@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import Image from 'next/image'
 
-export default function LoginForm() {
+interface LoginFormProps {
+  onLoginSuccess?: (role: string, username: string) => void
+}
+
+export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
@@ -37,12 +41,19 @@ export default function LoginForm() {
     if (userCredential && userCredential.password === password) {
       setUserRole(userCredential.role)
       setMessage(`🎉 Berhasil login sebagai ${userCredential.role}`)
-      setIsLoading(false)
       
       // Simpan role di localStorage untuk session management
       localStorage.setItem('userRole', userCredential.role)
       localStorage.setItem('username', username)
       
+      // Trigger callback setelah 1.5 detik
+      setTimeout(() => {
+        if (onLoginSuccess) {
+          onLoginSuccess(userCredential.role, username)
+        }
+      }, 1500)
+      
+      setIsLoading(false)
       return
     }
 
