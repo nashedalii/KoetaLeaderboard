@@ -2,11 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import LoginForm from '@/components/auth/LoginForm'
+import Sidebar from '@/components/layout/Sidebar'
+
+// Import halaman-halaman (uncomment seiring development)
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
+// import KelolaUser from '@/components/pages/KelolaUser'
+// import KonfigurasiPenilaian from '@/components/pages/KonfigurasiPenilaian'
+// import Analytics from '@/components/pages/Analytics'
+// import ValidasiData from '@/components/pages/ValidasiData'
+// import RankingPenilaian from '@/components/pages/RankingPenilaian'
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userRole, setUserRole] = useState('')
+  const [currentPage, setCurrentPage] = useState('dashboard')
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -28,7 +37,20 @@ export default function Home() {
   const handleLoginSuccess = (role: string, username: string) => {
     setIsLoggedIn(true)
     setUserRole(role)
+    setCurrentPage('dashboard')
     // Data sudah disimpan di localStorage di LoginForm
+  }
+
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('userRole')
+    localStorage.removeItem('username')
+    setIsLoggedIn(false)
+    setUserRole('')
+    setCurrentPage('dashboard')
   }
 
   // Show loading screen while checking localStorage
@@ -45,31 +67,56 @@ export default function Home() {
     return <LoginForm onLoginSuccess={handleLoginSuccess} />
   }
 
-  // Render dashboard berdasarkan role
-  if (userRole === 'Admin') {
-    return <AdminDashboard />
-  } else if (userRole === 'Petugas') {
-    return (
-      <div className="dashboard-container">
-        <div className="dashboard-content">
-          <h1 style={{color: 'white', textAlign: 'center', marginTop: '50px'}}>
-            Dashboard Petugas (Coming Soon)
-          </h1>
-        </div>
-      </div>
-    )
-  } else if (userRole === 'Supir') {
-    return (
-      <div className="dashboard-container">
-        <div className="dashboard-content">
-          <h1 style={{color: 'white', textAlign: 'center', marginTop: '50px'}}>
-            Dashboard Supir (Coming Soon)
-          </h1>
-        </div>
-      </div>
-    )
+  // Render content dengan Sidebar
+  const renderContent = () => {
+    if (userRole === 'Admin') {
+      switch (currentPage) {
+        case 'dashboard':
+          return <AdminDashboard />
+        
+        // Uncomment seiring development halaman baru
+        // case 'kelola-user':
+        //   return <KelolaUser />
+        
+        // case 'konfigurasi':
+        //   return <KonfigurasiPenilaian />
+        
+        // case 'analytics':
+        //   return <Analytics />
+        
+        // case 'validasi':
+        //   return <ValidasiData />
+        
+        // case 'ranking':
+        //   return <RankingPenilaian />
+        
+        default:
+          return <AdminDashboard />
+      }
+    }
+
+    if (userRole === 'Petugas') {
+      return <div className="coming-soon">Dashboard Petugas (Coming Soon)</div>
+    }
+
+    if (userRole === 'Supir') {
+      return <div className="coming-soon">Dashboard Supir (Coming Soon)</div>
+    }
+
+    return <div>Unknown role</div>
   }
 
-  // Fallback ke login
-  return <LoginForm onLoginSuccess={handleLoginSuccess} />
+  // Render dengan Sidebar
+  return (
+    <div className="app-container">
+      <Sidebar 
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+      />
+      <main className="main-content">
+        {renderContent()}
+      </main>
+    </div>
+  )
 }

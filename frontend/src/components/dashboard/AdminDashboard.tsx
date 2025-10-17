@@ -1,60 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-
 export default function AdminDashboard() {
-  const [userRole, setUserRole] = useState('')
-  const [username, setUsername] = useState('')
-  const router = useRouter()
-
-  useEffect(() => {
-    // Cek session dari localStorage
-    const role = localStorage.getItem('userRole')
-    const user = localStorage.getItem('username')
-    
-    if (!role || role !== 'Admin') {
-      // Jika bukan admin atau belum login, redirect ke login
-      router.push('/')
-      return
-    }
-    
-    setUserRole(role)
-    setUsername(user || '')
-  }, [router])
-
-  const handleLogout = () => {
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('username')
-    window.location.reload() // Reload untuk kembali ke login
-  }
-
-  if (!userRole) {
-    return <div className="loading-screen">Loading...</div>
-  }
-
   return (
-    <main className="dashboard-container">
-      {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-content">
-          <h1 className="dashboard-title">Dashboard Admin</h1>
-          <div className="user-menu">
-            <div className="user-info">
-              <span className="username">{username}</span>
-              <span className="user-role">Administrator</span>
-            </div>
-            <button onClick={handleLogout} className="logout-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
-
+    <div className="dashboard-container">
       {/* Main Content */}
       <div className="dashboard-content">
+        <h1 className="page-title">Dashboard Admin</h1>
+        
         <div className="stats-grid">
           {/* Jumlah Driver Aktif */}
           <div className="stat-card driver-card">
@@ -175,6 +127,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
