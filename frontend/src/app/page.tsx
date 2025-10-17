@@ -6,7 +6,7 @@ import Sidebar from '@/components/layout/Sidebar'
 
 // Import halaman-halaman (uncomment seiring development)
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
-// import KelolaUser from '@/components/pages/KelolaUser'
+import KelolaUser from '@/components/pages/KelolaUser'
 // import KonfigurasiPenilaian from '@/components/pages/KonfigurasiPenilaian'
 // import Analytics from '@/components/pages/Analytics'
 // import ValidasiData from '@/components/pages/ValidasiData'
@@ -75,8 +75,8 @@ export default function Home() {
           return <AdminDashboard />
         
         // Uncomment seiring development halaman baru
-        // case 'kelola-user':
-        //   return <KelolaUser />
+        case 'kelola-user':
+          return <KelolaUser />
         
         // case 'konfigurasi':
         //   return <KonfigurasiPenilaian />
