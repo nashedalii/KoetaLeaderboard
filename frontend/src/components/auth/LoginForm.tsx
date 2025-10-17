@@ -7,6 +7,7 @@ export default function LoginForm() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [userRole, setUserRole] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -14,19 +15,34 @@ export default function LoginForm() {
     e.preventDefault()
     setIsLoading(true)
     setMessage('')
+    setUserRole('')
 
-    // Demo credentials untuk testing
-    const demoCredentials = {
-      'admin': 'admin123',
-      'dishub': 'dishub2024',
-      'test': 'test123',
-      'user': 'password'
+    // Role-based credentials
+    const roleCredentials = {
+      // Admin
+      'admin_dishub': { password: 'admin123', role: 'Admin' },
+      
+      // Petugas
+      'petugas_01': { password: 'petugas123', role: 'Petugas' },
+      'petugas_02': { password: 'petugas123', role: 'Petugas' },
+      
+      // Supir
+      'supir_01': { password: 'supir123', role: 'Supir' },
+      'supir_02': { password: 'supir123', role: 'Supir' },
     }
 
-    // Cek demo credentials dulu (untuk testing tanpa backend)
-    if (demoCredentials[username as keyof typeof demoCredentials] === password) {
-      setMessage(`✅ Login berhasil! Selamat datang, ${username}`)
+    // Cek role credentials
+    const userCredential = roleCredentials[username as keyof typeof roleCredentials]
+    
+    if (userCredential && userCredential.password === password) {
+      setUserRole(userCredential.role)
+      setMessage(`🎉 Berhasil login sebagai ${userCredential.role}`)
       setIsLoading(false)
+      
+      // Simpan role di localStorage untuk session management
+      localStorage.setItem('userRole', userCredential.role)
+      localStorage.setItem('username', username)
+      
       return
     }
 
@@ -39,9 +55,13 @@ export default function LoginForm() {
       })
 
       const data = await res.json()
-      setMessage(data.message)
+      if (data.success) {
+        setMessage(`✅ ${data.message}`)
+      } else {
+        setMessage(`❌ ${data.message}`)
+      }
     } catch (error) {
-      setMessage('❌ Backend tidak tersedia. Gunakan demo credentials atau jalankan backend.')
+      setMessage('❌ Username atau password salah!')
     } finally {
       setIsLoading(false)
     }
@@ -121,8 +141,16 @@ export default function LoginForm() {
             </button>
 
             {message && (
-              <div className={`message ${message.includes('berhasil') ? 'success' : 'error'}`}>
+              <div className={`message ${message.includes('Berhasil') || message.includes('berhasil') ? 'success' : 'error'}`}>
                 {message}
+              </div>
+            )}
+
+            {userRole && (
+              <div className="role-display">
+                <div className="role-badge">
+                  Role: <span className={`role-${userRole.toLowerCase()}`}>{userRole}</span>
+                </div>
               </div>
             )}
 
@@ -130,6 +158,28 @@ export default function LoginForm() {
               Forget your password?
             </a>
           </form>
+
+          {/* Demo Credentials untuk Development */}
+          <div className="demo-credentials">
+            <h3>🔑 Demo Credentials (Testing)</h3>
+            <div className="credentials-grid">
+              <div className="credential-item admin">
+                <div className="role-header">👑 Admin</div>
+                <div>Username: <code>admin_dishub</code></div>
+                <div>Password: <code>admin123</code></div>
+              </div>
+              <div className="credential-item petugas">
+                <div className="role-header">👨‍💼 Petugas</div>
+                <div>Username: <code>petugas_01</code></div>
+                <div>Password: <code>petugas123</code></div>
+              </div>
+              <div className="credential-item supir">
+                <div className="role-header">🚛 Supir</div>
+                <div>Username: <code>supir_01</code></div>
+                <div>Password: <code>supir123</code></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
