@@ -2261,3 +2261,373 @@ body {
     font-size: 14px;
   }
 }
+
+/* ==============================================
+   RANKING PENILAIAN STYLES
+   ============================================== */
+
+.ranking-container {
+  width: 100%;
+}
+
+/* Ranking Controls */
+.ranking-controls {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.month-filter {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 220px;
+}
+
+.month-filter:hover {
+  border-color: #031E65;
+}
+
+.month-filter:focus {
+  outline: none;
+  border-color: #031E65;
+  box-shadow: 0 0 0 3px rgba(3, 30, 101, 0.1);
+}
+
+/* Ranking Table */
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: white;
+}
+
+.ranking-table thead {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.ranking-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.ranking-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+}
+
+.ranking-table tbody tr.clickable-row {
+  cursor: pointer;
+}
+
+.ranking-table tbody tr.clickable-row:hover {
+  background: #f8fafc;
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ranking-table td {
+  padding: 14px 16px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+/* Weighted Score Styling */
+.weighted-score {
+  font-weight: 600;
+  color: #3b82f6;
+  background: #eff6ff;
+  padding: 8px !important;
+  border-radius: 6px;
+}
+
+/* Rank Badge */
+.rank-cell {
+  text-align: center;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.rank-badge.rank-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #854d0e;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.rank-badge.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e5e5e5 100%);
+  color: #475569;
+  box-shadow: 0 4px 12px rgba(192, 192, 192, 0.4);
+}
+
+.rank-badge.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, #e6a85c 100%);
+  color: #78350f;
+  box-shadow: 0 4px 12px rgba(205, 127, 50, 0.4);
+}
+
+.rank-badge:not(.rank-1):not(.rank-2):not(.rank-3) {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+/* Driver Name */
+.driver-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+/* Armada Badge */
+.armada-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Total Score */
+.total-score {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--primary-blue);
+}
+
+/* Driver Detail View */
+.driver-detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: white;
+  color: var(--primary-blue);
+  border: 2px solid var(--primary-blue);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.btn-back:hover {
+  background: var(--primary-blue);
+  color: white;
+  transform: translateX(-4px);
+}
+
+/* Driver Info Card */
+.driver-info-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.driver-avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary-blue) 0%, #0a2f6e 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-icon {
+  font-size: 40px;
+  filter: brightness(0) invert(1);
+}
+
+.driver-info {
+  flex: 1;
+}
+
+.driver-detail-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary-blue);
+  margin-bottom: 4px;
+}
+
+.driver-detail-subtitle {
+  font-size: 16px;
+  color: #64748b;
+}
+
+/* Monthly Scores Section */
+.monthly-scores-container {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-blue);
+  margin-bottom: 20px;
+}
+
+/* Monthly Table */
+.monthly-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.monthly-table thead {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.monthly-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.monthly-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.monthly-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.monthly-table td {
+  padding: 12px 16px;
+  color: #334155;
+}
+
+.month-cell {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.empty-state {
+  padding: 40px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Responsive Design for Ranking */
+@media (max-width: 1024px) {
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .ranking-table,
+  .monthly-table {
+    min-width: 900px;
+  }
+
+  .ranking-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    justify-content: space-between;
+  }
+
+  .month-filter {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .driver-info-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .driver-detail-name {
+    font-size: 24px;
+  }
+
+  .monthly-scores-container {
+    padding: 16px;
+  }
+
+  .ranking-controls {
+    margin-bottom: 16px;
+  }
+
+  .filter-label {
+    font-size: 13px;
+  }
+
+  .month-filter {
+    font-size: 13px;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .ranking-table,
+  .monthly-table {
+    min-width: 800px;
+  }
+
+  .driver-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .avatar-icon {
+    font-size: 32px;
+  }
+}

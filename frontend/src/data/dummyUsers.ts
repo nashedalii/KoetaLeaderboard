@@ -1,5 +1,17 @@
 // Data dummy untuk users (Driver & Petugas)
 
+export interface SkorBulanan {
+  bulan: string // Format: "Januari/2025"
+  skor: {
+    etikaAdab: number
+    disiplin: number
+    loyalitas: number
+    skillMengemudi: number
+    perawatanKendaraan: number
+    performa: number
+  }
+}
+
 export interface User {
   id: number
   nama: string
@@ -19,6 +31,7 @@ export interface User {
     perawatanKendaraan: number
     performa: number
   }
+  skorBulanan?: SkorBulanan[]
 }
 
 export const dummyUsers: User[] = [
@@ -67,7 +80,42 @@ export const dummyUsers: User[] = [
       skillMengemudi: 92,
       perawatanKendaraan: 87,
       performa: 89
-    }
+    },
+    skorBulanan: [
+      {
+        bulan: 'Januari/2025',
+        skor: {
+          etikaAdab: 83,
+          disiplin: 88,
+          loyalitas: 86,
+          skillMengemudi: 90,
+          perawatanKendaraan: 85,
+          performa: 87
+        }
+      },
+      {
+        bulan: 'Februari/2025',
+        skor: {
+          etikaAdab: 85,
+          disiplin: 89,
+          loyalitas: 87,
+          skillMengemudi: 91,
+          perawatanKendaraan: 86,
+          performa: 88
+        }
+      },
+      {
+        bulan: 'Maret/2025',
+        skor: {
+          etikaAdab: 87,
+          disiplin: 91,
+          loyalitas: 89,
+          skillMengemudi: 93,
+          perawatanKendaraan: 88,
+          performa: 90
+        }
+      }
+    ]
   },
   {
     id: 5,
@@ -85,7 +133,42 @@ export const dummyUsers: User[] = [
       skillMengemudi: 87,
       perawatanKendaraan: 89,
       performa: 91
-    }
+    },
+    skorBulanan: [
+      {
+        bulan: 'Januari/2025',
+        skor: {
+          etikaAdab: 86,
+          disiplin: 83,
+          loyalitas: 88,
+          skillMengemudi: 85,
+          perawatanKendaraan: 87,
+          performa: 89
+        }
+      },
+      {
+        bulan: 'Februari/2025',
+        skor: {
+          etikaAdab: 87,
+          disiplin: 84,
+          loyalitas: 89,
+          skillMengemudi: 86,
+          perawatanKendaraan: 88,
+          performa: 90
+        }
+      },
+      {
+        bulan: 'Maret/2025',
+        skor: {
+          etikaAdab: 89,
+          disiplin: 86,
+          loyalitas: 91,
+          skillMengemudi: 88,
+          perawatanKendaraan: 90,
+          performa: 92
+        }
+      }
+    ]
   },
   {
     id: 6,
@@ -103,7 +186,42 @@ export const dummyUsers: User[] = [
       skillMengemudi: 89,
       perawatanKendaraan: 85,
       performa: 88
-    }
+    },
+    skorBulanan: [
+      {
+        bulan: 'Januari/2025',
+        skor: {
+          etikaAdab: 88,
+          disiplin: 86,
+          loyalitas: 90,
+          skillMengemudi: 87,
+          perawatanKendaraan: 83,
+          performa: 86
+        }
+      },
+      {
+        bulan: 'Februari/2025',
+        skor: {
+          etikaAdab: 89,
+          disiplin: 87,
+          loyalitas: 91,
+          skillMengemudi: 88,
+          perawatanKendaraan: 84,
+          performa: 87
+        }
+      },
+      {
+        bulan: 'Maret/2025',
+        skor: {
+          etikaAdab: 91,
+          disiplin: 89,
+          loyalitas: 93,
+          skillMengemudi: 90,
+          perawatanKendaraan: 86,
+          performa: 89
+        }
+      }
+    ]
   },
   {
     id: 7,
@@ -139,7 +257,42 @@ export const dummyUsers: User[] = [
       skillMengemudi: 90,
       perawatanKendaraan: 87,
       performa: 89
-    }
+    },
+    skorBulanan: [
+      {
+        bulan: 'Januari/2025',
+        skor: {
+          etikaAdab: 90,
+          disiplin: 87,
+          loyalitas: 89,
+          skillMengemudi: 88,
+          perawatanKendaraan: 85,
+          performa: 87
+        }
+      },
+      {
+        bulan: 'Februari/2025',
+        skor: {
+          etikaAdab: 91,
+          disiplin: 88,
+          loyalitas: 90,
+          skillMengemudi: 89,
+          perawatanKendaraan: 86,
+          performa: 88
+        }
+      },
+      {
+        bulan: 'Maret/2025',
+        skor: {
+          etikaAdab: 93,
+          disiplin: 90,
+          loyalitas: 92,
+          skillMengemudi: 91,
+          perawatanKendaraan: 88,
+          performa: 90
+        }
+      }
+    ]
   },
   {
     id: 9,
@@ -175,7 +328,42 @@ export const dummyUsers: User[] = [
       skillMengemudi: 90,
       perawatanKendaraan: 92,
       performa: 91
-    }
+    },
+    skorBulanan: [
+      {
+        bulan: 'Januari/2025',
+        skor: {
+          etikaAdab: 87,
+          disiplin: 89,
+          loyalitas: 86,
+          skillMengemudi: 88,
+          perawatanKendaraan: 90,
+          performa: 89
+        }
+      },
+      {
+        bulan: 'Februari/2025',
+        skor: {
+          etikaAdab: 88,
+          disiplin: 90,
+          loyalitas: 87,
+          skillMengemudi: 89,
+          perawatanKendaraan: 91,
+          performa: 90
+        }
+      },
+      {
+        bulan: 'Maret/2025',
+        skor: {
+          etikaAdab: 90,
+          disiplin: 92,
+          loyalitas: 89,
+          skillMengemudi: 91,
+          perawatanKendaraan: 93,
+          performa: 92
+        }
+      }
+    ]
   },
   {
     id: 11,

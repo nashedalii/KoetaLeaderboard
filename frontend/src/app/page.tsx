@@ -8,9 +8,9 @@ import Sidebar from '@/components/layout/Sidebar'
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
 import KelolaUser from '@/components/pages/KelolaUser'
 import KonfigurasiPenilaian from '@/components/pages/KonfigurasiPenilaian'
+import RankingPenilaian from '@/components/pages/RankingPenilaian'
 // import Analytics from '@/components/pages/Analytics'
 // import ValidasiData from '@/components/pages/ValidasiData'
-// import RankingPenilaian from '@/components/pages/RankingPenilaian'
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -81,14 +81,14 @@ export default function Home() {
         case 'konfigurasi':
           return <KonfigurasiPenilaian />
         
+        case 'ranking':
+          return <RankingPenilaian />
+        
         // case 'analytics':
         //   return <Analytics />
         
         // case 'validasi':
         //   return <ValidasiData />
-        
-        // case 'ranking':
-        //   return <RankingPenilaian />
         
         default:
           return <AdminDashboard />
