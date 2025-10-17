@@ -7,7 +7,7 @@ import Sidebar from '@/components/layout/Sidebar'
 // Import halaman-halaman (uncomment seiring development)
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
 import KelolaUser from '@/components/pages/KelolaUser'
-// import KonfigurasiPenilaian from '@/components/pages/KonfigurasiPenilaian'
+import KonfigurasiPenilaian from '@/components/pages/KonfigurasiPenilaian'
 // import Analytics from '@/components/pages/Analytics'
 // import ValidasiData from '@/components/pages/ValidasiData'
 // import RankingPenilaian from '@/components/pages/RankingPenilaian'
@@ -78,8 +78,8 @@ export default function Home() {
         case 'kelola-user':
           return <KelolaUser />
         
-        // case 'konfigurasi':
-        //   return <KonfigurasiPenilaian />
+        case 'konfigurasi':
+          return <KonfigurasiPenilaian />
         
         // case 'analytics':
         //   return <Analytics />
