@@ -169,28 +169,6 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
               Forget your password?
             </a>
           </form>
-
-          {/* Demo Credentials untuk Development */}
-          <div className="demo-credentials">
-            <h3>🔑 Demo Credentials (Testing)</h3>
-            <div className="credentials-grid">
-              <div className="credential-item admin">
-                <div className="role-header">👑 Admin</div>
-                <div>Username: <code>admin_dishub</code></div>
-                <div>Password: <code>admin123</code></div>
-              </div>
-              <div className="credential-item petugas">
-                <div className="role-header">👨‍💼 Petugas</div>
-                <div>Username: <code>petugas_01</code></div>
-                <div>Password: <code>petugas123</code></div>
-              </div>
-              <div className="credential-item supir">
-                <div className="role-header">🚛 Supir</div>
-                <div>Username: <code>supir_01</code></div>
-                <div>Password: <code>supir123</code></div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </main>
