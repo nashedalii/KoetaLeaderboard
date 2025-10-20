@@ -40,22 +40,58 @@ export default function RankingPenilaian() {
   const calculateTotalScore = (skor: any) => {
     if (!skor) return 0
     
-    const total = (
-      (skor.etikaAdab * bobotPenilaian.etikaAdab / 100) +
-      (skor.disiplin * bobotPenilaian.disiplin / 100) +
-      (skor.loyalitas * bobotPenilaian.loyalitas / 100) +
-      (skor.skillMengemudi * bobotPenilaian.skillMengemudi / 100) +
-      (skor.perawatanKendaraan * bobotPenilaian.perawatanKendaraan / 100) +
-      (skor.performa * bobotPenilaian.performa / 100)
-    )
+    // Sum up all weighted scores (rounded individually)
+    const total = 
+      calculateWeightedScore(skor.etikaAdab || 0, bobotPenilaian.etikaAdab) +
+      calculateWeightedScore(skor.disiplin || 0, bobotPenilaian.disiplin) +
+      calculateWeightedScore(skor.loyalitas || 0, bobotPenilaian.loyalitas) +
+      calculateWeightedScore(skor.skillMengemudi || 0, bobotPenilaian.skillMengemudi) +
+      calculateWeightedScore(skor.perawatanKendaraan || 0, bobotPenilaian.perawatanKendaraan) +
+      calculateWeightedScore(skor.performa || 0, bobotPenilaian.performa)
     
     return Math.round(total * 10) / 10 // Round to 1 decimal
   }
 
-  // Get scores for selected month or current scores
+  // Calculate average score from all months
+  const calculateAverageScores = (driver: User) => {
+    if (!driver.skorBulanan || driver.skorBulanan.length === 0) {
+      return driver.skor
+    }
+
+    const totals = {
+      etikaAdab: 0,
+      disiplin: 0,
+      loyalitas: 0,
+      skillMengemudi: 0,
+      perawatanKendaraan: 0,
+      performa: 0
+    }
+
+    driver.skorBulanan.forEach(sb => {
+      totals.etikaAdab += sb.skor.etikaAdab
+      totals.disiplin += sb.skor.disiplin
+      totals.loyalitas += sb.skor.loyalitas
+      totals.skillMengemudi += sb.skor.skillMengemudi
+      totals.perawatanKendaraan += sb.skor.perawatanKendaraan
+      totals.performa += sb.skor.performa
+    })
+
+    const count = driver.skorBulanan.length
+
+    return {
+      etikaAdab: Math.round((totals.etikaAdab / count) * 10) / 10,
+      disiplin: Math.round((totals.disiplin / count) * 10) / 10,
+      loyalitas: Math.round((totals.loyalitas / count) * 10) / 10,
+      skillMengemudi: Math.round((totals.skillMengemudi / count) * 10) / 10,
+      perawatanKendaraan: Math.round((totals.perawatanKendaraan / count) * 10) / 10,
+      performa: Math.round((totals.performa / count) * 10) / 10
+    }
+  }
+
+  // Get scores for selected month or average scores
   const getDriverScores = (driver: User) => {
     if (selectedMonth === 'all') {
-      return driver.skor
+      return calculateAverageScores(driver)
     }
     
     const monthlyScore = driver.skorBulanan?.find(sb => sb.bulan === selectedMonth)

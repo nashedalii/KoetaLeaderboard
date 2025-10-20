@@ -9,7 +9,7 @@ import AdminDashboard from '@/components/dashboard/AdminDashboard'
 import KelolaUser from '@/components/pages/KelolaUser'
 import KonfigurasiPenilaian from '@/components/pages/KonfigurasiPenilaian'
 import RankingPenilaian from '@/components/pages/RankingPenilaian'
-// import Analytics from '@/components/pages/Analytics'
+import Analytics from '@/components/pages/Analytics'
 // import ValidasiData from '@/components/pages/ValidasiData'
 
 export default function Home() {
@@ -84,8 +84,8 @@ export default function Home() {
         case 'ranking':
           return <RankingPenilaian />
         
-        // case 'analytics':
-        //   return <Analytics />
+        case 'analytics':
+          return <Analytics />
         
         // case 'validasi':
         //   return <ValidasiData />
