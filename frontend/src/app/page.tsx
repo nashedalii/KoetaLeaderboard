@@ -15,6 +15,7 @@ import Analytics from '@/components/pages/admin/Analytics'
 // Import halaman-halaman Petugas
 import PetugasDashboard from '@/components/pages/petugas/PetugasDashboard'
 import ManajemenDriver from '@/components/pages/petugas/ManajemenDriver'
+import InputValidasiData from '@/components/pages/petugas/InputValidasiData'
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -113,7 +114,7 @@ export default function Home() {
           return <ManajemenDriver />
         
         case 'input-validasi':
-          return <div className="coming-soon">Input & Validasi Data (Coming Soon)</div>
+          return <InputValidasiData />
         
         default:
           return <PetugasDashboard />
