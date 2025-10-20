@@ -6,10 +6,10 @@ import Sidebar from '@/components/layout/Sidebar'
 
 // Import halaman-halaman (uncomment seiring development)
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
-import KelolaUser from '@/components/pages/KelolaUser'
-import KonfigurasiPenilaian from '@/components/pages/KonfigurasiPenilaian'
-import RankingPenilaian from '@/components/pages/RankingPenilaian'
-import Analytics from '@/components/pages/Analytics'
+import KelolaUser from '@/components/pages/admin/KelolaUser'
+import KonfigurasiPenilaian from '@/components/pages/admin/KonfigurasiPenilaian'
+import RankingPenilaian from '@/components/pages/admin/RankingPenilaian'
+import Analytics from '@/components/pages/admin/Analytics'
 // import ValidasiData from '@/components/pages/ValidasiData'
 
 export default function Home() {
