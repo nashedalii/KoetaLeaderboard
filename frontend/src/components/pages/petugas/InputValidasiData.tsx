@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { dummyUsers, User } from '@/data/dummyUsers'
+import { useDataContext } from '@/contexts/DataContext'
 
 const bobotPenilaian = {
   etikaAdab: 25,
@@ -33,6 +34,7 @@ interface FormData {
 }
 
 export default function InputValidasiData() {
+  const { addPendingValidation } = useDataContext()
   const [selectedDriver, setSelectedDriver] = useState<DriverInputStatus | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | StatusInput>('all')
@@ -156,22 +158,63 @@ export default function InputValidasiData() {
   const handleSubmit = () => {
     if (!selectedDriver) return
     
-    // Simulate adding score to driver's skorBulanan
+    // Get current logged in petugas from localStorage or default
+    const currentUserEmail = localStorage.getItem('userEmail') || 'suryadi@dishub.aceh.go.id'
+    const petugas = dummyUsers.find(u => u.role === 'Petugas' && u.email === currentUserEmail)
+    
+    if (!petugas) {
+      // Fallback to first petugas if current user not found
+      const fallbackPetugas = dummyUsers.find(u => u.role === 'Petugas')
+      if (!fallbackPetugas) {
+        alert('Error: Tidak ada data petugas!')
+        return
+      }
+      console.log('Using fallback petugas:', fallbackPetugas.nama)
+    }
+    
+    const finalPetugas = petugas || dummyUsers.find(u => u.role === 'Petugas')!
+    
+    // Add to pending validations via context
+    const skorData = {
+      etikaAdab: parseFloat(formData.etikaAdab) || 0,
+      disiplin: parseFloat(formData.disiplin) || 0,
+      loyalitas: parseFloat(formData.loyalitas) || 0,
+      skillMengemudi: parseFloat(formData.skillMengemudi) || 0,
+      perawatanKendaraan: parseFloat(formData.perawatanKendaraan) || 0,
+      performa: parseFloat(formData.performa) || 0
+    }
+    
+    const totalSkor = Math.round((
+      (skorData.etikaAdab * bobotPenilaian.etikaAdab) / 100 +
+      (skorData.disiplin * bobotPenilaian.disiplin) / 100 +
+      (skorData.loyalitas * bobotPenilaian.loyalitas) / 100 +
+      (skorData.skillMengemudi * bobotPenilaian.skillMengemudi) / 100 +
+      (skorData.perawatanKendaraan * bobotPenilaian.perawatanKendaraan) / 100 +
+      (skorData.performa * bobotPenilaian.performa) / 100
+    ) * 10) / 10
+    
+    const validationData = {
+      driverId: selectedDriver.id,
+      bulan: selectedMonth,
+      petugas: finalPetugas,
+      skor: skorData,
+      totalSkor,
+      catatanPetugas: formData.catatan || undefined,
+      buktiFiles: formData.buktiFiles
+    }
+    
+    console.log('Submitting validation data:', validationData)
+    addPendingValidation(validationData)
+    console.log('After addPendingValidation called')
+    
+    // Also add to dummyUsers for local status display
     const driverIndex = dummyUsers.findIndex(u => u.id === selectedDriver.id)
     if (driverIndex !== -1) {
       const newScore = {
         bulan: selectedMonth,
-        skor: {
-          etikaAdab: parseFloat(formData.etikaAdab) || 0,
-          disiplin: parseFloat(formData.disiplin) || 0,
-          loyalitas: parseFloat(formData.loyalitas) || 0,
-          skillMengemudi: parseFloat(formData.skillMengemudi) || 0,
-          perawatanKendaraan: parseFloat(formData.perawatanKendaraan) || 0,
-          performa: parseFloat(formData.performa) || 0
-        }
+        skor: skorData
       }
       
-      // Add or update score for this month
       if (!dummyUsers[driverIndex].skorBulanan) {
         dummyUsers[driverIndex].skorBulanan = []
       }
