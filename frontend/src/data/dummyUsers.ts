@@ -546,7 +546,7 @@ export const dummyUsers: User[] = [
     nama: 'Agus Setiawan',
     email: 'agus.s@dishub.aceh.go.id',
     role: 'Supir',
-    status: 'Nonaktif',
+    status: 'Aktif',
     password: 'supir123',
     namaKernet: 'Chandra Kusuma',
     namaArmada: 'A',
