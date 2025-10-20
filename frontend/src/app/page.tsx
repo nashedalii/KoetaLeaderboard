@@ -4,13 +4,16 @@ import { useEffect, useState } from 'react'
 import LoginForm from '@/components/auth/LoginForm'
 import Sidebar from '@/components/layout/Sidebar'
 
-// Import halaman-halaman (uncomment seiring development)
+// Import halaman-halaman Admin
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
 import KelolaUser from '@/components/pages/admin/KelolaUser'
 import KonfigurasiPenilaian from '@/components/pages/admin/KonfigurasiPenilaian'
 import RankingPenilaian from '@/components/pages/admin/RankingPenilaian'
 import Analytics from '@/components/pages/admin/Analytics'
 // import ValidasiData from '@/components/pages/ValidasiData'
+
+// Import halaman-halaman Petugas
+import PetugasDashboard from '@/components/pages/petugas/PetugasDashboard'
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -37,7 +40,12 @@ export default function Home() {
   const handleLoginSuccess = (role: string, username: string) => {
     setIsLoggedIn(true)
     setUserRole(role)
-    setCurrentPage('dashboard')
+    // Set default page berdasarkan role
+    if (role === 'Petugas') {
+      setCurrentPage('petugas-dashboard')
+    } else {
+      setCurrentPage('dashboard')
+    }
     // Data sudah disimpan di localStorage di LoginForm
   }
 
@@ -96,7 +104,19 @@ export default function Home() {
     }
 
     if (userRole === 'Petugas') {
-      return <div className="coming-soon">Dashboard Petugas (Coming Soon)</div>
+      switch (currentPage) {
+        case 'petugas-dashboard':
+          return <PetugasDashboard />
+        
+        case 'manajemen-driver':
+          return <div className="coming-soon">Manajemen Driver (Coming Soon)</div>
+        
+        case 'input-validasi':
+          return <div className="coming-soon">Input & Validasi Data (Coming Soon)</div>
+        
+        default:
+          return <PetugasDashboard />
+      }
     }
 
     if (userRole === 'Supir') {
@@ -113,6 +133,7 @@ export default function Home() {
         currentPage={currentPage}
         onNavigate={handleNavigate}
         onLogout={handleLogout}
+        userRole={userRole as 'Admin' | 'Petugas' | 'Supir'}
       />
       <main className="main-content">
         {renderContent()}
