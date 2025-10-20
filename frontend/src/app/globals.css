@@ -2653,22 +2653,6 @@ body {
 }
 
 .chart-type-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 8px 16px;
-  border-radius: 8px;
-}
-
-.chart-type-selector label {
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.chart-type-selector select {
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -2681,11 +2665,69 @@ body {
   transition: all 0.2s;
 }
 
-.chart-type-selector select:hover {
+.chart-type-selector option {
+  background: white;
+  color: #1e293b;
+  padding: 8px 12px;
+}
+
+.chart-type-selector:hover {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.chart-type-selector select:focus {
+.chart-type-selector:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Container untuk chart controls yang lama */
+.chart-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.chart-controls .chart-type-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.chart-controls .chart-type-selector label {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chart-controls .chart-type-selector select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: white;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 180px;
+  transition: all 0.2s;
+}
+
+.chart-controls .chart-type-selector select option {
+  background: white;
+  color: #1e293b;
+  padding: 8px 12px;
+}
+
+.chart-controls .chart-type-selector select:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.chart-controls .chart-type-selector select:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -2733,6 +2775,12 @@ body {
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.filter-select option {
+  background: white;
+  color: #1e293b;
+  padding: 8px 12px;
 }
 
 .filter-select:hover {
@@ -3015,6 +3063,12 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   min-width: 200px;
+}
+
+.chart-type-select option {
+  background: white;
+  color: #1e293b;
+  padding: 8px 12px;
 }
 
 .chart-type-select:hover {
