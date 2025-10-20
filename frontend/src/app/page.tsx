@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import LoginForm from '@/components/auth/LoginForm'
 import Sidebar from '@/components/layout/Sidebar'
+import { DataProvider } from '@/contexts/DataContext'
 
 // Import halaman-halaman Admin
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
@@ -10,7 +11,7 @@ import KelolaUser from '@/components/pages/admin/KelolaUser'
 import KonfigurasiPenilaian from '@/components/pages/admin/KonfigurasiPenilaian'
 import RankingPenilaian from '@/components/pages/admin/RankingPenilaian'
 import Analytics from '@/components/pages/admin/Analytics'
-// import ValidasiData from '@/components/pages/ValidasiData'
+import ValidasiDataPetugas from '@/components/pages/admin/ValidasiDataPetugas'
 
 // Import halaman-halaman Petugas
 import PetugasDashboard from '@/components/pages/petugas/PetugasDashboard'
@@ -97,8 +98,8 @@ export default function Home() {
         case 'analytics':
           return <Analytics />
         
-        // case 'validasi':
-        //   return <ValidasiData />
+        case 'validasi':
+          return <ValidasiDataPetugas />
         
         default:
           return <AdminDashboard />
@@ -130,16 +131,18 @@ export default function Home() {
 
   // Render dengan Sidebar
   return (
-    <div className="app-container">
-      <Sidebar 
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        onLogout={handleLogout}
-        userRole={userRole as 'Admin' | 'Petugas' | 'Supir'}
-      />
-      <main className="main-content">
-        {renderContent()}
-      </main>
-    </div>
+    <DataProvider>
+      <div className="app-container">
+        <Sidebar 
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          onLogout={handleLogout}
+          userRole={userRole as 'Admin' | 'Petugas' | 'Supir'}
+        />
+        <main className="main-content">
+          {renderContent()}
+        </main>
+      </div>
+    </DataProvider>
   )
 }
