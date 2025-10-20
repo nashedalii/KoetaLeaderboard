@@ -22,12 +22,12 @@ interface DriverInputStatus extends User {
 interface FormData {
   driverId: number
   bulan: string
-  etikaAdab: number
-  disiplin: number
-  loyalitas: number
-  skillMengemudi: number
-  perawatanKendaraan: number
-  performa: number
+  etikaAdab: string
+  disiplin: string
+  loyalitas: string
+  skillMengemudi: string
+  perawatanKendaraan: string
+  performa: string
   buktiFiles: File[]
   catatan: string
 }
@@ -38,19 +38,21 @@ export default function InputValidasiData() {
   const [statusFilter, setStatusFilter] = useState<'all' | StatusInput>('all')
   const [selectedMonth, setSelectedMonth] = useState('April/2025')
   const [petugasArmada] = useState<'A' | 'B' | 'C'>('A')
+  const [refreshKey, setRefreshKey] = useState(0) // Add this to trigger re-render
   
   // Form states
   const [showInputForm, setShowInputForm] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     driverId: 0,
     bulan: 'April/2025',
-    etikaAdab: 0,
-    disiplin: 0,
-    loyalitas: 0,
-    skillMengemudi: 0,
-    perawatanKendaraan: 0,
-    performa: 0,
+    etikaAdab: '',
+    disiplin: '',
+    loyalitas: '',
+    skillMengemudi: '',
+    perawatanKendaraan: '',
+    performa: '',
     buktiFiles: [],
     catatan: ''
   })
@@ -78,7 +80,7 @@ export default function InputValidasiData() {
         const lastInputMonth = d.skorBulanan?.[d.skorBulanan.length - 1]?.bulan
         return { ...d, statusInput, lastInputMonth } as DriverInputStatus
       })
-  }, [petugasArmada, selectedMonth])
+  }, [petugasArmada, selectedMonth, refreshKey]) // Add refreshKey to dependencies
 
   const filteredDrivers = useMemo(() => {
     return driversWithStatus.filter((driver) => {
@@ -106,12 +108,12 @@ export default function InputValidasiData() {
     setFormData({
       driverId: driver.id,
       bulan: selectedMonth,
-      etikaAdab: 0,
-      disiplin: 0,
-      loyalitas: 0,
-      skillMengemudi: 0,
-      perawatanKendaraan: 0,
-      performa: 0,
+      etikaAdab: '',
+      disiplin: '',
+      loyalitas: '',
+      skillMengemudi: '',
+      perawatanKendaraan: '',
+      performa: '',
       buktiFiles: [],
       catatan: ''
     })
@@ -138,12 +140,12 @@ export default function InputValidasiData() {
 
   const calculateTotal = () => {
     const total =
-      (formData.etikaAdab * bobotPenilaian.etikaAdab) / 100 +
-      (formData.disiplin * bobotPenilaian.disiplin) / 100 +
-      (formData.loyalitas * bobotPenilaian.loyalitas) / 100 +
-      (formData.skillMengemudi * bobotPenilaian.skillMengemudi) / 100 +
-      (formData.perawatanKendaraan * bobotPenilaian.perawatanKendaraan) / 100 +
-      (formData.performa * bobotPenilaian.performa) / 100
+      ((parseFloat(formData.etikaAdab) || 0) * bobotPenilaian.etikaAdab) / 100 +
+      ((parseFloat(formData.disiplin) || 0) * bobotPenilaian.disiplin) / 100 +
+      ((parseFloat(formData.loyalitas) || 0) * bobotPenilaian.loyalitas) / 100 +
+      ((parseFloat(formData.skillMengemudi) || 0) * bobotPenilaian.skillMengemudi) / 100 +
+      ((parseFloat(formData.perawatanKendaraan) || 0) * bobotPenilaian.perawatanKendaraan) / 100 +
+      ((parseFloat(formData.performa) || 0) * bobotPenilaian.performa) / 100
     return Math.round(total * 10) / 10
   }
 
@@ -152,17 +154,61 @@ export default function InputValidasiData() {
   }
 
   const handleSubmit = () => {
-    // In real app: send to backend/API
+    if (!selectedDriver) return
+    
+    // Simulate adding score to driver's skorBulanan
+    const driverIndex = dummyUsers.findIndex(u => u.id === selectedDriver.id)
+    if (driverIndex !== -1) {
+      const newScore = {
+        bulan: selectedMonth,
+        skor: {
+          etikaAdab: parseFloat(formData.etikaAdab) || 0,
+          disiplin: parseFloat(formData.disiplin) || 0,
+          loyalitas: parseFloat(formData.loyalitas) || 0,
+          skillMengemudi: parseFloat(formData.skillMengemudi) || 0,
+          perawatanKendaraan: parseFloat(formData.perawatanKendaraan) || 0,
+          performa: parseFloat(formData.performa) || 0
+        }
+      }
+      
+      // Add or update score for this month
+      if (!dummyUsers[driverIndex].skorBulanan) {
+        dummyUsers[driverIndex].skorBulanan = []
+      }
+      
+      const existingScoreIndex = dummyUsers[driverIndex].skorBulanan!.findIndex(
+        s => s.bulan === selectedMonth
+      )
+      
+      if (existingScoreIndex >= 0) {
+        dummyUsers[driverIndex].skorBulanan![existingScoreIndex] = newScore
+      } else {
+        dummyUsers[driverIndex].skorBulanan!.push(newScore)
+      }
+    }
+    
     console.log('Submit data:', formData)
     alert(`Data untuk ${selectedDriver?.nama} bulan ${selectedMonth} berhasil disubmit!\nStatus: Menunggu approval admin.`)
     setShowInputForm(false)
     setShowPreview(false)
     setSelectedDriver(null)
+    
+    // Trigger re-render to update status
+    setRefreshKey(prev => prev + 1)
   }
 
   const handleSaveDraft = () => {
     console.log('Save draft:', formData)
     alert('Draft berhasil disimpan!')
+  }
+
+  const handleViewDetail = (driver: DriverInputStatus) => {
+    setSelectedDriver(driver)
+    setShowDetailModal(true)
+  }
+
+  const getDriverScoreForMonth = (driver: User, month: string) => {
+    return driver.skorBulanan?.find(sb => sb.bulan === month)
   }
 
   return (
@@ -269,11 +315,11 @@ export default function InputValidasiData() {
                         <button className="btn btn-secondary" onClick={() => handleOpenInputForm(driver)}>
                           ✏️ Edit
                         </button>
-                        <button className="btn btn-outline">👁️ Lihat</button>
+                        <button className="btn btn-outline" onClick={() => handleViewDetail(driver)}>👁️ Lihat</button>
                       </>
                     )}
                     {driver.statusInput === 'approved' && (
-                      <button className="btn btn-outline">👁️ Lihat Detail</button>
+                      <button className="btn btn-outline" onClick={() => handleViewDetail(driver)}>👁️ Lihat Detail</button>
                     )}
                   </div>
                 </div>
@@ -326,7 +372,7 @@ export default function InputValidasiData() {
                             min="0"
                             max="100"
                             value={(formData as any)[item.key]}
-                            onChange={(e) => handleFormChange(item.key as keyof FormData, parseInt(e.target.value) || 0)}
+                            onChange={(e) => handleFormChange(item.key as keyof FormData, e.target.value)}
                             placeholder="0-100"
                           />
                         </div>
@@ -341,7 +387,9 @@ export default function InputValidasiData() {
 
                   {/* Upload bukti */}
                   <div className="form-section">
-                    <h3 className="form-section-title">Bukti Pendukung</h3>
+                    <h3 className="form-section-title">
+                      Bukti Pendukung <span style={{ color: '#ef4444', fontSize: '0.9em' }}>*opsional</span>
+                    </h3>
                     <div className="upload-area">
                       <input
                         type="file"
@@ -378,7 +426,9 @@ export default function InputValidasiData() {
 
                   {/* Catatan */}
                   <div className="form-section">
-                    <h3 className="form-section-title">Catatan Tambahan</h3>
+                    <h3 className="form-section-title">
+                      Catatan Tambahan <span style={{ color: '#ef4444', fontSize: '0.9em' }}>*opsional</span>
+                    </h3>
                     <textarea
                       className="form-textarea"
                       rows={4}
@@ -502,6 +552,102 @@ export default function InputValidasiData() {
                 </button>
                 <button className="btn btn-primary" onClick={handleSubmit}>
                   ✓ Submit ke Admin
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Detail Modal - View approved/pending data */}
+        {showDetailModal && selectedDriver && (
+          <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+            <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div>
+                  <h2 className="modal-title">Detail Penilaian Driver</h2>
+                  <p className="modal-subtitle">{selectedDriver.nama} - {selectedMonth}</p>
+                </div>
+                <button className="modal-close" onClick={() => setShowDetailModal(false)}>✕</button>
+              </div>
+
+              <div className="modal-body">
+                {(() => {
+                  const scoreData = getDriverScoreForMonth(selectedDriver, selectedMonth)
+                  
+                  if (!scoreData) {
+                    return (
+                      <div className="empty-state">
+                        <p>Tidak ada data untuk bulan ini</p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <>
+                      <div className="preview-section">
+                        <h3>Data Penilaian</h3>
+                        <table className="preview-table">
+                          <tbody>
+                            <tr>
+                              <td><strong>Etika & Adab (25%):</strong></td>
+                              <td>{scoreData.skor.etikaAdab}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Disiplin (20%):</strong></td>
+                              <td>{scoreData.skor.disiplin}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Loyalitas (20%):</strong></td>
+                              <td>{scoreData.skor.loyalitas}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Skill Mengemudi (15%):</strong></td>
+                              <td>{scoreData.skor.skillMengemudi}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Perawatan Kendaraan (10%):</strong></td>
+                              <td>{scoreData.skor.perawatanKendaraan}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Performa (10%):</strong></td>
+                              <td>{scoreData.skor.performa}</td>
+                            </tr>
+                            <tr className="total-row">
+                              <td><strong>Total Skor Tertimbang:</strong></td>
+                              <td><strong className="total-score">{
+                                Math.round((
+                                  (scoreData.skor.etikaAdab * bobotPenilaian.etikaAdab) / 100 +
+                                  (scoreData.skor.disiplin * bobotPenilaian.disiplin) / 100 +
+                                  (scoreData.skor.loyalitas * bobotPenilaian.loyalitas) / 100 +
+                                  (scoreData.skor.skillMengemudi * bobotPenilaian.skillMengemudi) / 100 +
+                                  (scoreData.skor.perawatanKendaraan * bobotPenilaian.perawatanKendaraan) / 100 +
+                                  (scoreData.skor.performa * bobotPenilaian.performa) / 100
+                                ) * 10) / 10
+                              }</strong></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="preview-section">
+                        <h3>Status</h3>
+                        <p>
+                          {selectedDriver.statusInput === 'approved' && (
+                            <span className="status-badge approved">✓ Disetujui Admin</span>
+                          )}
+                          {selectedDriver.statusInput === 'pending' && (
+                            <span className="status-badge pending">⏳ Menunggu Persetujuan</span>
+                          )}
+                        </p>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+
+              <div className="modal-footer">
+                <button className="btn btn-outline" onClick={() => setShowDetailModal(false)}>
+                  Tutup
                 </button>
               </div>
             </div>

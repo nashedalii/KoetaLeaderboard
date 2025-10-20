@@ -5037,6 +5037,7 @@ body {
   resize: vertical;
   transition: all 0.2s ease;
   background: white;
+  color: #000000;
 }
 
 .form-textarea:focus {
@@ -5209,7 +5210,7 @@ body {
   background: white;
   padding: 1rem;
   border-radius: 8px;
-  color: #334155;
+  color: #000000;
   line-height: 1.6;
   margin: 0;
 }
