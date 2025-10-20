@@ -18,16 +18,24 @@ const bobotPenilaian = {
 }
 
 type ChartType = 'monthly-top20' | 'driver-progress'
+type ProgressChartType = 'total' | 'components'
 
 export default function Analytics() {
   const [selectedChart, setSelectedChart] = useState<ChartType>('monthly-top20')
   const [selectedMonth, setSelectedMonth] = useState<string>('Total')
   const [selectedDriver, setSelectedDriver] = useState<number | null>(null)
+  const [searchDriver, setSearchDriver] = useState<string>('')
+  const [progressChartType, setProgressChartType] = useState<ProgressChartType>('total')
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstanceRef = useRef<Chart | null>(null)
 
   // Get drivers only
   const drivers = dummyUsers.filter(user => user.role === 'Supir')
+
+  // Filter drivers based on search
+  const filteredDrivers = drivers.filter(driver => 
+    driver.nama.toLowerCase().includes(searchDriver.toLowerCase())
+  )
 
   // Calculate individual weighted score (rounded)
   const calculateWeightedScoreComponent = (value: number, bobot: number) => {
@@ -245,8 +253,8 @@ export default function Analytics() {
     chartInstanceRef.current = new Chart(chartRef.current, config)
   }
 
-  // Render Line Chart - Driver Progress
-  const renderDriverProgressChart = () => {
+  // Render Line Chart - Driver Progress (Total Score)
+  const renderDriverTotalChart = () => {
     if (!chartRef.current || !selectedDriver) return
 
     // Destroy previous chart
@@ -281,66 +289,6 @@ export default function Analytics() {
             pointBackgroundColor: 'rgba(3, 30, 101, 1)',
             pointBorderColor: '#fff',
             pointBorderWidth: 2
-          },
-          {
-            label: 'Etika & Adab (25%)',
-            data: sortedScores.map(s => s.skor.etikaAdab * 0.25),
-            borderColor: 'rgba(239, 68, 68, 0.8)',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          },
-          {
-            label: 'Disiplin (20%)',
-            data: sortedScores.map(s => s.skor.disiplin * 0.20),
-            borderColor: 'rgba(59, 130, 246, 0.8)',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          },
-          {
-            label: 'Loyalitas (20%)',
-            data: sortedScores.map(s => s.skor.loyalitas * 0.20),
-            borderColor: 'rgba(16, 185, 129, 0.8)',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          },
-          {
-            label: 'Skill Mengemudi (15%)',
-            data: sortedScores.map(s => s.skor.skillMengemudi * 0.15),
-            borderColor: 'rgba(245, 158, 11, 0.8)',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          },
-          {
-            label: 'Perawatan Kendaraan (10%)',
-            data: sortedScores.map(s => s.skor.perawatanKendaraan * 0.10),
-            borderColor: 'rgba(168, 85, 247, 0.8)',
-            backgroundColor: 'rgba(168, 85, 247, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          },
-          {
-            label: 'Performa (10%)',
-            data: sortedScores.map(s => s.skor.performa * 0.10),
-            borderColor: 'rgba(236, 72, 153, 0.8)',
-            backgroundColor: 'rgba(236, 72, 153, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
           }
         ]
       },
@@ -362,7 +310,7 @@ export default function Analytics() {
           },
           title: {
             display: true,
-            text: `Progress Bulanan - ${driver.nama}`,
+            text: `Progress Total - ${driver.nama}`,
             color: '#1e293b',
             font: {
               size: 20,
@@ -403,12 +351,161 @@ export default function Analytics() {
     chartInstanceRef.current = new Chart(chartRef.current, config)
   }
 
+  // Render Line Chart - Driver Progress (6 Components)
+  const renderDriverComponentsChart = () => {
+    if (!chartRef.current || !selectedDriver) return
+
+    // Destroy previous chart
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy()
+    }
+
+    const driver = drivers.find(d => d.id === selectedDriver)
+    if (!driver || !driver.skorBulanan) return
+
+    // Sort by month order
+    const sortedScores = [...driver.skorBulanan].sort((a, b) => {
+      const monthOrder = ['Januari/2025', 'Februari/2025', 'Maret/2025']
+      return monthOrder.indexOf(a.bulan) - monthOrder.indexOf(b.bulan)
+    })
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: {
+        labels: sortedScores.map(s => s.bulan),
+        datasets: [
+          {
+            label: 'Etika & Adab (25%)',
+            data: sortedScores.map(s => calculateWeightedScoreComponent(s.skor.etikaAdab, 25)),
+            borderColor: 'rgba(239, 68, 68, 0.8)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Disiplin (20%)',
+            data: sortedScores.map(s => calculateWeightedScoreComponent(s.skor.disiplin, 20)),
+            borderColor: 'rgba(59, 130, 246, 0.8)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Loyalitas (20%)',
+            data: sortedScores.map(s => calculateWeightedScoreComponent(s.skor.loyalitas, 20)),
+            borderColor: 'rgba(16, 185, 129, 0.8)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Skill Mengemudi (15%)',
+            data: sortedScores.map(s => calculateWeightedScoreComponent(s.skor.skillMengemudi, 15)),
+            borderColor: 'rgba(245, 158, 11, 0.8)',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Perawatan Kendaraan (10%)',
+            data: sortedScores.map(s => calculateWeightedScoreComponent(s.skor.perawatanKendaraan, 10)),
+            borderColor: 'rgba(168, 85, 247, 0.8)',
+            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          },
+          {
+            label: 'Performa (10%)',
+            data: sortedScores.map(s => calculateWeightedScoreComponent(s.skor.performa, 10)),
+            borderColor: 'rgba(236, 72, 153, 0.8)',
+            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: '#334155',
+              font: {
+                size: 12
+              },
+              padding: 15,
+              usePointStyle: true
+            }
+          },
+          title: {
+            display: true,
+            text: `Progress Komponen - ${driver.nama}`,
+            color: '#1e293b',
+            font: {
+              size: 20,
+              weight: 'bold'
+            },
+            padding: 20
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 25,
+            ticks: {
+              stepSize: 5,
+              color: '#64748b',
+              font: {
+                size: 12
+              }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          x: {
+            ticks: {
+              color: '#64748b',
+              font: {
+                size: 12
+              }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          }
+        }
+      }
+    }
+
+    chartInstanceRef.current = new Chart(chartRef.current, config)
+  }
+
   // Update chart when dependencies change
   useEffect(() => {
     if (selectedChart === 'monthly-top20') {
       renderMonthlyTop20Chart()
     } else if (selectedChart === 'driver-progress' && selectedDriver) {
-      renderDriverProgressChart()
+      if (progressChartType === 'total') {
+        renderDriverTotalChart()
+      } else {
+        renderDriverComponentsChart()
+      }
     }
 
     return () => {
@@ -416,7 +513,7 @@ export default function Analytics() {
         chartInstanceRef.current.destroy()
       }
     }
-  }, [selectedChart, selectedMonth, selectedDriver])
+  }, [selectedChart, selectedMonth, selectedDriver, progressChartType])
 
   return (
     <div className="dashboard-container">
@@ -434,8 +531,10 @@ export default function Analytics() {
                 value={selectedChart}
                 onChange={(e) => {
                   setSelectedChart(e.target.value as ChartType)
-                  if (e.target.value === 'driver-progress' && !selectedDriver) {
-                    setSelectedDriver(drivers[0]?.id || null)
+                  // Reset selected driver when switching away from driver-progress
+                  if (e.target.value !== 'driver-progress') {
+                    setSelectedDriver(null)
+                    setSearchDriver('')
                   }
                 }}
                 className="chart-type-selector"
@@ -449,56 +548,108 @@ export default function Analytics() {
 
         {/* Chart Container */}
         <div className="analytics-container">
-          {/* Controls based on chart type */}
-          <div className="chart-filters">
-            {selectedChart === 'monthly-top20' && (
-              <div className="filter-group">
-                <label className="filter-label">Pilih Bulan:</label>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="filter-select"
-                >
-                  {availableMonths.map(month => (
-                    <option key={month} value={month}>{month}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {selectedChart === 'driver-progress' && (
-              <div className="filter-group">
-                <label className="filter-label">Pilih Driver:</label>
-                <select
-                  value={selectedDriver || ''}
-                  onChange={(e) => setSelectedDriver(Number(e.target.value))}
-                  className="filter-select"
-                >
-                  <option value="">-- Pilih Driver --</option>
-                  {drivers
-                    .filter(d => d.skorBulanan && d.skorBulanan.length > 0)
-                    .map(driver => (
-                      <option key={driver.id} value={driver.id}>
-                        {driver.nama}
-                      </option>
+          {selectedChart === 'monthly-top20' && (
+            <>
+              {/* Controls for Monthly Ranking */}
+              <div className="chart-filters">
+                <div className="filter-group">
+                  <label className="filter-label">Pilih Bulan:</label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="filter-select"
+                  >
+                    {availableMonths.map(month => (
+                      <option key={month} value={month}>{month}</option>
                     ))}
-                </select>
+                  </select>
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Chart Canvas */}
-          <div className="chart-wrapper">
-            {selectedChart === 'driver-progress' && !selectedDriver ? (
-              <div className="chart-placeholder">
-                <div className="placeholder-icon">📈</div>
-                <h3>Pilih Driver untuk Melihat Progress</h3>
-                <p>Pilih driver dari dropdown di atas untuk melihat grafik progress bulanan</p>
+              {/* Chart Canvas */}
+              <div className="chart-wrapper">
+                <canvas ref={chartRef} id="analyticsChart"></canvas>
               </div>
-            ) : (
-              <canvas ref={chartRef} id="analyticsChart"></canvas>
-            )}
-          </div>
+            </>
+          )}
+
+          {selectedChart === 'driver-progress' && (
+            <>
+              {!selectedDriver ? (
+                /* Driver List View */
+                <div className="driver-progress-container">
+                  {/* Search Bar */}
+                  <div className="search-container">
+                    <div className="search-input-wrapper">
+                      <input
+                        type="text"
+                        placeholder="🔍 Cari driver..."
+                        value={searchDriver}
+                        onChange={(e) => setSearchDriver(e.target.value)}
+                        className="search-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Driver Cards Grid */}
+                  <div className="driver-cards-grid">
+                    {filteredDrivers
+                      .filter(d => d.skorBulanan && d.skorBulanan.length > 0)
+                      .map(driver => {
+                        const avgScore = calculateTotalScore(driver)
+                        return (
+                          <div
+                            key={driver.id}
+                            className="driver-progress-card"
+                            onClick={() => setSelectedDriver(driver.id)}
+                          >
+                            <div className="driver-card-header">
+                              <h3 className="driver-card-name">{driver.nama}</h3>
+                              <span className="driver-card-armada">Armada {driver.namaArmada}</span>
+                            </div>
+                            <div className="driver-card-score">
+                              <span className="score-label">Rata-rata Total</span>
+                              <span className="score-value">{avgScore.toFixed(1)} poin</span>
+                            </div>
+                            <div className="driver-card-arrow">→</div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                </div>
+              ) : (
+                /* Driver Detail Chart View */
+                <div className="driver-detail-container">
+                  {/* Back Button and Chart Type Selector */}
+                  <div className="driver-detail-controls">
+                    <button
+                      onClick={() => setSelectedDriver(null)}
+                      className="back-button"
+                    >
+                      ← Kembali ke Daftar Driver
+                    </button>
+                    
+                    <div className="chart-type-controls">
+                      <label className="filter-label">Jenis Grafik:</label>
+                      <select
+                        value={progressChartType}
+                        onChange={(e) => setProgressChartType(e.target.value as ProgressChartType)}
+                        className="chart-type-select"
+                      >
+                        <option value="total">📊 Grafik Total</option>
+                        <option value="components">📈 Grafik 6 Komponen</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Chart Canvas */}
+                  <div className="chart-wrapper">
+                    <canvas ref={chartRef} id="analyticsChart"></canvas>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

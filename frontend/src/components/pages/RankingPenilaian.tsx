@@ -20,7 +20,7 @@ export default function RankingPenilaian() {
   // Get only drivers (Supir)
   const drivers = dummyUsers.filter(user => user.role === 'Supir')
 
-  // Get unique months from all drivers
+  // Get unique months from all drivers (with proper chronological order)
   const availableMonths = useMemo(() => {
     const monthsSet = new Set<string>()
     drivers.forEach(driver => {
@@ -28,7 +28,12 @@ export default function RankingPenilaian() {
         monthsSet.add(skorBulan.bulan)
       })
     })
-    return Array.from(monthsSet).sort()
+    
+    // Define proper chronological order
+    const monthOrder = ['Januari/2025', 'Februari/2025', 'Maret/2025']
+    
+    // Filter and sort by chronological order
+    return monthOrder.filter(month => monthsSet.has(month))
   }, [drivers])
 
   // Calculate weighted score (skor sudah dipersentase)

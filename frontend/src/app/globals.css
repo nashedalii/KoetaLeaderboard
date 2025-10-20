@@ -2827,3 +2827,223 @@ body {
     font-size: 16px;
   }
 }
+
+/* =============================================================================
+   DRIVER PROGRESS STYLES
+   ============================================================================= */
+
+/* Driver Progress Container */
+.driver-progress-container {
+  width: 100%;
+}
+
+/* Search Container */
+.search-container {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.search-input-wrapper {
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  color: #1e293b;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.search-input:hover {
+  border-color: #cbd5e1;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+/* Driver Cards Grid */
+.driver-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.driver-progress-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.driver-progress-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.driver-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.driver-card-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.driver-card-armada {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.driver-card-score {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.score-label {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.score-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary-blue);
+}
+
+.driver-card-arrow {
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: #cbd5e1;
+  transition: all 0.3s ease;
+}
+
+.driver-progress-card:hover .driver-card-arrow {
+  color: #3b82f6;
+  transform: translateY(-50%) translateX(4px);
+}
+
+/* Driver Detail Container */
+.driver-detail-container {
+  width: 100%;
+}
+
+.driver-detail-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f1f5f9;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.back-button {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  color: var(--primary-blue);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-button:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.chart-type-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chart-type-controls .filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
+}
+
+.chart-type-select {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  color: #1e293b;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 200px;
+}
+
+.chart-type-select:hover {
+  border-color: #cbd5e1;
+}
+
+.chart-type-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive Design untuk Driver Progress */
+@media (max-width: 768px) {
+  .driver-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .driver-detail-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .chart-type-controls {
+    justify-content: space-between;
+  }
+  
+  .search-input-wrapper {
+    max-width: 100%;
+  }
+}
