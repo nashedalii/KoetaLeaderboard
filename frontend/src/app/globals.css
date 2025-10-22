@@ -6375,6 +6375,150 @@ body {
   }
 }
 
+/* ============================================
+   Driver Ranking Penilaian Styles
+   ============================================ */
+
+/* Personal Ranking Section */
+.personal-ranking-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 3px solid #e2e8f0;
+}
+
+.personal-ranking-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  display: inline-block;
+  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+}
+
+/* Personal Ranking Table */
+.personal-ranking-table {
+  border: 3px solid #667eea;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+}
+
+.personal-ranking-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.personal-ranking-table thead th {
+  color: white;
+  font-weight: 700;
+  padding: 1rem;
+  border-bottom: 2px solid #5568d3;
+}
+
+.personal-row {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.personal-row:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.personal-row td {
+  padding: 1.25rem 1rem;
+  border-bottom: 2px solid #667eea;
+  color: #1e293b;
+}
+
+.personal-name-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.personal-name-container .driver-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1.05rem;
+}
+
+.rank-subtitle {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  width: fit-content;
+}
+
+.personal-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  color: #667eea;
+  font-size: 1.05rem;
+}
+
+.rank-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.personal-row .total-score {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #667eea;
+}
+
+.personal-row .weighted-score {
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Responsive for Driver Ranking */
+@media (max-width: 1024px) {
+  .personal-ranking-table {
+    font-size: 0.9rem;
+  }
+  
+  .personal-ranking-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .personal-ranking-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+  }
+  
+  .personal-ranking-title {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .rank-badge-inline {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+  }
+}
+
 
 
 
