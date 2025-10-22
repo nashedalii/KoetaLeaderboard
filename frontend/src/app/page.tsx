@@ -18,6 +18,9 @@ import PetugasDashboard from '@/components/pages/petugas/PetugasDashboard'
 import ManajemenDriver from '@/components/pages/petugas/ManajemenDriver'
 import InputValidasiData from '@/components/pages/petugas/InputValidasiData'
 
+// Import halaman-halaman Driver
+import DriverDashboard from '@/components/pages/driver/DriverDashboard'
+
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userRole, setUserRole] = useState('')
@@ -46,6 +49,8 @@ export default function Home() {
     // Set default page berdasarkan role
     if (role === 'Petugas') {
       setCurrentPage('petugas-dashboard')
+    } else if (role === 'Supir') {
+      setCurrentPage('driver-dashboard')
     } else {
       setCurrentPage('dashboard')
     }
@@ -126,7 +131,13 @@ export default function Home() {
     }
 
     if (userRole === 'Supir') {
-      return <div className="coming-soon">Dashboard Supir (Coming Soon)</div>
+      switch (currentPage) {
+        case 'driver-dashboard':
+          return <DriverDashboard />
+        
+        default:
+          return <DriverDashboard />
+      }
     }
 
     return <div>Unknown role</div>
