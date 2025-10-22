@@ -117,6 +117,9 @@ export default function Home() {
         case 'input-validasi':
           return <InputValidasiData />
         
+        case 'petugas-ranking':
+          return <RankingPenilaian />
+        
         default:
           return <PetugasDashboard />
       }
