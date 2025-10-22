@@ -20,6 +20,7 @@ import InputValidasiData from '@/components/pages/petugas/InputValidasiData'
 
 // Import halaman-halaman Driver
 import DriverDashboard from '@/components/pages/driver/DriverDashboard'
+import DriverVisualisasi from '@/components/pages/driver/DriverVisualisasi'
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -134,6 +135,9 @@ export default function Home() {
       switch (currentPage) {
         case 'driver-dashboard':
           return <DriverDashboard />
+        
+        case 'driver-visualisasi':
+          return <DriverVisualisasi />
         
         default:
           return <DriverDashboard />

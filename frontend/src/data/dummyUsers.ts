@@ -19,6 +19,7 @@ export interface User {
   role: 'Admin' | 'Petugas' | 'Supir'
   status: 'Aktif' | 'Nonaktif'
   password?: string
+  username?: string
   
   // Data khusus untuk Supir
   namaKernet?: string
@@ -42,7 +43,8 @@ export const dummyUsers: User[] = [
     email: 'admin@dishub.aceh.go.id',
     role: 'Admin',
     status: 'Aktif',
-    password: 'admin123'
+    password: 'admin123',
+    username: 'admin_dishub'
   },
   
   // Petugas (2 orang)
@@ -52,7 +54,8 @@ export const dummyUsers: User[] = [
     email: 'suryadi@dishub.aceh.go.id',
     role: 'Petugas',
     status: 'Aktif',
-    password: 'petugas123'
+    password: 'petugas123',
+    username: 'petugas_01'
   },
   {
     id: 3,
@@ -60,7 +63,8 @@ export const dummyUsers: User[] = [
     email: 'cutnyak@dishub.aceh.go.id',
     role: 'Petugas',
     status: 'Aktif',
-    password: 'petugas123'
+    password: 'petugas123',
+    username: 'petugas_02'
   },
   
   // Supir/Driver (10 orang)
@@ -239,42 +243,7 @@ export const dummyUsers: User[] = [
       skillMengemudi: 91,
       perawatanKendaraan: 88,
       performa: 90
-    },
-    skorBulanan: [
-      {
-        bulan: 'Januari/2025',
-        skor: {
-          etikaAdab: 85,
-          disiplin: 88,
-          loyalitas: 84,
-          skillMengemudi: 89,
-          perawatanKendaraan: 86,
-          performa: 88
-        }
-      },
-      {
-        bulan: 'Februari/2025',
-        skor: {
-          etikaAdab: 86,
-          disiplin: 89,
-          loyalitas: 85,
-          skillMengemudi: 90,
-          perawatanKendaraan: 87,
-          performa: 89
-        }
-      },
-      {
-        bulan: 'Maret/2025',
-        skor: {
-          etikaAdab: 88,
-          disiplin: 91,
-          loyalitas: 87,
-          skillMengemudi: 92,
-          perawatanKendaraan: 89,
-          performa: 91
-        }
-      }
-    ]
+    }
   },
   {
     id: 8,
@@ -345,42 +314,7 @@ export const dummyUsers: User[] = [
       skillMengemudi: 82,
       perawatanKendaraan: 76,
       performa: 79
-    },
-    skorBulanan: [
-      {
-        bulan: 'Januari/2025',
-        skor: {
-          etikaAdab: 76,
-          disiplin: 73,
-          loyalitas: 78,
-          skillMengemudi: 80,
-          perawatanKendaraan: 74,
-          performa: 77
-        }
-      },
-      {
-        bulan: 'Februari/2025',
-        skor: {
-          etikaAdab: 77,
-          disiplin: 74,
-          loyalitas: 79,
-          skillMengemudi: 81,
-          perawatanKendaraan: 75,
-          performa: 78
-        }
-      },
-      {
-        bulan: 'Maret/2025',
-        skor: {
-          etikaAdab: 79,
-          disiplin: 76,
-          loyalitas: 81,
-          skillMengemudi: 83,
-          perawatanKendaraan: 77,
-          performa: 80
-        }
-      }
-    ]
+    }
   },
   {
     id: 10,
@@ -389,6 +323,7 @@ export const dummyUsers: User[] = [
     role: 'Supir',
     status: 'Aktif',
     password: 'supir123',
+    username: 'supir_01',
     namaKernet: 'Andi Wijaya',
     namaArmada: 'A',
     skor: {
@@ -451,42 +386,7 @@ export const dummyUsers: User[] = [
       skillMengemudi: 89,
       perawatanKendaraan: 90,
       performa: 88
-    },
-    skorBulanan: [
-      {
-        bulan: 'Januari/2025',
-        skor: {
-          etikaAdab: 84,
-          disiplin: 86,
-          loyalitas: 85,
-          skillMengemudi: 87,
-          perawatanKendaraan: 88,
-          performa: 86
-        }
-      },
-      {
-        bulan: 'Februari/2025',
-        skor: {
-          etikaAdab: 85,
-          disiplin: 87,
-          loyalitas: 86,
-          skillMengemudi: 88,
-          perawatanKendaraan: 89,
-          performa: 87
-        }
-      },
-      {
-        bulan: 'Maret/2025',
-        skor: {
-          etikaAdab: 87,
-          disiplin: 89,
-          loyalitas: 88,
-          skillMengemudi: 90,
-          perawatanKendaraan: 91,
-          performa: 89
-        }
-      }
-    ]
+    }
   },
   {
     id: 12,
@@ -504,49 +404,14 @@ export const dummyUsers: User[] = [
       skillMengemudi: 88,
       perawatanKendaraan: 86,
       performa: 90
-    },
-    skorBulanan: [
-      {
-        bulan: 'Januari/2025',
-        skor: {
-          etikaAdab: 89,
-          disiplin: 85,
-          loyalitas: 87,
-          skillMengemudi: 86,
-          perawatanKendaraan: 84,
-          performa: 88
-        }
-      },
-      {
-        bulan: 'Februari/2025',
-        skor: {
-          etikaAdab: 90,
-          disiplin: 86,
-          loyalitas: 88,
-          skillMengemudi: 87,
-          perawatanKendaraan: 85,
-          performa: 89
-        }
-      },
-      {
-        bulan: 'Maret/2025',
-        skor: {
-          etikaAdab: 92,
-          disiplin: 88,
-          loyalitas: 90,
-          skillMengemudi: 89,
-          perawatanKendaraan: 87,
-          performa: 91
-        }
-      }
-    ]
+    }
   },
   {
     id: 13,
     nama: 'Agus Setiawan',
     email: 'agus.s@dishub.aceh.go.id',
     role: 'Supir',
-    status: 'Aktif',
+    status: 'Nonaktif',
     password: 'supir123',
     namaKernet: 'Chandra Kusuma',
     namaArmada: 'A',
@@ -557,41 +422,6 @@ export const dummyUsers: User[] = [
       skillMengemudi: 83,
       perawatanKendaraan: 78,
       performa: 80
-    },
-    skorBulanan: [
-      {
-        bulan: 'Januari/2025',
-        skor: {
-          etikaAdab: 78,
-          disiplin: 77,
-          loyalitas: 79,
-          skillMengemudi: 81,
-          perawatanKendaraan: 76,
-          performa: 78
-        }
-      },
-      {
-        bulan: 'Februari/2025',
-        skor: {
-          etikaAdab: 79,
-          disiplin: 78,
-          loyalitas: 80,
-          skillMengemudi: 82,
-          perawatanKendaraan: 77,
-          performa: 79
-        }
-      },
-      {
-        bulan: 'Maret/2025',
-        skor: {
-          etikaAdab: 81,
-          disiplin: 80,
-          loyalitas: 82,
-          skillMengemudi: 84,
-          perawatanKendaraan: 79,
-          performa: 81
-        }
-      }
-    ]
+    }
   }
 ]

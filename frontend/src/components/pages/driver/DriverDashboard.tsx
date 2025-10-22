@@ -40,16 +40,19 @@ export default function DriverDashboard() {
   }
 
   useEffect(() => {
-    // Langsung ambil data Budiman Santoso
-    const budiman = dummyUsers.find(
-      (user) => user.nama === 'Budiman Santoso' && user.role === 'Supir'
+    // Ambil username dari localStorage
+    const username = localStorage.getItem('username')
+    
+    // Cari driver berdasarkan username (untuk supir_01) atau fallback ke Budiman Santoso
+    const loggedInDriver = dummyUsers.find(
+      (user) => user.role === 'Supir' && (user.username === username || user.nama === 'Budiman Santoso')
     )
     
-    if (budiman) {
-      setDriverData(budiman)
+    if (loggedInDriver) {
+      setDriverData(loggedInDriver)
       
       // Ambil skor bulan Maret 2025
-      const skorMaret = budiman.skorBulanan?.find(sb => sb.bulan === 'Maret/2025')
+      const skorMaret = loggedInDriver.skorBulanan?.find(sb => sb.bulan === 'Maret/2025')
       
       if (skorMaret) {
         // Hitung skor akhir bulan Maret
@@ -71,8 +74,8 @@ export default function DriverDashboard() {
           })
           .sort((a, b) => b.skorMaret - a.skorMaret)
         
-        const budimanRank = driversWithMaretScore.findIndex(d => d.id === budiman.id) + 1
-        setRankingMaret(budimanRank)
+        const driverRank = driversWithMaretScore.findIndex(d => d.id === loggedInDriver.id) + 1
+        setRankingMaret(driverRank)
       }
     }
   }, [])
