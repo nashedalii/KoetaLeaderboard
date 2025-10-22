@@ -125,8 +125,8 @@ export default function RankingPenilaian() {
   // Get top 10 drivers (tetap tampilkan semua top 10)
   const topDrivers = rankedDrivers.slice(0, 10)
   
-  // Show personal ranking only if driver is outside top 10
-  const showPersonalRanking = currentDriverRank > 10
+  // Always show personal ranking for demo purposes
+  const showPersonalRanking = true // Changed to always show
 
   return (
     <div className="dashboard-container">
@@ -175,14 +175,18 @@ export default function RankingPenilaian() {
                 {topDrivers.map((driver, index) => {
                   const skor = driver.currentSkor
                   const actualRank = rankedDrivers.findIndex(d => d.id === driver.id) + 1
+                  const isCurrentDriver = driver.id === currentDriver?.id
                   return (
-                    <tr key={driver.id}>
+                    <tr key={driver.id} className={isCurrentDriver ? 'current-driver-row' : ''}>
                       <td className="text-center rank-cell">
                         <span className={`rank-badge rank-${actualRank}`}>
                           {actualRank}
                         </span>
                       </td>
-                      <td className="driver-name">{driver.nama}</td>
+                      <td className="driver-name">
+                        {driver.nama}
+                        {isCurrentDriver && <span className="you-badge">Anda</span>}
+                      </td>
                       <td className="text-center">
                         <span className="armada-badge">Armada {driver.namaArmada}</span>
                       </td>

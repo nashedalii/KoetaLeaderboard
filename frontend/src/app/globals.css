@@ -6379,6 +6379,65 @@ body {
    Driver Ranking Penilaian Styles
    ============================================ */
 
+/* Current Driver Highlight in Top 10 Table */
+.current-driver-row {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%);
+  border-left: 4px solid #667eea;
+  border-right: 4px solid #667eea;
+  position: relative;
+}
+
+.current-driver-row:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.18) 0%, rgba(118, 75, 162, 0.18) 100%);
+}
+
+.current-driver-row td {
+  color: #667eea !important;
+  font-weight: 700 !important;
+  position: relative;
+}
+
+.current-driver-row .driver-name {
+  color: #667eea;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.current-driver-row .armada-badge {
+  background: #667eea !important;
+  color: white !important;
+  font-weight: 700 !important;
+  border: 2px solid #5568d3;
+}
+
+.current-driver-row .weighted-score {
+  font-weight: 700 !important;
+  color: #667eea !important;
+}
+
+.current-driver-row .total-score {
+  font-weight: 800 !important;
+  color: #667eea !important;
+  font-size: 1.1rem !important;
+}
+
+.you-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Personal Ranking Section */
 .personal-ranking-section {
   margin-top: 2.5rem;
