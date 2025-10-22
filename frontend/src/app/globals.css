@@ -5843,10 +5843,35 @@ body {
 }
 
 .driver-dashboard .stat-simple-icon {
-  font-size: 3rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 4rem;
+  height: 4rem;
+}
+
+.driver-dashboard .stat-simple-icon svg {
+  width: 3rem;
+  height: 3rem;
+  color: rgba(255, 255, 255, 0.9);
+  stroke-width: 1.5;
+}
+
+.driver-dashboard .identity-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.driver-dashboard .identity-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #64748b;
+  stroke-width: 1.5;
 }
 
 .driver-dashboard .stat-simple-content {
@@ -5858,15 +5883,26 @@ body {
 
 .driver-dashboard .stat-simple-label {
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.95);
+  color: white;
   font-weight: 500;
+  opacity: 0.95;
 }
 
 .driver-dashboard .stat-simple-value {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   color: white;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
+}
+
+/* Score Card Specific */
+.driver-dashboard .score-card .stat-simple-value {
+  color: white;
+}
+
+/* Rank Card Specific */
+.driver-dashboard .rank-card .stat-simple-value {
+  color: white;
 }
 
 /* Detailed Scores Section */
@@ -6309,11 +6345,19 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
+  gap: 0.5rem;
+}
+
+.note-header .note-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
 }
 
 .note-category {
   font-size: 0.95rem;
   font-weight: 700;
+  flex: 1;
 }
 
 .note-badge {
