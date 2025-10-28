@@ -321,85 +321,84 @@ export default function RankingPenilaian() {
             </div>
           </div>
         ) : (
-          // Driver Detail View with Monthly Scores
+          // Detail Driver View
           <div className="driver-detail-container">
             <button 
+              className="back-button"
               onClick={() => setSelectedDriver(null)}
-              className="btn-back"
             >
-              ← Kembali ke Ranking
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              Kembali ke Ranking
             </button>
 
-            {/* Driver Info Card */}
-            <div className="driver-info-card">
-              <div className="driver-avatar">
-                <span className="avatar-icon">👤</span>
+            <div className="driver-detail-card">
+              <div className="driver-detail-header">
+                <div className="driver-detail-identity">
+                  <h2 className="driver-detail-name">{selectedDriver.nama}</h2>
+                  <div className="driver-detail-meta">
+                    <span className="armada-badge">Armada {selectedDriver.namaArmada}</span>
+                    <span className="role-badge">{selectedDriver.role}</span>
+                  </div>
+                </div>
+                <div className="driver-rank-display">
+                  <span className="rank-label">Peringkat</span>
+                  <span className={`rank-number rank-${rankedDrivers.findIndex(d => d.id === selectedDriver.id) + 1}`}>
+                    #{rankedDrivers.findIndex(d => d.id === selectedDriver.id) + 1}
+                  </span>
+                </div>
               </div>
-              <div className="driver-info">
-                <h2 className="driver-detail-name">{selectedDriver.nama}</h2>
-                <p className="driver-detail-subtitle">Informasi tentang Driver</p>
-              </div>
-            </div>
 
-            {/* Monthly Scores Table */}
-            <div className="monthly-scores-container">
-              <h3 className="section-title">Skor Bulanan</h3>
-              <div className="table-container">
-                <table className="monthly-table">
-                  <thead>
-                    <tr>
-                      <th>Bulan/Tahun</th>
-                      <th>Armada</th>
-                      <th>Skor 1 (25%)</th>
-                      <th>Skor 2 (20%)</th>
-                      <th>Skor 3 (20%)</th>
-                      <th>Skor 4 (15%)</th>
-                      <th>Skor 5 (10%)</th>
-                      <th>Skor 6 (10%)</th>
-                      <th>Skor Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedDriver.skorBulanan && selectedDriver.skorBulanan.length > 0 ? (
-                      selectedDriver.skorBulanan.map((skorBulan, index) => {
-                        const monthlyTotal = calculateTotalScore(skorBulan.skor)
-                        return (
-                          <tr key={index}>
-                            <td className="month-cell">{skorBulan.bulan}</td>
-                            <td className="text-center">
-                              <span className="armada-badge">Armada {selectedDriver.namaArmada}</span>
-                            </td>
-                            <td className="text-center weighted-score">
-                              {calculateWeightedScore(skorBulan.skor.etikaAdab, bobotPenilaian.etikaAdab)}
-                            </td>
-                            <td className="text-center weighted-score">
-                              {calculateWeightedScore(skorBulan.skor.disiplin, bobotPenilaian.disiplin)}
-                            </td>
-                            <td className="text-center weighted-score">
-                              {calculateWeightedScore(skorBulan.skor.loyalitas, bobotPenilaian.loyalitas)}
-                            </td>
-                            <td className="text-center weighted-score">
-                              {calculateWeightedScore(skorBulan.skor.skillMengemudi, bobotPenilaian.skillMengemudi)}
-                            </td>
-                            <td className="text-center weighted-score">
-                              {calculateWeightedScore(skorBulan.skor.perawatanKendaraan, bobotPenilaian.perawatanKendaraan)}
-                            </td>
-                            <td className="text-center weighted-score">
-                              {calculateWeightedScore(skorBulan.skor.performa, bobotPenilaian.performa)}
-                            </td>
-                            <td className="text-center total-score">{monthlyTotal}</td>
-                          </tr>
-                        )
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={9} className="text-center empty-state">
-                          Belum ada data skor bulanan
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="driver-scores-grid">
+                {(() => {
+                  const skor = getDriverScores(selectedDriver)
+                  const scoreItems = [
+                    { label: 'Etika & Adab', value: skor?.etikaAdab || 0, bobot: bobotPenilaian.etikaAdab, color: '#ef4444' },
+                    { label: 'Kedisiplinan', value: skor?.disiplin || 0, bobot: bobotPenilaian.disiplin, color: '#f59e0b' },
+                    { label: 'Loyalitas', value: skor?.loyalitas || 0, bobot: bobotPenilaian.loyalitas, color: '#10b981' },
+                    { label: 'Skill Mengemudi', value: skor?.skillMengemudi || 0, bobot: bobotPenilaian.skillMengemudi, color: '#3b82f6' },
+                    { label: 'Perawatan Kendaraan', value: skor?.perawatanKendaraan || 0, bobot: bobotPenilaian.perawatanKendaraan, color: '#8b5cf6' },
+                    { label: 'Performa', value: skor?.performa || 0, bobot: bobotPenilaian.performa, color: '#ec4899' }
+                  ]
+
+                  return scoreItems.map((item, idx) => (
+                    <div key={idx} className="score-detail-card">
+                      <div className="score-detail-header">
+                        <h3 className="score-detail-label">{item.label}</h3>
+                        <span className="score-detail-bobot">Bobot: {item.bobot}%</span>
+                      </div>
+                      <div className="score-detail-values">
+                        <div className="score-raw">
+                          <span className="score-raw-label">Nilai:</span>
+                          <span className="score-raw-value">{item.value}</span>
+                        </div>
+                        <div className="score-weighted">
+                          <span className="score-weighted-label">Tertimbang:</span>
+                          <span className="score-weighted-value" style={{ color: item.color }}>
+                            {calculateWeightedScore(item.value, item.bobot)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="score-progress-bar">
+                        <div 
+                          className="score-progress-fill" 
+                          style={{ 
+                            width: `${item.value}%`,
+                            background: item.color
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                })()}
+              </div>
+
+              <div className="total-score-display">
+                <span className="total-score-label">Total Skor</span>
+                <span className="total-score-value">
+                  {calculateTotalScore(getDriverScores(selectedDriver))}
+                </span>
               </div>
             </div>
           </div>
