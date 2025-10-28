@@ -2868,6 +2868,41 @@ body {
   white-space: nowrap;
 }
 
+/* Sort Button in Table Header */
+.ranking-table th .sort-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ranking-table th .sort-button:hover {
+  color: #667eea;
+}
+
+.ranking-table th .sort-icon {
+  width: 1rem;
+  height: 1rem;
+  transition: all 0.2s ease;
+}
+
+.ranking-table th .sort-icon.inactive {
+  opacity: 0.3;
+}
+
+.ranking-table th .sort-icon.active {
+  color: #667eea;
+  opacity: 1;
+}
+
 .ranking-table tbody tr {
   border-bottom: 1px solid #f1f5f9;
   transition: all 0.2s ease;
