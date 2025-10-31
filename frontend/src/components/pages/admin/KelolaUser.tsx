@@ -20,7 +20,9 @@ export default function KelolaUser() {
     status: 'Aktif' as 'Aktif' | 'Nonaktif',
     password: '',
     namaKernet: '',
-    namaArmada: '' as '' | 'A' | 'B' | 'C'
+    namaArmada: '' as '' | 'A' | 'B' | 'C',
+    kodeBus: '',
+    nomorPolisi: ''
   })
 
   // Filter dan Search
@@ -41,7 +43,9 @@ export default function KelolaUser() {
       status: 'Aktif',
       password: '',
       namaKernet: '',
-      namaArmada: ''
+      namaArmada: '',
+      kodeBus: '',
+      nomorPolisi: ''
     })
     setShowModal(true)
   }
@@ -57,7 +61,9 @@ export default function KelolaUser() {
       status: user.status,
       password: '',
       namaKernet: user.namaKernet || '',
-      namaArmada: user.namaArmada || ''
+      namaArmada: user.namaArmada || '',
+      kodeBus: user.kodeBus || '',
+      nomorPolisi: user.nomorPolisi || ''
     })
     setShowModal(true)
   }
@@ -100,6 +106,8 @@ export default function KelolaUser() {
         ...(formData.role === 'Supir' && {
           namaKernet: formData.namaKernet || undefined,
           namaArmada: (formData.namaArmada || undefined) as 'A' | 'B' | 'C' | undefined,
+          kodeBus: formData.kodeBus || undefined,
+          nomorPolisi: formData.nomorPolisi || undefined,
           skor: {
             etikaAdab: 0,
             disiplin: 0,
@@ -124,7 +132,9 @@ export default function KelolaUser() {
               ...(formData.password && { password: formData.password }),
               ...(formData.role === 'Supir' && {
                 namaKernet: formData.namaKernet || undefined,
-                namaArmada: (formData.namaArmada || undefined) as 'A' | 'B' | 'C' | undefined
+                namaArmada: (formData.namaArmada || undefined) as 'A' | 'B' | 'C' | undefined,
+                kodeBus: formData.kodeBus || undefined,
+                nomorPolisi: formData.nomorPolisi || undefined
               })
             }
           : u
@@ -193,6 +203,7 @@ export default function KelolaUser() {
                 <th>Nama</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Bus/Armada</th>
                 <th>Status</th>
                 <th>Aksi</th>
               </tr>
@@ -210,6 +221,20 @@ export default function KelolaUser() {
                     <span className={`role-badge role-${user.role.toLowerCase()}`}>
                       {user.role}
                     </span>
+                  </td>
+                  <td>
+                    {user.role === 'Supir' && user.kodeBus ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontWeight: '600', color: '#667eea' }}>
+                          {user.kodeBus} - {user.nomorPolisi}
+                        </span>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                          Armada {user.namaArmada}
+                        </span>
+                      </div>
+                    ) : (
+                      <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>-</span>
+                    )}
                   </td>
                   <td>
                     <span className={`status-badge status-${user.status.toLowerCase()}`}>
@@ -321,6 +346,30 @@ export default function KelolaUser() {
                   <>
                     <div className="form-row">
                       <div className="form-group">
+                        <label className="form-label">Kode Bus</label>
+                        <input
+                          type="text"
+                          value={formData.kodeBus}
+                          onChange={(e) => setFormData({...formData, kodeBus: e.target.value})}
+                          placeholder="Contoh: TR 01"
+                          className="form-input"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Nomor Polisi</label>
+                        <input
+                          type="text"
+                          value={formData.nomorPolisi}
+                          onChange={(e) => setFormData({...formData, nomorPolisi: e.target.value})}
+                          placeholder="Contoh: BL 1234 AB"
+                          className="form-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
                         <label className="form-label">Nama Kernet (Opsional)</label>
                         <input
                           type="text"
@@ -332,7 +381,7 @@ export default function KelolaUser() {
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label">Armada (Opsional)</label>
+                        <label className="form-label">Armada</label>
                         <select
                           value={formData.namaArmada}
                           onChange={(e) => setFormData({...formData, namaArmada: e.target.value as any})}

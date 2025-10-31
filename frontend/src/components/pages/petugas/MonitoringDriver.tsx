@@ -157,7 +157,15 @@ export default function ManajemenDriver() {
               </div>
 
               <div className="driver-card-body">
-                <p className="muted">
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                  <p className="muted" style={{ flex: '1 1 45%' }}>
+                    Bus: <strong style={{ color: '#667eea' }}>{driver.kodeBus || '-'}</strong>
+                  </p>
+                  <p className="muted" style={{ flex: '1 1 45%' }}>
+                    Plat: <strong>{driver.nomorPolisi || '-'}</strong>
+                  </p>
+                </div>
+                <p className="muted" style={{ marginBottom: '0.75rem' }}>
                   Kernet: <strong>{driver.namaKernet || '-'}</strong>
                 </p>
 
@@ -211,6 +219,18 @@ export default function ManajemenDriver() {
                     <div className="info-item">
                       <span className="info-label">Email</span>
                       <span className="info-value">{selectedDriver.email}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Kode Bus</span>
+                      <span className="info-value" style={{ color: '#667eea', fontWeight: '600' }}>
+                        {selectedDriver.kodeBus || '-'}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Nomor Polisi</span>
+                      <span className="info-value" style={{ fontWeight: '600' }}>
+                        {selectedDriver.nomorPolisi || '-'}
+                      </span>
                     </div>
                     <div className="info-item">
                       <span className="info-label">Armada</span>

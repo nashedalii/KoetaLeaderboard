@@ -24,6 +24,8 @@ export interface User {
   // Data khusus untuk Supir
   namaKernet?: string
   namaArmada?: 'A' | 'B' | 'C'
+  kodeBus?: string // Format: TR 01 - TR 10
+  nomorPolisi?: string // Format: BL XXXX XX
   skor?: {
     etikaAdab: number
     disiplin: number
@@ -77,6 +79,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: 'Ahmad Fauzi',
     namaArmada: 'A',
+    kodeBus: 'TR 01',
+    nomorPolisi: 'BL 1234 AB',
     skor: {
       etikaAdab: 85,
       disiplin: 90,
@@ -130,6 +134,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: 'Syahrul Ramadhan',
     namaArmada: 'A',
+    kodeBus: 'TR 02',
+    nomorPolisi: 'BL 5678 CD',
     skor: {
       etikaAdab: 88,
       disiplin: 85,
@@ -183,6 +189,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: 'Dedi Kurniawan',
     namaArmada: 'B',
+    kodeBus: 'TR 03',
+    nomorPolisi: 'BL 9012 EF',
     skor: {
       etikaAdab: 90,
       disiplin: 88,
@@ -236,6 +244,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: 'Rahmat Hidayat',
     namaArmada: 'B',
+    kodeBus: 'TR 04',
+    nomorPolisi: 'BL 3456 GH',
     skor: {
       etikaAdab: 87,
       disiplin: 90,
@@ -254,6 +264,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: '',
     namaArmada: 'C',
+    kodeBus: 'TR 05',
+    nomorPolisi: 'BL 7890 IJ',
     skor: {
       etikaAdab: 92,
       disiplin: 89,
@@ -307,6 +319,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: '',
     namaArmada: 'C',
+    kodeBus: 'TR 06',
+    nomorPolisi: 'BL 2468 KL',
     skor: {
       etikaAdab: 78,
       disiplin: 75,
@@ -326,6 +340,8 @@ export const dummyUsers: User[] = [
     username: 'supir_01',
     namaKernet: 'Andi Wijaya',
     namaArmada: 'A',
+    kodeBus: 'TR 07',
+    nomorPolisi: 'BL 1357 MN',
     skor: {
       etikaAdab: 89,
       disiplin: 91,
@@ -379,6 +395,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: 'Budi Santoso',
     namaArmada: 'B',
+    kodeBus: 'TR 08',
+    nomorPolisi: 'BL 9753 OP',
     skor: {
       etikaAdab: 86,
       disiplin: 88,
@@ -397,6 +415,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: '',
     namaArmada: 'C',
+    kodeBus: 'TR 09',
+    nomorPolisi: 'BL 8642 QR',
     skor: {
       etikaAdab: 91,
       disiplin: 87,
@@ -415,6 +435,8 @@ export const dummyUsers: User[] = [
     password: 'supir123',
     namaKernet: 'Chandra Kusuma',
     namaArmada: 'A',
+    kodeBus: 'TR 10',
+    nomorPolisi: 'BL 3698 ST',
     skor: {
       etikaAdab: 80,
       disiplin: 79,
