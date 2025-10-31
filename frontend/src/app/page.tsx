@@ -17,6 +17,7 @@ import ValidasiDataPetugas from '@/components/pages/admin/ValidasiDataPetugas'
 import PetugasDashboard from '@/components/pages/petugas/PetugasDashboard'
 import MonitoringDriver from '@/components/pages/petugas/MonitoringDriver'
 import InputValidasiData from '@/components/pages/petugas/InputValidasiData'
+import KategoriPenilaian from '@/components/pages/petugas/KategoriPenilaian'
 
 // Import halaman-halaman Driver
 import DriverDashboard from '@/components/pages/driver/DriverDashboard'
@@ -123,6 +124,9 @@ export default function Home() {
         
         case 'input-validasi':
           return <InputValidasiData />
+        
+        case 'kategori-penilaian':
+          return <KategoriPenilaian />
         
         case 'petugas-ranking':
           return <RankingPenilaian />
