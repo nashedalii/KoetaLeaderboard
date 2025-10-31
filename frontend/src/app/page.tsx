@@ -9,6 +9,7 @@ import { DataProvider } from '@/contexts/DataContext'
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
 import KelolaUser from '@/components/pages/admin/KelolaUser'
 import KonfigurasiPenilaian from '@/components/pages/admin/KonfigurasiPenilaian'
+import KategoriPenilaianAdmin from '@/components/pages/admin/KategoriPenilaianAdmin'
 import RankingPenilaian from '@/components/pages/admin/RankingPenilaian'
 import Analytics from '@/components/pages/admin/Analytics'
 import ValidasiDataPetugas from '@/components/pages/admin/ValidasiDataPetugas'
@@ -99,6 +100,9 @@ export default function Home() {
         
         case 'konfigurasi':
           return <KonfigurasiPenilaian />
+        
+        case 'kategori-penilaian':
+          return <KategoriPenilaianAdmin />
         
         case 'ranking':
           return <RankingPenilaian />
