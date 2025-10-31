@@ -101,8 +101,8 @@ export default function ManajemenDriver() {
       <div className="dashboard-content">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Manajemen Driver</h1>
-            <p className="page-subtitle">Kelola data dan status driver di armada Anda</p>
+            <h1 className="page-title">Monitoring Driver</h1>
+            <p className="page-subtitle">Monitor dan kelola data driver di armada Anda</p>
           </div>
         </div>
 

@@ -15,7 +15,7 @@ import ValidasiDataPetugas from '@/components/pages/admin/ValidasiDataPetugas'
 
 // Import halaman-halaman Petugas
 import PetugasDashboard from '@/components/pages/petugas/PetugasDashboard'
-import ManajemenDriver from '@/components/pages/petugas/ManajemenDriver'
+import MonitoringDriver from '@/components/pages/petugas/MonitoringDriver'
 import InputValidasiData from '@/components/pages/petugas/InputValidasiData'
 
 // Import halaman-halaman Driver
@@ -119,7 +119,7 @@ export default function Home() {
           return <PetugasDashboard />
         
         case 'manajemen-driver':
-          return <ManajemenDriver />
+          return <MonitoringDriver />
         
         case 'input-validasi':
           return <InputValidasiData />
