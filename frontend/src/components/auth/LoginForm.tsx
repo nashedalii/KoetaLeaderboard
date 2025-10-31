@@ -164,10 +164,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 </div>
               </div>
             )}
-
-            <a href="#" className="forgot-password">
-              Forget your password?
-            </a>
+            
           </form>
         </div>
       </div>
