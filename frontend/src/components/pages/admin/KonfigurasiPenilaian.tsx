@@ -22,6 +22,35 @@ export default function KonfigurasiPenilaian() {
   // Calculate total bobot
   const totalBobot = indikators.reduce((sum, ind) => sum + ind.bobot, 0)
 
+  // Check for low bobot
+  const hasLowBobot = indikators.some(ind => ind.bobot > 0 && ind.bobot < 5)
+
+  // Check for empty names
+  const hasEmptyNames = indikators.some(ind => !ind.nama.trim())
+
+  // Get status message
+  const getStatusMessage = () => {
+    if (hasEmptyNames) {
+      return '⚠️ Ada nama indikator yang kosong'
+    } else if (hasLowBobot) {
+      return '⚠️ Ada bobot kurang dari 5%'
+    } else if (totalBobot === 100) {
+      return '✅ Siap disimpan'
+    } else if (totalBobot > 100) {
+      return '❌ Melebihi 100%'
+    } else {
+      return '⚠️ Belum mencapai 100%'
+    }
+  }
+
+  // Get status class
+  const getStatusClass = () => {
+    if (hasEmptyNames || hasLowBobot || totalBobot !== 100) {
+      return 'invalid'
+    }
+    return 'valid'
+  }
+
   // Get progress bar color based on total
   const getProgressColor = () => {
     if (totalBobot === 100) return '#10b981' // green
@@ -82,6 +111,13 @@ export default function KonfigurasiPenilaian() {
     const hasEmptyName = indikators.some(ind => !ind.nama.trim())
     if (hasEmptyName) {
       alert('Semua indikator harus memiliki nama!')
+      return
+    }
+
+    // Check minimal bobot 5%
+    const hasLowBobot = indikators.some(ind => ind.bobot > 0 && ind.bobot < 5)
+    if (hasLowBobot) {
+      alert('Setiap indikator harus memiliki bobot minimal 5% (atau 0% untuk menghapus)!')
       return
     }
 
@@ -156,24 +192,34 @@ export default function KonfigurasiPenilaian() {
                   <tr key={indikator.id}>
                     <td className="text-center">{index + 1}</td>
                     <td>
-                      <input
-                        type="text"
-                        value={indikator.nama}
-                        onChange={(e) => handleNameChange(indikator.id, e.target.value)}
-                        className="input-indikator-name"
-                        placeholder="Nama indikator"
-                      />
+                      <div className="input-wrapper-name">
+                        <input
+                          type="text"
+                          value={indikator.nama}
+                          onChange={(e) => handleNameChange(indikator.id, e.target.value)}
+                          className={`input-indikator-name ${!indikator.nama.trim() ? 'invalid-name' : ''}`}
+                          placeholder="Nama indikator"
+                        />
+                        {!indikator.nama.trim() && (
+                          <span className="name-warning">⚠️ Wajib diisi</span>
+                        )}
+                      </div>
                     </td>
                     <td>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={indikator.bobot}
-                        onChange={(e) => handleBobotChange(indikator.id, e.target.value)}
-                        className="input-bobot"
-                        placeholder="0"
-                      />
+                      <div className="input-wrapper">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={indikator.bobot}
+                          onChange={(e) => handleBobotChange(indikator.id, e.target.value)}
+                          className={`input-bobot ${indikator.bobot > 0 && indikator.bobot < 5 ? 'invalid-bobot' : ''}`}
+                          placeholder="0"
+                        />
+                        {indikator.bobot > 0 && indikator.bobot < 5 && (
+                          <span className="bobot-warning">⚠️ Min 5%</span>
+                        )}
+                      </div>
                     </td>
                     <td className="text-center">
                       {indikators.length > 1 && (
@@ -207,8 +253,8 @@ export default function KonfigurasiPenilaian() {
           <div className="progress-section">
             <div className="progress-header">
               <span className="progress-label">Total Bobot: {totalBobot}%</span>
-              <span className={`progress-status ${totalBobot === 100 ? 'valid' : 'invalid'}`}>
-                {totalBobot === 100 ? '✅ Siap disimpan' : totalBobot > 100 ? '❌ Melebihi 100%' : '⚠️ Belum mencapai 100%'}
+              <span className={`progress-status ${getStatusClass()}`}>
+                {getStatusMessage()}
               </span>
             </div>
             <div className="progress-bar-container">

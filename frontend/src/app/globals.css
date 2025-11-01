@@ -2495,6 +2495,17 @@ body {
   box-shadow: 0 0 0 3px rgba(3, 30, 101, 0.1);
 }
 
+.input-indikator-name.invalid-name {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+.input-indikator-name.invalid-name:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
 .input-bobot {
   width: 100%;
   padding: 10px 14px;
@@ -2527,6 +2538,53 @@ body {
 .input-bobot {
   appearance: textfield;
   -moz-appearance: textfield;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-wrapper-name {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.invalid-name {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+.name-warning {
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.invalid-bobot {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+.bobot-warning {
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .btn-delete-indicator {
