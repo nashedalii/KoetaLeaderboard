@@ -1,0 +1,58 @@
+# ================================
+# 🧱 Node.js (Backend & Frontend)
+# ================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ================================
+# ⚙️ Build Outputs
+# ================================
+dist/
+build/
+.next/
+out/
+
+# ================================
+# 🧩 Environment Files
+# ================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env
+
+# ================================
+# 🧪 Testing & Temp
+# ================================
+coverage/
+*.test.js
+*.spec.js
+*.tmp
+*.log
+
+# ================================
+# 🧰 Editor & System Files
+# ================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ================================
+# 🧱 Backend Specific
+# ================================
+backend/node_modules/
+backend/package-lock.json
+
+# ================================
+# 🎨 Frontend Specific
+# ================================
+frontend/node_modules/
+frontend/.next/
+frontend/package-lock.json
