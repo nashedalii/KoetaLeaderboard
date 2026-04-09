@@ -1,104 +1,41 @@
 import express from 'express'
-import testRoutes from './routes/test.js'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import pool from './config/db.js'
+import authRoutes from './routes/auth.js'
+import userRoutes from './routes/user.js'
+import { authenticate, authorize } from './middleware/authMiddleware.js'
+
+dotenv.config()
 
 const app = express()
+const PORT = process.env.PORT || 5000
 
+app.use(cors())
 app.use(express.json())
-app.use('/api', testRoutes)
 
-app.listen(5000, () => {
-  console.log('Server jalan di http://localhost:5000')
+app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
+
+// Test protected route
+app.get('/api/test-auth', authenticate, (req, res) => {
+  res.json({ message: 'Token valid', user: req.user })
 })
 
+app.get('/api/test-admin', authenticate, authorize('admin'), (req, res) => {
+  res.json({ message: 'Hanya admin yang bisa akses ini', user: req.user })
+})
 
-// import express from "express";
-// import cors from "cors";
-// import pool from "./db.js";
+// Test koneksi database
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW() AS time')
+    res.json({ success: true, time: result.rows[0].time })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+})
 
-// const app = express();
-
-// // Middleware
-// app.use(cors());
-// app.use(express.json());
-
-// // Root endpoint
-// app.get("/", (req, res) => {
-//   res.json({ 
-//     message: "Backend berjalan dengan baik!", 
-//     timestamp: new Date().toISOString() 
-//   });
-// });
-
-// // Test database connection
-// app.get("/test-db", async (req, res) => {
-//   try {
-//     const result = await pool.query("SELECT NOW() as current_time, version() as postgres_version");
-//     res.json({ 
-//       success: true, 
-//       message: "Koneksi ke Supabase berhasil!",
-//       data: result.rows[0]
-//     });
-//   } catch (err) {
-//     console.error("DB connection error:", err);
-//     res.status(500).json({ 
-//       success: false, 
-//       message: "Koneksi ke database gagal",
-//       error: err.message 
-//     });
-//   }
-// });
-
-// // Login endpoint untuk frontend
-// app.post("/login", async (req, res) => {
-//   try {
-//     const { username, password } = req.body;
-    
-//     // Simulasi validasi (ganti dengan logic sebenarnya)
-//     if (username && password) {
-//       res.json({
-//         success: true,
-//         message: "Login berhasil!",
-//         user: { username },
-//         timestamp: new Date().toISOString()
-//       });
-//     } else {
-//       res.status(400).json({
-//         success: false,
-//         message: "Username dan password harus diisi"
-//       });
-//     }
-//   } catch (err) {
-//     console.error("Login error:", err);
-//     res.status(500).json({
-//       success: false,
-//       message: "Terjadi kesalahan server",
-//       error: err.message
-//     });
-//   }
-// });
-
-// // Test endpoint untuk melihat semua tables di database
-// app.get("/test-tables", async (req, res) => {
-//   try {
-//     const result = await pool.query(`
-//       SELECT table_name 
-//       FROM information_schema.tables 
-//       WHERE table_schema = 'public'
-//       ORDER BY table_name
-//     `);
-//     res.json({
-//       success: true,
-//       message: "Berhasil mengambil daftar tabel",
-//       tables: result.rows
-//     });
-//   } catch (err) {
-//     console.error("Tables query error:", err);
-//     res.status(500).json({
-//       success: false,
-//       message: "Gagal mengambil daftar tabel",
-//       error: err.message
-//     });
-//   }
-// });
-
-// app.listen(5000, () => console.log("✅ Server running on port 5000"));
+app.listen(PORT, () => {
+  console.log(`Server berjalan di http://localhost:${PORT}`)
+})
