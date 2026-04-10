@@ -1,9 +1,10 @@
 import pool from '../config/db.js'
 
-// GET /api/bus
+// GET /api/bus?armada_id=1
 export const getAllBus = async (req, res) => {
+  const { armada_id } = req.query
   try {
-    const result = await pool.query(`
+    let query = `
       SELECT b.bus_id, b.kode_bus, b.nopol, b.status_aktif,
              b.driver_id, b.armada_id,
              a.kode_armada, a.nama_armada,
@@ -11,8 +12,15 @@ export const getAllBus = async (req, res) => {
       FROM bus b
       LEFT JOIN armada a ON b.armada_id = a.armada_id
       LEFT JOIN driver d ON b.driver_id = d.driver_id
-      ORDER BY a.kode_armada, b.kode_bus
-    `)
+    `
+    const params = []
+    if (armada_id) {
+      query += ' WHERE b.armada_id = $1'
+      params.push(armada_id)
+    }
+    query += ' ORDER BY a.kode_armada, b.kode_bus'
+
+    const result = await pool.query(query, params)
     res.json(result.rows)
   } catch (err) {
     console.error('Get all bus error:', err)

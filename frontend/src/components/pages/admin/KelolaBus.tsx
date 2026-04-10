@@ -217,7 +217,9 @@ export default function KelolaBus() {
                       )}
                     </td>
                     <td>
-                      {bus.nama_driver ? (
+                      {bus.status_aktif === 'nonaktif' ? (
+                        <span style={{ color: '#94a3b8' }}>—</span>
+                      ) : bus.nama_driver ? (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                           🚌 {bus.nama_driver}
                         </span>

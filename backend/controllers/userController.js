@@ -178,7 +178,7 @@ export const getAllUsers = async (req, res) => {
       `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
               d.nama_kernet, d.email, d.status_aktif, 'driver' AS role,
               a.armada_id, a.kode_armada, a.nama_armada,
-              b.bus_id, b.kode_bus, b.nopol
+              b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
        FROM driver d
        LEFT JOIN armada a ON d.armada_id = a.armada_id
        LEFT JOIN bus b ON b.driver_id = d.driver_id`
@@ -206,7 +206,7 @@ export const getAllDrivers = async (req, res) => {
       SELECT d.driver_id AS id, d.nama_driver AS nama, d.nama_kernet,
              d.username, d.email, d.status_aktif,
              a.armada_id, a.kode_armada, a.nama_armada,
-             b.kode_bus, b.nopol
+             b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
       FROM driver d
       LEFT JOIN armada a ON d.armada_id = a.armada_id
       LEFT JOIN bus b ON b.driver_id = d.driver_id
@@ -239,7 +239,7 @@ const TABLE_MAP = {
 
 export const updateUser = async (req, res) => {
   const { role, id } = req.params
-  const { nama, identifier, email, status_aktif, armada_id, nama_kernet, kode_bus, nopol } = req.body
+  const { nama, identifier, email, status_aktif, armada_id, nama_kernet, bus_id } = req.body
 
   if (!VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: 'Role tidak valid. Gunakan: admin, petugas, driver' })
@@ -264,7 +264,7 @@ export const updateUser = async (req, res) => {
     values.push(nama_kernet)
   }
 
-  if (fields.length === 0 && kode_bus === undefined && nopol === undefined) {
+  if (fields.length === 0 && bus_id === undefined) {
     return res.status(400).json({ message: 'Tidak ada field yang diupdate' })
   }
 
@@ -283,26 +283,20 @@ export const updateUser = async (req, res) => {
       }
     }
 
-    // Update bus jika role driver dan ada field bus
-    if (role === 'driver' && (kode_bus !== undefined || nopol !== undefined)) {
-      const busFields = []
-      const busValues = []
-      let busIdx = 1
-
-      if (kode_bus !== undefined) { busFields.push(`kode_bus = $${busIdx++}`); busValues.push(kode_bus) }
-      if (nopol !== undefined)    { busFields.push(`nopol = $${busIdx++}`);    busValues.push(nopol) }
-
-      busValues.push(id)
-      await pool.query(
-        `UPDATE bus SET ${busFields.join(', ')} WHERE driver_id = $${busIdx}`,
-        busValues
-      )
+    // Jika driver dinonaktifkan, lepas bus yang terikat
+    if (role === 'driver' && status_aktif === 'nonaktif') {
+      await pool.query('UPDATE bus SET driver_id = NULL WHERE driver_id = $1', [id])
     }
 
-    const updatedUser = result.rows[0] ?? {}
+    // Assignment bus untuk driver: lepas bus lama, pasang bus baru
+    if (role === 'driver' && bus_id !== undefined && status_aktif !== 'nonaktif') {
+      await pool.query('UPDATE bus SET driver_id = NULL WHERE driver_id = $1', [id])
+      if (bus_id) {
+        await pool.query('UPDATE bus SET driver_id = $1 WHERE bus_id = $2', [id, bus_id])
+      }
+    }
 
     if (result.rows.length === 0 && fields.length === 0) {
-      // Hanya update bus, tidak ada user row untuk di-return — fetch ulang
       const refetch = await pool.query(
         `SELECT ${idCol} AS id, ${namaCol} AS nama, status_aktif FROM ${table} WHERE ${idCol} = $1`,
         [id]

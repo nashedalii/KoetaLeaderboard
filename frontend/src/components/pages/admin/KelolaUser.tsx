@@ -16,8 +16,18 @@ interface UserData {
   armada_id?: number
   kode_armada?: string
   nama_armada?: string
+  bus_id?: number
   kode_bus?: string
   nopol?: string
+  bus_status?: 'aktif' | 'nonaktif'
+}
+
+interface BusOption {
+  bus_id: number
+  kode_bus: string
+  nopol: string
+  status_aktif: 'aktif' | 'nonaktif'
+  driver_id: number | null
 }
 
 interface FormData {
@@ -27,8 +37,7 @@ interface FormData {
   status_aktif: 'aktif' | 'nonaktif'
   nama_kernet: string
   armada_id: string
-  kode_bus: string
-  nopol: string
+  bus_id: string
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -65,6 +74,7 @@ export default function KelolaUser() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
+  const [busOptions, setBusOptions] = useState<BusOption[]>([])
 
   const [formData, setFormData] = useState<FormData>({
     nama: '',
@@ -73,8 +83,7 @@ export default function KelolaUser() {
     status_aktif: 'aktif',
     nama_kernet: '',
     armada_id: '',
-    kode_bus: '',
-    nopol: '',
+    bus_id: '',
   })
 
   // ── Fetch users ──────────────────────────────────────────────────────
@@ -103,7 +112,7 @@ export default function KelolaUser() {
   })
 
   // ── Edit ─────────────────────────────────────────────────────────────
-  const openEdit = (user: UserData) => {
+  const openEdit = async (user: UserData) => {
     setSelectedUser(user)
     setFormData({
       nama: user.nama,
@@ -112,9 +121,18 @@ export default function KelolaUser() {
       status_aktif: user.status_aktif,
       nama_kernet: user.nama_kernet ?? '',
       armada_id: user.armada_id?.toString() ?? '',
-      kode_bus: user.kode_bus ?? '',
-      nopol: user.nopol ?? '',
+      bus_id: user.bus_id?.toString() ?? '',
     })
+
+    if (user.role === 'driver' && user.armada_id) {
+      try {
+        const buses = await apiFetch(`/api/bus?armada_id=${user.armada_id}`)
+        setBusOptions(buses ?? [])
+      } catch {
+        setBusOptions([])
+      }
+    }
+
     setShowModal(true)
   }
 
@@ -134,8 +152,7 @@ export default function KelolaUser() {
       }
       if (selectedUser.role === 'driver') {
         body.nama_kernet = formData.nama_kernet
-        body.kode_bus = formData.kode_bus
-        body.nopol = formData.nopol
+        body.bus_id = formData.bus_id ? parseInt(formData.bus_id) : null
       }
 
       await apiFetch(`/api/users/${selectedUser.role}/${selectedUser.id}`, {
@@ -261,11 +278,19 @@ export default function KelolaUser() {
                       </span>
                     </td>
                     <td>
-                      {user.role === 'driver' && user.kode_bus ? (
+                      {user.role === 'driver' && user.status_aktif === 'nonaktif' ? (
+                        <span style={{ color: '#94a3b8' }}>—</span>
+                      ) : user.role === 'driver' && user.kode_bus ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <span style={{ fontWeight: 600, color: '#667eea' }}>
-                            {user.kode_bus} - {user.nopol}
-                          </span>
+                          {user.bus_status === 'nonaktif' ? (
+                            <span style={{ fontWeight: 600, color: '#ef4444', fontSize: '0.85rem' }}>
+                              ⚠️ Bus telah dinonaktifkan
+                            </span>
+                          ) : (
+                            <span style={{ fontWeight: 600, color: '#667eea' }}>
+                              {user.kode_bus} - {user.nopol}
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
                             {user.nama_armada}
                           </span>
@@ -275,7 +300,7 @@ export default function KelolaUser() {
                           {user.nama_armada}
                         </span>
                       ) : (
-                        <span style={{ color: '#94a3b8' }}>-</span>
+                        <span style={{ color: '#94a3b8' }}>—</span>
                       )}
                     </td>
                     <td>
@@ -362,7 +387,18 @@ export default function KelolaUser() {
                       <label className="form-label">Armada</label>
                       <select
                         value={formData.armada_id}
-                        onChange={e => setFormData({ ...formData, armada_id: e.target.value })}
+                        onChange={async e => {
+                          const newArmadaId = e.target.value
+                          setFormData({ ...formData, armada_id: newArmadaId, bus_id: '' })
+                          if (selectedUser.role === 'driver' && newArmadaId) {
+                            try {
+                              const buses = await apiFetch(`/api/bus?armada_id=${newArmadaId}`)
+                              setBusOptions(buses ?? [])
+                            } catch {
+                              setBusOptions([])
+                            }
+                          }
+                        }}
                         className="form-select"
                       >
                         <option value="">Pilih Armada</option>
@@ -387,27 +423,51 @@ export default function KelolaUser() {
                       />
                     </div>
 
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">Kode Bus</label>
-                        <input
-                          type="text"
-                          value={formData.kode_bus}
-                          onChange={e => setFormData({ ...formData, kode_bus: e.target.value })}
-                          placeholder="Contoh: TR 01"
-                          className="form-input"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Nomor Polisi</label>
-                        <input
-                          type="text"
-                          value={formData.nopol}
-                          onChange={e => setFormData({ ...formData, nopol: e.target.value })}
-                          placeholder="Contoh: BL 1234 AB"
-                          className="form-input"
-                        />
-                      </div>
+                    <div className="form-group">
+                      <label className="form-label">Bus</label>
+                      {formData.status_aktif === 'nonaktif' ? (
+                        <div className="form-input" style={{ color: '#94a3b8', background: '#f8fafc', cursor: 'not-allowed' }}>
+                          — (driver nonaktif)
+                        </div>
+                      ) : (
+                        <select
+                          value={formData.bus_id}
+                          onChange={e => setFormData({ ...formData, bus_id: e.target.value })}
+                          className="form-select"
+                        >
+                          <option value="">— Tanpa Bus —</option>
+                          {busOptions.map(bus => {
+                            const isOwn = bus.bus_id === selectedUser.bus_id
+                            const isTaken = bus.driver_id !== null && bus.driver_id !== selectedUser.id
+                            const isNonaktif = bus.status_aktif === 'nonaktif'
+                            const isDisabled = isTaken || isNonaktif
+
+                            let prefix = ''
+                            if (isDisabled) prefix = '🔴 '
+                            else if (isOwn) prefix = '🟢 '
+
+                            let suffix = ''
+                            if (isOwn && isNonaktif) suffix = ' (Bus Anda - Nonaktif)'
+                            else if (isTaken) suffix = ' (Terpakai)'
+                            else if (isNonaktif) suffix = ' (Nonaktif)'
+                            else if (isOwn) suffix = ' (Bus Anda)'
+
+                            return (
+                              <option
+                                key={bus.bus_id}
+                                value={bus.bus_id.toString()}
+                                disabled={isDisabled}
+                                style={{
+                                  color: isOwn ? '#16a34a' : isDisabled ? '#ef4444' : '#1e293b',
+                                  fontWeight: isOwn ? 600 : 400,
+                                }}
+                              >
+                                {prefix}{bus.kode_bus} - {bus.nopol}{suffix}
+                              </option>
+                            )
+                          })}
+                        </select>
+                      )}
                     </div>
                   </>
                 )}
