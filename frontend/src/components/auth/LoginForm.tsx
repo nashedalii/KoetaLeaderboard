@@ -47,7 +47,8 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
           id: data.user.id,
           nama: data.user.nama,
           role: data.user.role,
-          roleLabel
+          roleLabel,
+          ...(data.user.armada_id !== undefined && { armada_id: data.user.armada_id })
         }
       }
 

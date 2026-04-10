@@ -1,253 +1,233 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { dummyUsers, User } from '@/data/dummyUsers'
+import { useEffect, useMemo, useState } from 'react'
+import { apiFetch } from '@/utils/api'
 
-const bobotPenilaian = {
-  etikaAdab: 25,
-  disiplin: 20,
-  loyalitas: 20,
-  skillMengemudi: 15,
-  perawatanKendaraan: 10,
-  performa: 10
+// ── Types ──────────────────────────────────────────────────────────────
+interface DriverData {
+  id: number
+  nama: string
+  nama_kernet: string | null
+  username: string
+  email: string
+  status_aktif: 'aktif' | 'nonaktif'
+  armada_id: number
+  kode_armada: string
+  nama_armada: string
+  kode_bus: string | null
+  nopol: string | null
 }
 
-interface DriverWithStats extends User {
+interface DriverWithStats extends DriverData {
   averageScore: number
   latestMonthScore: number
   trend: 'up' | 'down' | 'stable'
 }
 
-export default function ManajemenDriver() {
+// ── Helpers ────────────────────────────────────────────────────────────
+function getArmadaIdFromAuth(): number | null {
+  try {
+    const raw = localStorage.getItem('auth')
+    if (!raw) return null
+    const auth = JSON.parse(raw)
+    return auth?.user?.armada_id ?? null
+  } catch {
+    return null
+  }
+}
+
+// ── Component ──────────────────────────────────────────────────────────
+export default function MonitoringDriver() {
+  const [drivers, setDrivers] = useState<DriverWithStats[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedDriver, setSelectedDriver] = useState<DriverWithStats | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'Aktif' | 'Nonaktif'>('all')
-  const [petugasArmada] = useState<'A' | 'B' | 'C'>('A')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'aktif' | 'nonaktif'>('all')
 
-  const calculateWeightedScore = (skor: any) => {
-    if (!skor) return 0
-    const total =
-      (skor.etikaAdab * bobotPenilaian.etikaAdab) / 100 +
-      (skor.disiplin * bobotPenilaian.disiplin) / 100 +
-      (skor.loyalitas * bobotPenilaian.loyalitas) / 100 +
-      (skor.skillMengemudi * bobotPenilaian.skillMengemudi) / 100 +
-      (skor.perawatanKendaraan * bobotPenilaian.perawatanKendaraan) / 100 +
-      (skor.performa * bobotPenilaian.performa) / 100
-    return Math.round(total * 10) / 10
-  }
+  // ── Fetch drivers by armada ──────────────────────────────────────────
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      try {
+        setLoading(true)
+        setError('')
 
-  const calculateAverageScore = (driver: User) => {
-    if (!driver.skorBulanan || driver.skorBulanan.length === 0) {
-      return calculateWeightedScore(driver.skor)
+        const armadaId = getArmadaIdFromAuth()
+        const endpoint = armadaId
+          ? `/api/users/driver?armada_id=${armadaId}`
+          : '/api/users/driver'
+
+        const data: DriverData[] = await apiFetch(endpoint)
+
+        // Skor masih statis sampai Fase 3 (penilaian) selesai
+        const withStats: DriverWithStats[] = (data ?? []).map(d => ({
+          ...d,
+          averageScore: 0,
+          latestMonthScore: 0,
+          trend: 'stable'
+        }))
+
+        setDrivers(withStats)
+      } catch (err: any) {
+        setError(err.message ?? 'Gagal memuat data driver')
+      } finally {
+        setLoading(false)
+      }
     }
-    const totalScore = driver.skorBulanan.reduce((s, b) => s + calculateWeightedScore(b.skor), 0)
-    return Math.round((totalScore / driver.skorBulanan.length) * 10) / 10
-  }
 
-  const driversWithStats = useMemo(() => {
-    return dummyUsers
-      .filter((u) => u.role === 'Supir' && u.namaArmada === petugasArmada)
-      .map((d) => {
-        const averageScore = calculateAverageScore(d)
-        const latestMonthScore =
-          d.skorBulanan && d.skorBulanan.length > 0
-            ? calculateWeightedScore(d.skorBulanan[d.skorBulanan.length - 1].skor)
-            : calculateWeightedScore(d.skor)
+    fetchDrivers()
+  }, [])
 
-        let trend: 'up' | 'down' | 'stable' = 'stable'
-        if (d.skorBulanan && d.skorBulanan.length >= 2) {
-          const cur = calculateWeightedScore(d.skorBulanan[d.skorBulanan.length - 1].skor)
-          const prev = calculateWeightedScore(d.skorBulanan[d.skorBulanan.length - 2].skor)
-          if (cur > prev + 1) trend = 'up'
-          else if (cur < prev - 1) trend = 'down'
-        }
-
-        return { ...d, averageScore, latestMonthScore, trend } as DriverWithStats
-      })
-  }, [petugasArmada])
-
-  const filteredDrivers = useMemo(() => {
-    return driversWithStats.filter((driver) => {
-      const matchesSearch =
-        driver.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (driver.namaKernet || '').toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesStatus =
-        statusFilter === 'all'
-          ? true
-          : statusFilter === 'Aktif'
-          ? driver.status === 'Aktif'
-          : driver.status === 'Nonaktif'
-      return matchesSearch && matchesStatus
+  // ── Filter ───────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return drivers.filter(d => {
+      const matchSearch =
+        d.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (d.nama_kernet ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+      const matchStatus =
+        statusFilter === 'all' ? true : d.status_aktif === statusFilter
+      return matchSearch && matchStatus
     })
-  }, [driversWithStats, searchQuery, statusFilter])
+  }, [drivers, searchQuery, statusFilter])
 
-  const handleStatusChange = (driverId: number, newStatus: 'Aktif' | 'Nonaktif') => {
-    console.log(`Change status ${driverId} -> ${newStatus}`)
-    setSelectedDriver(null)
+  const getTrendIndicator = (trend: 'up' | 'down' | 'stable') => {
+    if (trend === 'up')   return { icon: '⬆️', color: '#16a34a', text: 'Meningkat' }
+    if (trend === 'down') return { icon: '⬇️', color: '#dc2626', text: 'Menurun' }
+    return { icon: '➡️', color: '#6b7280', text: 'Stabil' }
   }
 
-  const getStatusBadgeClass = (status: string) =>
-    `status-pill ${status === 'Aktif' ? 'active' : 'inactive'}`
-
-  const getTrendIndicator = (trend: 'up' | 'down' | 'stable') =>
-    trend === 'up'
-      ? { icon: '⬆️', color: '#16a34a', text: 'Meningkat' }
-      : trend === 'down'
-      ? { icon: '⬇️', color: '#dc2626', text: 'Menurun' }
-      : { icon: '➡️', color: '#6b7280', text: 'Stabil' }
-
+  // ── Render ───────────────────────────────────────────────────────────
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
         <div className="page-header">
           <div>
             <h1 className="page-title">Monitoring Driver</h1>
-            <p className="page-subtitle">Monitor dan kelola data driver di armada Anda</p>
+            <p className="page-subtitle">Monitor data driver di armada Anda</p>
           </div>
         </div>
 
-        <div className="manajemen-controls">
-          <div className="manajemen-summary">
-            <p>
-              Total Driver: <strong>{driversWithStats.length}</strong>
-            </p>
-            <p>
-              Aktif: <strong>{driversWithStats.filter((d) => d.status === 'Aktif').length}</strong>
-            </p>
-            <p>
-              Non-aktif:{' '}
-              <strong>{driversWithStats.filter((d) => d.status === 'Nonaktif').length}</strong>
-            </p>
-          </div>
-
-          <div className="manajemen-filters">
-            <input
-              className="search-input"
-              placeholder="🔍 Cari driver atau kernet..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <select
-              className="filter-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-            >
-              <option value="all">Semua Status</option>
-              <option value="Aktif">Aktif</option>
-              <option value="Nonaktif">Non-aktif</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="driver-grid">
-          {filteredDrivers.map((driver) => (
-            <div
-              key={driver.id}
-              className="driver-card"
-              onClick={() => setSelectedDriver(driver)}
-            >
-              <div className="driver-card-header">
-                <div>
-                  <h3 className="driver-name">{driver.nama}</h3>
-                </div>
-                <div className="driver-right">
-                  <span className="armada-badge">Armada {driver.namaArmada}</span>
-                  <span className={getStatusBadgeClass(driver.status)}>{driver.status}</span>
-                </div>
-              </div>
-
-              <div className="driver-card-body">
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                  <p className="muted" style={{ flex: '1 1 45%' }}>
-                    Bus: <strong style={{ color: '#667eea' }}>{driver.kodeBus || '-'}</strong>
-                  </p>
-                  <p className="muted" style={{ flex: '1 1 45%' }}>
-                    Plat: <strong>{driver.nomorPolisi || '-'}</strong>
-                  </p>
-                </div>
-                <p className="muted" style={{ marginBottom: '0.75rem' }}>
-                  Kernet: <strong>{driver.namaKernet || '-'}</strong>
-                </p>
-
-                <div className="metric">
-                  <div>
-                    <p className="muted">Rata-rata</p>
-                    <p className="large">{driver.averageScore} poin</p>
-                  </div>
-                  <div>
-                    <p className="muted">Bulan Ini</p>
-                    <p className="large">{driver.latestMonthScore}</p>
-                  </div>
-                </div>
-
-                <div className="driver-actions">
-                  <a className="link" href="#">
-                    📄 Lihat Detail →
-                  </a>
-                </div>
-              </div>
+        {/* Summary */}
+        {!loading && !error && (
+          <div className="manajemen-controls">
+            <div className="manajemen-summary">
+              <p>Total Driver: <strong>{drivers.length}</strong></p>
+              <p>Aktif: <strong>{drivers.filter(d => d.status_aktif === 'aktif').length}</strong></p>
+              <p>Non-aktif: <strong>{drivers.filter(d => d.status_aktif === 'nonaktif').length}</strong></p>
             </div>
-          ))}
-        </div>
 
-        {filteredDrivers.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">👥</div>
-            <h3>Tidak ada driver ditemukan</h3>
-            <p>Coba ubah filter pencarian atau status</p>
+            <div className="manajemen-filters">
+              <input
+                className="search-input"
+                placeholder="🔍 Cari driver atau kernet..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+              <select
+                className="filter-select"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value as any)}
+              >
+                <option value="all">Semua Status</option>
+                <option value="aktif">Aktif</option>
+                <option value="nonaktif">Non-aktif</option>
+              </select>
+            </div>
           </div>
         )}
 
+        {/* States */}
+        {loading ? (
+          <div className="loading-state">Memuat data driver...</div>
+        ) : error ? (
+          <div className="error-state"><p>{error}</p></div>
+        ) : (
+          <>
+            <div className="driver-grid">
+              {filtered.map(driver => (
+                <div
+                  key={driver.id}
+                  className="driver-card"
+                  onClick={() => setSelectedDriver(driver)}
+                >
+                  <div className="driver-card-header">
+                    <div>
+                      <h3 className="driver-name">{driver.nama}</h3>
+                    </div>
+                    <div className="driver-right">
+                      <span className="armada-badge">{driver.nama_armada}</span>
+                      <span className={`status-pill ${driver.status_aktif === 'aktif' ? 'active' : 'inactive'}`}>
+                        {driver.status_aktif === 'aktif' ? 'Aktif' : 'Non-aktif'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="driver-card-body">
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                      <p className="muted" style={{ flex: '1 1 45%' }}>
+                        Bus: <strong style={{ color: '#667eea' }}>{driver.kode_bus ?? '-'}</strong>
+                      </p>
+                      <p className="muted" style={{ flex: '1 1 45%' }}>
+                        Plat: <strong>{driver.nopol ?? '-'}</strong>
+                      </p>
+                    </div>
+                    <p className="muted" style={{ marginBottom: '0.75rem' }}>
+                      Kernet: <strong>{driver.nama_kernet ?? '-'}</strong>
+                    </p>
+
+                    <div className="metric">
+                      <div>
+                        <p className="muted">Rata-rata</p>
+                        <p className="large">{driver.averageScore} poin</p>
+                      </div>
+                      <div>
+                        <p className="muted">Bulan Ini</p>
+                        <p className="large">{driver.latestMonthScore}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <div className="empty-state">
+                <div className="empty-icon">👥</div>
+                <h3>Tidak ada driver ditemukan</h3>
+                <p>Coba ubah filter pencarian atau status</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Detail Modal (Read Only) ── */}
         {selectedDriver && (
           <div className="modal-overlay" onClick={() => setSelectedDriver(null)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <h2 className="modal-title">Profil Driver</h2>
-                <button className="modal-close" onClick={() => setSelectedDriver(null)}>
-                  ✕
-                </button>
+                <button className="modal-close" onClick={() => setSelectedDriver(null)}>✕</button>
               </div>
 
               <div className="modal-body">
                 <div className="profile-section">
                   <h3 className="section-title">Informasi Dasar</h3>
                   <div className="info-grid">
-                    <div className="info-item">
-                      <span className="info-label">Nama Driver</span>
-                      <span className="info-value">{selectedDriver.nama}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Email</span>
-                      <span className="info-value">{selectedDriver.email}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Kode Bus</span>
-                      <span className="info-value" style={{ color: '#667eea', fontWeight: '600' }}>
-                        {selectedDriver.kodeBus || '-'}
-                      </span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Nomor Polisi</span>
-                      <span className="info-value" style={{ fontWeight: '600' }}>
-                        {selectedDriver.nomorPolisi || '-'}
-                      </span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Armada</span>
-                      <span className="info-value">Armada {selectedDriver.namaArmada}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Kernet</span>
-                      <span className="info-value">
-                        {selectedDriver.namaKernet || 'Tidak ada'}
-                      </span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Status</span>
-                      <span className={getStatusBadgeClass(selectedDriver.status)}>
-                        {selectedDriver.status}
-                      </span>
-                    </div>
+                    {[
+                      { label: 'Nama Driver',  value: selectedDriver.nama },
+                      { label: 'Username',     value: selectedDriver.username },
+                      { label: 'Email',        value: selectedDriver.email },
+                      { label: 'Kode Bus',     value: selectedDriver.kode_bus ?? '-' },
+                      { label: 'Nomor Polisi', value: selectedDriver.nopol ?? '-' },
+                      { label: 'Armada',       value: selectedDriver.nama_armada },
+                      { label: 'Kernet',       value: selectedDriver.nama_kernet ?? 'Tidak ada' },
+                      { label: 'Status',       value: selectedDriver.status_aktif === 'aktif' ? 'Aktif' : 'Non-aktif' },
+                    ].map(item => (
+                      <div key={item.label} className="info-item">
+                        <span className="info-label">{item.label}</span>
+                        <span className="info-value">{item.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -272,71 +252,9 @@ export default function ManajemenDriver() {
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {selectedDriver.skorBulanan && selectedDriver.skorBulanan.length > 0 && (
-                  <div className="profile-section">
-                    <h3 className="section-title">Riwayat Performa</h3>
-                    <div className="history-table">
-                      <div className="table-header">
-                        <span>Bulan</span>
-                        <span>Etika & Adab</span>
-                        <span>Disiplin</span>
-                        <span>Loyalitas</span>
-                        <span>Skill</span>
-                        <span>Perawatan</span>
-                        <span>Performa</span>
-                        <span>Total</span>
-                      </div>
-                      {selectedDriver.skorBulanan.map((bulan, idx) => (
-                        <div key={idx} className="table-row">
-                          <span className="month-cell">{bulan.bulan}</span>
-                          <span>{bulan.skor.etikaAdab}</span>
-                          <span>{bulan.skor.disiplin}</span>
-                          <span>{bulan.skor.loyalitas}</span>
-                          <span>{bulan.skor.skillMengemudi}</span>
-                          <span>{bulan.skor.perawatanKendaraan}</span>
-                          <span>{bulan.skor.performa}</span>
-                          <span className="total-cell">
-                            {calculateWeightedScore(bulan.skor)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="profile-section">
-                  <h3 className="section-title">Manajemen Status</h3>
-                  <div className="status-management">
-                    <p className="status-info">
-                      Status saat ini:{' '}
-                      <span className={getStatusBadgeClass(selectedDriver.status)}>
-                        {selectedDriver.status}
-                      </span>
-                    </p>
-                    <div className="status-actions">
-                      {selectedDriver.status === 'Aktif' ? (
-                        <button
-                          className="status-btn inactive-btn"
-                          onClick={() => handleStatusChange(selectedDriver.id, 'Nonaktif')}
-                        >
-                          Nonaktifkan Driver
-                        </button>
-                      ) : (
-                        <button
-                          className="status-btn active-btn"
-                          onClick={() => handleStatusChange(selectedDriver.id, 'Aktif')}
-                        >
-                          Aktifkan Driver
-                        </button>
-                      )}
-                    </div>
-                    <p className="status-note">
-                      <strong>Note:</strong> Perubahan status akan mempengaruhi akses driver ke
-                      sistem dan perhitungan ranking armada.
-                    </p>
-                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+                    * Data skor akan tersedia setelah fitur penilaian aktif
+                  </p>
                 </div>
               </div>
             </div>
