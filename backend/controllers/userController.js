@@ -157,6 +157,173 @@ export const resetDriverPassword = async (req, res) => {
   }
 }
 
+// GET /api/users
+export const getAllUsers = async (req, res) => {
+  try {
+    const adminResult = await pool.query(
+      `SELECT admin_id AS id, nama_admin AS nama, nomor_pegawai AS identifier,
+              email, status_aktif, 'admin' AS role
+       FROM admin`
+    )
+
+    const petugasResult = await pool.query(
+      `SELECT p.petugas_id AS id, p.nama_petugas AS nama, p.nomor_pegawai AS identifier,
+              p.email, p.status_aktif, 'petugas' AS role,
+              a.kode_armada, a.nama_armada
+       FROM petugas p
+       LEFT JOIN armada a ON p.armada_id = a.armada_id`
+    )
+
+    const driverResult = await pool.query(
+      `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
+              d.email, d.status_aktif, 'driver' AS role,
+              a.kode_armada, a.nama_armada
+       FROM driver d
+       LEFT JOIN armada a ON d.armada_id = a.armada_id`
+    )
+
+    const users = [
+      ...adminResult.rows,
+      ...petugasResult.rows,
+      ...driverResult.rows
+    ]
+
+    res.json(users)
+  } catch (err) {
+    console.error('Get all users error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+}
+
+// GET /api/users/driver?armada_id=1
+export const getAllDrivers = async (req, res) => {
+  const { armada_id } = req.query
+
+  try {
+    let query = `
+      SELECT d.driver_id AS id, d.nama_driver AS nama, d.nama_kernet,
+             d.username, d.email, d.status_aktif,
+             a.armada_id, a.kode_armada, a.nama_armada,
+             b.kode_bus, b.nopol
+      FROM driver d
+      LEFT JOIN armada a ON d.armada_id = a.armada_id
+      LEFT JOIN bus b ON b.driver_id = d.driver_id
+    `
+    const params = []
+
+    if (armada_id) {
+      query += ' WHERE d.armada_id = $1'
+      params.push(armada_id)
+    }
+
+    query += ' ORDER BY a.kode_armada, d.nama_driver'
+
+    const result = await pool.query(query, params)
+    res.json(result.rows)
+  } catch (err) {
+    console.error('Get all drivers error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+}
+
+// PUT /api/users/:role/:id
+const VALID_ROLES = ['admin', 'petugas', 'driver']
+
+const TABLE_MAP = {
+  admin:   { table: 'admin',   idCol: 'admin_id',   namaCol: 'nama_admin',   identifierCol: 'nomor_pegawai' },
+  petugas: { table: 'petugas', idCol: 'petugas_id', namaCol: 'nama_petugas', identifierCol: 'nomor_pegawai' },
+  driver:  { table: 'driver',  idCol: 'driver_id',  namaCol: 'nama_driver',  identifierCol: 'username'      }
+}
+
+export const updateUser = async (req, res) => {
+  const { role, id } = req.params
+  const { nama, identifier, email, status_aktif, armada_id, nama_kernet } = req.body
+
+  if (!VALID_ROLES.includes(role)) {
+    return res.status(400).json({ message: 'Role tidak valid. Gunakan: admin, petugas, driver' })
+  }
+
+  const { table, idCol, namaCol, identifierCol } = TABLE_MAP[role]
+
+  const fields = []
+  const values = []
+  let idx = 1
+
+  if (nama !== undefined)        { fields.push(`${namaCol} = $${idx++}`);       values.push(nama) }
+  if (identifier !== undefined)  { fields.push(`${identifierCol} = $${idx++}`); values.push(identifier) }
+  if (email !== undefined)       { fields.push(`email = $${idx++}`);            values.push(email) }
+  if (status_aktif !== undefined){ fields.push(`status_aktif = $${idx++}`);     values.push(status_aktif) }
+  if (armada_id !== undefined && role !== 'admin') {
+    fields.push(`armada_id = $${idx++}`)
+    values.push(armada_id)
+  }
+  if (nama_kernet !== undefined && role === 'driver') {
+    fields.push(`nama_kernet = $${idx++}`)
+    values.push(nama_kernet)
+  }
+
+  if (fields.length === 0) {
+    return res.status(400).json({ message: 'Tidak ada field yang diupdate' })
+  }
+
+  values.push(id)
+
+  try {
+    const result = await pool.query(
+      `UPDATE ${table} SET ${fields.join(', ')} WHERE ${idCol} = $${idx} RETURNING ${idCol} AS id, ${namaCol} AS nama, status_aktif`,
+      values
+    )
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' })
+    }
+
+    res.json({
+      message: 'User berhasil diupdate',
+      user: { ...result.rows[0], role }
+    })
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ message: 'Identifier atau email sudah digunakan' })
+    }
+    console.error('Update user error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+}
+
+// DELETE /api/users/:role/:id
+export const deleteUser = async (req, res) => {
+  const { role, id } = req.params
+
+  if (!VALID_ROLES.includes(role)) {
+    return res.status(400).json({ message: 'Role tidak valid. Gunakan: admin, petugas, driver' })
+  }
+
+  const { table, idCol, namaCol } = TABLE_MAP[role]
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM ${table} WHERE ${idCol} = $1 RETURNING ${idCol} AS id, ${namaCol} AS nama`,
+      [id]
+    )
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' })
+    }
+
+    res.json({
+      message: 'User berhasil dihapus',
+      user: { ...result.rows[0], role }
+    })
+  } catch (err) {
+    if (err.code === '23503') {
+      return res.status(409).json({ message: 'User tidak bisa dihapus karena masih memiliki data terkait' })
+    }
+    console.error('Delete user error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+}
+
 // POST /api/users/driver
 export const createDriver = async (req, res) => {
   const { nama_driver, nama_kernet, username, email, armada_id } = req.body
