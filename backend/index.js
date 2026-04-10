@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import pool from './config/db.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/user.js'
+import busRoutes from './routes/bus.js'
 import { authenticate, authorize } from './middleware/authMiddleware.js'
 
 dotenv.config()
@@ -16,6 +17,7 @@ app.use(express.json())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/bus', busRoutes)
 
 // Test protected route
 app.get('/api/test-auth', authenticate, (req, res) => {

@@ -8,6 +8,7 @@ import { DataProvider } from '@/contexts/DataContext'
 // Import halaman-halaman Admin
 import AdminDashboard from '@/components/dashboard/AdminDashboard'
 import KelolaUser from '@/components/pages/admin/KelolaUser'
+import KelolaBus from '@/components/pages/admin/KelolaBus'
 import KonfigurasiPenilaian from '@/components/pages/admin/KonfigurasiPenilaian'
 import KategoriPenilaianAdmin from '@/components/pages/admin/KategoriPenilaianAdmin'
 import RankingPenilaian from '@/components/pages/admin/RankingPenilaian'
@@ -94,7 +95,10 @@ export default function Home() {
         // Uncomment seiring development halaman baru
         case 'kelola-user':
           return <KelolaUser />
-        
+
+        case 'kelola-bus':
+          return <KelolaBus />
+
         case 'konfigurasi':
           return <KonfigurasiPenilaian />
         
