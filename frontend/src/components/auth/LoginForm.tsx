@@ -3,76 +3,62 @@
 import { useState } from 'react'
 import Image from 'next/image'
 
+const ROLE_LABEL: Record<string, string> = {
+  admin: 'Admin',
+  petugas: 'Petugas',
+  driver: 'Supir'
+}
+
 interface LoginFormProps {
-  onLoginSuccess?: (role: string, username: string) => void
+  onLoginSuccess?: (role: string, nama: string) => void
 }
 
 export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
-  const [username, setUsername] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
-  const [userRole, setUserRole] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setMessage('')
-    setUserRole('')
+    setErrorMessage('')
 
-    // Role-based credentials
-    const roleCredentials = {
-      // Admin
-      'admin_dishub': { password: 'admin123', role: 'Admin' },
-      
-      // Petugas
-      'petugas_01': { password: 'petugas123', role: 'Petugas' },
-      'petugas_02': { password: 'petugas123', role: 'Petugas' },
-      
-      // Supir
-      'supir_01': { password: 'supir123', role: 'Supir' },
-      'supir_02': { password: 'supir123', role: 'Supir' },
-    }
-
-    // Cek role credentials
-    const userCredential = roleCredentials[username as keyof typeof roleCredentials]
-    
-    if (userCredential && userCredential.password === password) {
-      setUserRole(userCredential.role)
-      setMessage(`🎉 Berhasil login sebagai ${userCredential.role}`)
-      
-      // Simpan role di localStorage untuk session management
-      localStorage.setItem('userRole', userCredential.role)
-      localStorage.setItem('username', username)
-      
-      // Trigger callback setelah 1.5 detik
-      setTimeout(() => {
-        if (onLoginSuccess) {
-          onLoginSuccess(userCredential.role, username)
-        }
-      }, 1500)
-      
-      setIsLoading(false)
-      return
-    }
-
-    // Jika bukan demo credentials, coba hubungi backend
     try {
-      const res = await fetch('http://localhost:5000/login', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ identifier, password })
       })
 
       const data = await res.json()
-      if (data.success) {
-        setMessage(`✅ ${data.message}`)
-      } else {
-        setMessage(`❌ ${data.message}`)
+
+      if (!res.ok) {
+        setErrorMessage(data.message || 'Login gagal')
+        return
       }
-    } catch (error) {
-      setMessage('❌ Username atau password salah!')
+
+      const roleLabel = ROLE_LABEL[data.user.role] ?? data.user.role
+
+      const auth = {
+        token: data.token,
+        user: {
+          id: data.user.id,
+          nama: data.user.nama,
+          role: data.user.role,
+          roleLabel
+        }
+      }
+
+      localStorage.setItem('auth', JSON.stringify(auth))
+
+      if (onLoginSuccess) {
+        onLoginSuccess(roleLabel, data.user.nama)
+      }
+
+    } catch (err) {
+      setErrorMessage('Tidak dapat terhubung ke server')
     } finally {
       setIsLoading(false)
     }
@@ -83,9 +69,9 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
       <div className="login-wrapper">
         {/* Logo Dishub */}
         <div className="logo-container">
-          <Image 
-            src="/logodishub.png" 
-            alt="Logo Dishub" 
+          <Image
+            src="/logodishub.png"
+            alt="Logo Dishub"
             width={149}
             height={149}
             priority
@@ -97,16 +83,18 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
         {/* Form Sign In */}
         <div className="signin-card">
           <h1 className="signin-title">Sign In</h1>
-          
+
           <form onSubmit={handleLogin} className="signin-form">
             <div className="form-group">
-              <label htmlFor="username" className="form-label">Username</label>
+              <label htmlFor="identifier" className="form-label">
+                Username / Nomor Pegawai
+              </label>
               <input
-                id="username"
+                id="identifier"
                 type="text"
-                placeholder="Masukkan username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Masukkan username atau nomor pegawai"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="form-input"
                 required
               />
@@ -117,7 +105,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <div className="password-input-wrapper">
                 <input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Masukkan password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -143,28 +131,19 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="login-button"
               disabled={isLoading}
             >
               {isLoading ? 'Loading...' : 'LOG IN'}
             </button>
 
-            {message && (
-              <div className={`message ${message.includes('Berhasil') || message.includes('berhasil') ? 'success' : 'error'}`}>
-                {message}
+            {errorMessage && (
+              <div className="message error">
+                {errorMessage}
               </div>
             )}
-
-            {userRole && (
-              <div className="role-display">
-                <div className="role-badge">
-                  Role: <span className={`role-${userRole.toLowerCase()}`}>{userRole}</span>
-                </div>
-              </div>
-            )}
-            
           </form>
         </div>
       </div>

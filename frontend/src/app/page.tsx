@@ -32,33 +32,31 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Cek session dari localStorage
-    const role = localStorage.getItem('userRole')
-    const username = localStorage.getItem('username')
-    
-    if (role && username) {
-      setIsLoggedIn(true)
-      setUserRole(role)
-    } else {
-      setIsLoggedIn(false)
-      setUserRole('')
+    const raw = localStorage.getItem('auth')
+    if (raw) {
+      try {
+        const auth = JSON.parse(raw)
+        if (auth?.token && auth?.user?.roleLabel) {
+          setIsLoggedIn(true)
+          setUserRole(auth.user.roleLabel)
+        }
+      } catch {
+        localStorage.removeItem('auth')
+      }
     }
-    
     setIsLoading(false)
   }, [])
 
-  const handleLoginSuccess = (role: string, username: string) => {
+  const handleLoginSuccess = (roleLabel: string, nama: string) => {
     setIsLoggedIn(true)
-    setUserRole(role)
-    // Set default page berdasarkan role
-    if (role === 'Petugas') {
+    setUserRole(roleLabel)
+    if (roleLabel === 'Petugas') {
       setCurrentPage('petugas-dashboard')
-    } else if (role === 'Supir') {
+    } else if (roleLabel === 'Supir') {
       setCurrentPage('driver-dashboard')
     } else {
       setCurrentPage('dashboard')
     }
-    // Data sudah disimpan di localStorage di LoginForm
   }
 
   const handleNavigate = (page: string) => {
@@ -66,8 +64,7 @@ export default function Home() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('username')
+    localStorage.removeItem('auth')
     setIsLoggedIn(false)
     setUserRole('')
     setCurrentPage('dashboard')

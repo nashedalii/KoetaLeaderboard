@@ -12,11 +12,11 @@ export const login = async (req, res) => {
     let user = null
     let role = null
 
-    // 1. Cek tabel admin (login dengan nomor_pegawai)
+    // 1. Cek tabel admin (login dengan nomor_pegawai atau username)
     const adminResult = await pool.query(
       `SELECT admin_id AS id, nama_admin AS nama, nomor_pegawai, status_aktif,
               (password = crypt($1, password)) AS password_valid
-       FROM admin WHERE nomor_pegawai = $2`,
+       FROM admin WHERE nomor_pegawai = $2 OR username = $2`,
       [password, identifier]
     )
     if (adminResult.rows.length > 0) {
@@ -24,12 +24,12 @@ export const login = async (req, res) => {
       role = 'admin'
     }
 
-    // 2. Cek tabel petugas (login dengan nomor_pegawai)
+    // 2. Cek tabel petugas (login dengan nomor_pegawai atau username)
     if (!user) {
       const petugasResult = await pool.query(
         `SELECT petugas_id AS id, nama_petugas AS nama, nomor_pegawai, status_aktif,
                 (password = crypt($1, password)) AS password_valid
-         FROM petugas WHERE nomor_pegawai = $2`,
+         FROM petugas WHERE nomor_pegawai = $2 OR username = $2`,
         [password, identifier]
       )
       if (petugasResult.rows.length > 0) {
@@ -54,12 +54,12 @@ export const login = async (req, res) => {
 
     // 4. User tidak ditemukan
     if (!user) {
-      return res.status(401).json({ message: 'Identifier atau password salah' })
+      return res.status(401).json({ message: 'Username/Nomor Pegawai atau password salah' })
     }
 
     // 5. Verifikasi password
     if (!user.password_valid) {
-      return res.status(401).json({ message: 'Identifier atau password salah' })
+      return res.status(401).json({ message: 'Username/Nomor Pegawai atau password salah' })
     }
 
     // 6. Cek status aktif
