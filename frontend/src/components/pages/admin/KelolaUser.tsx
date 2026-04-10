@@ -40,6 +40,28 @@ interface FormData {
   bus_id: string
 }
 
+interface AddFormData {
+  role: 'admin' | 'petugas' | 'driver'
+  nama: string
+  nomor_pegawai: string
+  username: string
+  email: string
+  armada_id: string
+  nama_kernet: string
+  bus_id: string
+}
+
+const EMPTY_ADD_FORM: AddFormData = {
+  role: 'admin',
+  nama: '',
+  nomor_pegawai: '',
+  username: '',
+  email: '',
+  armada_id: '',
+  nama_kernet: '',
+  bus_id: '',
+}
+
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Admin',
   petugas: 'Petugas',
@@ -70,11 +92,16 @@ export default function KelolaUser() {
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
 
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
   const [newPassword, setNewPassword] = useState('')
+  const [passwordModalTitle, setPasswordModalTitle] = useState('Password Berhasil Direset')
   const [saving, setSaving] = useState(false)
   const [busOptions, setBusOptions] = useState<BusOption[]>([])
+
+  const [addFormData, setAddFormData] = useState<AddFormData>(EMPTY_ADD_FORM)
+  const [addBusOptions, setAddBusOptions] = useState<BusOption[]>([])
 
   const [formData, setFormData] = useState<FormData>({
     nama: '',
@@ -201,10 +228,77 @@ export default function KelolaUser() {
         { method: 'PUT' }
       )
       setNewPassword(data.password_baru)
+      setPasswordModalTitle('Password Berhasil Direset')
       setShowModal(false)
       setShowResetModal(true)
     } catch (err: any) {
       alert(err.message ?? 'Gagal mereset password')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── Add ──────────────────────────────────────────────────────────────
+  const openAdd = () => {
+    setAddFormData(EMPTY_ADD_FORM)
+    setAddBusOptions([])
+    setShowAddModal(true)
+  }
+
+  const handleAdd = async () => {
+    const { role, nama, nomor_pegawai, username, email, armada_id, nama_kernet, bus_id } = addFormData
+
+    if (!nama || !username || !email) {
+      alert('Nama, username, dan email wajib diisi')
+      return
+    }
+    if (role !== 'driver' && !nomor_pegawai) {
+      alert('Nomor pegawai wajib diisi')
+      return
+    }
+    if (role !== 'admin' && !armada_id) {
+      alert('Armada wajib diisi')
+      return
+    }
+
+    setSaving(true)
+    try {
+      let body: Record<string, any>
+      let endpoint: string
+
+      if (role === 'admin') {
+        body = { nama_admin: nama, nomor_pegawai, username, email }
+        endpoint = '/api/users/admin'
+      } else if (role === 'petugas') {
+        body = { nama_petugas: nama, nomor_pegawai, username, email, armada_id: parseInt(armada_id) }
+        endpoint = '/api/users/petugas'
+      } else {
+        body = { nama_driver: nama, nama_kernet: nama_kernet || null, username, email, armada_id: parseInt(armada_id) }
+        endpoint = '/api/users/driver'
+      }
+
+      const result = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) })
+
+      // Assign bus jika driver dan bus dipilih
+      if (role === 'driver' && bus_id && result?.user?.id) {
+        try {
+          await apiFetch(`/api/users/driver/${result.user.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ bus_id: parseInt(bus_id) }),
+          })
+        } catch {
+          // bus assignment gagal, tidak kritis
+        }
+      }
+
+      await fetchUsers()
+      setSelectedUser({ id: result.user.id, nama: result.user.nama ?? nama, identifier: '', email, status_aktif: 'aktif', role })
+      setNewPassword(result.password_awal)
+      setPasswordModalTitle('User Berhasil Dibuat')
+      setShowAddModal(false)
+      setShowResetModal(true)
+    } catch (err: any) {
+      alert(err.message ?? 'Gagal menambahkan user')
     } finally {
       setSaving(false)
     }
@@ -239,6 +333,11 @@ export default function KelolaUser() {
             <option value="petugas">Petugas</option>
             <option value="driver">Supir</option>
           </select>
+
+          <button onClick={openAdd} className="btn-add-user">
+            <span>➕</span>
+            <span>Tambah User</span>
+          </button>
         </div>
 
         {/* State: loading / error / table */}
@@ -450,7 +549,6 @@ export default function KelolaUser() {
                             if (isOwn && isNonaktif) suffix = ' (Bus Anda - Nonaktif)'
                             else if (isTaken) suffix = ' (Terpakai)'
                             else if (isNonaktif) suffix = ' (Nonaktif)'
-                            else if (isOwn) suffix = ' (Bus Anda)'
 
                             return (
                               <option
@@ -496,6 +594,172 @@ export default function KelolaUser() {
           </div>
         )}
 
+        {/* ── Add Modal ── */}
+        {showAddModal && (
+          <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Tambah User Baru</h2>
+                <button onClick={() => setShowAddModal(false)} className="modal-close">✖️</button>
+              </div>
+
+              <div className="modal-body">
+                {/* Role selector */}
+                <div className="form-group">
+                  <label className="form-label">Role <span className="required">*</span></label>
+                  <select
+                    value={addFormData.role}
+                    onChange={e => setAddFormData({ ...EMPTY_ADD_FORM, role: e.target.value as any })}
+                    className="form-select"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="petugas">Petugas</option>
+                    <option value="driver">Supir</option>
+                  </select>
+                </div>
+
+                {/* Nama */}
+                <div className="form-group">
+                  <label className="form-label">Nama Lengkap <span className="required">*</span></label>
+                  <input
+                    type="text"
+                    value={addFormData.nama}
+                    onChange={e => setAddFormData({ ...addFormData, nama: e.target.value })}
+                    placeholder="Masukkan nama lengkap"
+                    className="form-input"
+                  />
+                </div>
+
+                {/* Nomor Pegawai — admin & petugas only */}
+                {addFormData.role !== 'driver' && (
+                  <div className="form-group">
+                    <label className="form-label">Nomor Pegawai <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      value={addFormData.nomor_pegawai}
+                      onChange={e => setAddFormData({ ...addFormData, nomor_pegawai: e.target.value })}
+                      placeholder="Contoh: NIP-001"
+                      className="form-input"
+                    />
+                  </div>
+                )}
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Username <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      value={addFormData.username}
+                      onChange={e => setAddFormData({ ...addFormData, username: e.target.value })}
+                      placeholder="Username login"
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Email <span className="required">*</span></label>
+                    <input
+                      type="email"
+                      value={addFormData.email}
+                      onChange={e => setAddFormData({ ...addFormData, email: e.target.value })}
+                      placeholder="email@example.com"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Armada — petugas & driver */}
+                {addFormData.role !== 'admin' && (
+                  <div className="form-group">
+                    <label className="form-label">Armada <span className="required">*</span></label>
+                    <select
+                      value={addFormData.armada_id}
+                      onChange={async e => {
+                        const newArmadaId = e.target.value
+                        setAddFormData({ ...addFormData, armada_id: newArmadaId, bus_id: '' })
+                        if (addFormData.role === 'driver' && newArmadaId) {
+                          try {
+                            const buses = await apiFetch(`/api/bus?armada_id=${newArmadaId}`)
+                            setAddBusOptions(buses ?? [])
+                          } catch {
+                            setAddBusOptions([])
+                          }
+                        }
+                      }}
+                      className="form-select"
+                    >
+                      <option value="">Pilih Armada</option>
+                      {ARMADA_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Driver-only fields */}
+                {addFormData.role === 'driver' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Nama Kernet (Opsional)</label>
+                      <input
+                        type="text"
+                        value={addFormData.nama_kernet}
+                        onChange={e => setAddFormData({ ...addFormData, nama_kernet: e.target.value })}
+                        placeholder="Kosongkan jika tidak ada kernet"
+                        className="form-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Bus</label>
+                      <select
+                        value={addFormData.bus_id}
+                        onChange={e => setAddFormData({ ...addFormData, bus_id: e.target.value })}
+                        className="form-select"
+                        disabled={!addFormData.armada_id}
+                      >
+                        <option value="">— Tanpa Bus —</option>
+                        {addBusOptions.map(bus => {
+                          const isTaken = bus.driver_id !== null
+                          const isNonaktif = bus.status_aktif === 'nonaktif'
+                          const isDisabled = isTaken || isNonaktif
+
+                          const prefix = isDisabled ? '🔴 ' : ''
+                          let suffix = ''
+                          if (isTaken) suffix = ' (Terpakai)'
+                          else if (isNonaktif) suffix = ' (Nonaktif)'
+
+                          return (
+                            <option
+                              key={bus.bus_id}
+                              value={bus.bus_id.toString()}
+                              disabled={isDisabled}
+                              style={{ color: isDisabled ? '#ef4444' : '#1e293b' }}
+                            >
+                              {prefix}{bus.kode_bus} - {bus.nopol}{suffix}
+                            </option>
+                          )
+                        })}
+                      </select>
+                      {!addFormData.armada_id && (
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                          Pilih armada terlebih dahulu
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button onClick={() => setShowAddModal(false)} className="btn-cancel">Batal</button>
+                <button onClick={handleAdd} disabled={saving} className="btn-save">
+                  {saving ? 'Menyimpan...' : 'Tambah User'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Delete Modal ── */}
         {showDeleteModal && selectedUser && (
           <div className="modal-overlay delete-modal" onClick={() => setShowDeleteModal(false)}>
@@ -524,7 +788,7 @@ export default function KelolaUser() {
           <div className="modal-overlay" onClick={() => setShowResetModal(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Password Berhasil Direset</h2>
+                <h2>{passwordModalTitle}</h2>
                 <button onClick={() => setShowResetModal(false)} className="modal-close">✖️</button>
               </div>
               <div className="modal-body">
