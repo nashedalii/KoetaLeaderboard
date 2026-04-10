@@ -27,7 +27,7 @@ export const login = async (req, res) => {
     // 2. Cek tabel petugas (login dengan nomor_pegawai atau username)
     if (!user) {
       const petugasResult = await pool.query(
-        `SELECT petugas_id AS id, nama_petugas AS nama, nomor_pegawai, status_aktif,
+        `SELECT petugas_id AS id, nama_petugas AS nama, nomor_pegawai, status_aktif, armada_id,
                 (password = crypt($1, password)) AS password_valid
          FROM petugas WHERE nomor_pegawai = $2 OR username = $2`,
         [password, identifier]
@@ -68,20 +68,22 @@ export const login = async (req, res) => {
     }
 
     // 7. Generate JWT
-    const token = jwt.sign(
-      { user_id: user.id, role },
-      process.env.JWT_SECRET,
-      { expiresIn: '8h' }
-    )
+    const jwtPayload = {
+      user_id: user.id,
+      role,
+      ...(user.armada_id && { armada_id: user.armada_id })
+    }
 
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        nama: user.nama,
-        role
-      }
-    })
+    const token = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '8h' })
+
+    const responseUser = {
+      id: user.id,
+      nama: user.nama,
+      role,
+      ...(user.armada_id && { armada_id: user.armada_id })
+    }
+
+    res.json({ token, user: responseUser })
 
   } catch (err) {
     console.error('Login error:', err)

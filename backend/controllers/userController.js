@@ -176,10 +176,12 @@ export const getAllUsers = async (req, res) => {
 
     const driverResult = await pool.query(
       `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
-              d.email, d.status_aktif, 'driver' AS role,
-              a.kode_armada, a.nama_armada
+              d.nama_kernet, d.email, d.status_aktif, 'driver' AS role,
+              a.armada_id, a.kode_armada, a.nama_armada,
+              b.bus_id, b.kode_bus, b.nopol
        FROM driver d
-       LEFT JOIN armada a ON d.armada_id = a.armada_id`
+       LEFT JOIN armada a ON d.armada_id = a.armada_id
+       LEFT JOIN bus b ON b.driver_id = d.driver_id`
     )
 
     const users = [
@@ -237,7 +239,7 @@ const TABLE_MAP = {
 
 export const updateUser = async (req, res) => {
   const { role, id } = req.params
-  const { nama, identifier, email, status_aktif, armada_id, nama_kernet } = req.body
+  const { nama, identifier, email, status_aktif, armada_id, nama_kernet, kode_bus, nopol } = req.body
 
   if (!VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: 'Role tidak valid. Gunakan: admin, petugas, driver' })
@@ -262,20 +264,51 @@ export const updateUser = async (req, res) => {
     values.push(nama_kernet)
   }
 
-  if (fields.length === 0) {
+  if (fields.length === 0 && kode_bus === undefined && nopol === undefined) {
     return res.status(400).json({ message: 'Tidak ada field yang diupdate' })
   }
 
-  values.push(id)
-
   try {
-    const result = await pool.query(
-      `UPDATE ${table} SET ${fields.join(', ')} WHERE ${idCol} = $${idx} RETURNING ${idCol} AS id, ${namaCol} AS nama, status_aktif`,
-      values
-    )
+    let result = { rows: [] }
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'User tidak ditemukan' })
+    if (fields.length > 0) {
+      values.push(id)
+      result = await pool.query(
+        `UPDATE ${table} SET ${fields.join(', ')} WHERE ${idCol} = $${idx} RETURNING ${idCol} AS id, ${namaCol} AS nama, status_aktif`,
+        values
+      )
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'User tidak ditemukan' })
+      }
+    }
+
+    // Update bus jika role driver dan ada field bus
+    if (role === 'driver' && (kode_bus !== undefined || nopol !== undefined)) {
+      const busFields = []
+      const busValues = []
+      let busIdx = 1
+
+      if (kode_bus !== undefined) { busFields.push(`kode_bus = $${busIdx++}`); busValues.push(kode_bus) }
+      if (nopol !== undefined)    { busFields.push(`nopol = $${busIdx++}`);    busValues.push(nopol) }
+
+      busValues.push(id)
+      await pool.query(
+        `UPDATE bus SET ${busFields.join(', ')} WHERE driver_id = $${busIdx}`,
+        busValues
+      )
+    }
+
+    const updatedUser = result.rows[0] ?? {}
+
+    if (result.rows.length === 0 && fields.length === 0) {
+      // Hanya update bus, tidak ada user row untuk di-return — fetch ulang
+      const refetch = await pool.query(
+        `SELECT ${idCol} AS id, ${namaCol} AS nama, status_aktif FROM ${table} WHERE ${idCol} = $1`,
+        [id]
+      )
+      if (refetch.rows.length === 0) return res.status(404).json({ message: 'User tidak ditemukan' })
+      return res.json({ message: 'User berhasil diupdate', user: { ...refetch.rows[0], role } })
     }
 
     res.json({
