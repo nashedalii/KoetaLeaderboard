@@ -19,109 +19,67 @@ export default function KonfigurasiPenilaian() {
     { id: 6, nama: 'Performa', bobot: 10 }
   ])
 
-  // Calculate total bobot
   const totalBobot = indikators.reduce((sum, ind) => sum + ind.bobot, 0)
-
-  // Check for low bobot
   const hasLowBobot = indikators.some(ind => ind.bobot > 0 && ind.bobot < 5)
-
-  // Check for empty names
   const hasEmptyNames = indikators.some(ind => !ind.nama.trim())
 
-  // Get status message
   const getStatusMessage = () => {
-    if (hasEmptyNames) {
-      return '⚠️ Ada nama indikator yang kosong'
-    } else if (hasLowBobot) {
-      return '⚠️ Ada bobot kurang dari 5%'
-    } else if (totalBobot === 100) {
-      return '✅ Siap disimpan'
-    } else if (totalBobot > 100) {
-      return '❌ Melebihi 100%'
-    } else {
-      return '⚠️ Belum mencapai 100%'
-    }
+    if (hasEmptyNames) return '⚠️ Ada nama indikator yang kosong'
+    if (hasLowBobot) return '⚠️ Ada bobot kurang dari 5%'
+    if (totalBobot === 100) return '✅ Siap disimpan'
+    if (totalBobot > 100) return '❌ Melebihi 100%'
+    return '⚠️ Belum mencapai 100%'
   }
 
-  // Get status class
   const getStatusClass = () => {
-    if (hasEmptyNames || hasLowBobot || totalBobot !== 100) {
-      return 'invalid'
-    }
+    if (hasEmptyNames || hasLowBobot || totalBobot !== 100) return 'invalid'
     return 'valid'
   }
 
-  // Get progress bar color based on total
   const getProgressColor = () => {
-    if (totalBobot === 100) return '#10b981' // green
-    if (totalBobot >= 80 && totalBobot < 100) return '#10b981' // green
-    if (totalBobot >= 40 && totalBobot < 80) return '#f59e0b' // orange/yellow
-    return '#ef4444' // red
+    if (totalBobot === 100) return '#10b981'
+    if (totalBobot >= 80 && totalBobot < 100) return '#10b981'
+    if (totalBobot >= 40 && totalBobot < 80) return '#f59e0b'
+    return '#ef4444'
   }
 
-  // Get progress percentage (max 100%)
-  const getProgressWidth = () => {
-    return Math.min(totalBobot, 100)
-  }
+  const getProgressWidth = () => Math.min(totalBobot, 100)
 
-  // Handle bobot change
   const handleBobotChange = (id: number, newBobot: string) => {
-    // Allow only digits
     const sanitized = newBobot.replace(/\D/g, '')
-    
-    // Convert to number
     let value = sanitized === '' ? 0 : parseInt(sanitized, 10)
-    
-    // Clamp to 0-100
     value = Math.max(0, Math.min(100, value))
-    
-    setIndikators(indikators.map(ind => 
-      ind.id === id ? { ...ind, bobot: value } : ind
-    ))
+    setIndikators(indikators.map(ind => ind.id === id ? { ...ind, bobot: value } : ind))
   }
 
-  // Handle add new indicator
   const handleAddIndicator = () => {
     const newId = Math.max(...indikators.map(ind => ind.id)) + 1
     setIndikators([...indikators, { id: newId, nama: '', bobot: 0 }])
   }
 
-  // Handle delete indicator
   const handleDeleteIndicator = (id: number) => {
     if (indikators.length > 1) {
       setIndikators(indikators.filter(ind => ind.id !== id))
     }
   }
 
-  // Handle indicator name change
   const handleNameChange = (id: number, newName: string) => {
-    setIndikators(indikators.map(ind => 
-      ind.id === id ? { ...ind, nama: newName } : ind
-    ))
+    setIndikators(indikators.map(ind => ind.id === id ? { ...ind, nama: newName } : ind))
   }
 
-  // Handle save
   const handleSave = () => {
     if (totalBobot !== 100) {
       alert('Total bobot harus 100% untuk menyimpan konfigurasi!')
       return
     }
-
-    // Check if all indicators have names
-    const hasEmptyName = indikators.some(ind => !ind.nama.trim())
-    if (hasEmptyName) {
+    if (indikators.some(ind => !ind.nama.trim())) {
       alert('Semua indikator harus memiliki nama!')
       return
     }
-
-    // Check minimal bobot 5%
-    const hasLowBobot = indikators.some(ind => ind.bobot > 0 && ind.bobot < 5)
-    if (hasLowBobot) {
-      alert('Setiap indikator harus memiliki bobot minimal 5% (atau 0% untuk menghapus)!')
+    if (indikators.some(ind => ind.bobot > 0 && ind.bobot < 5)) {
+      alert('Setiap indikator harus memiliki bobot minimal 5%!')
       return
     }
-
-    // Save logic here
     alert('Konfigurasi penilaian berhasil disimpan!')
     setIsEditMode(false)
   }
@@ -130,12 +88,11 @@ export default function KonfigurasiPenilaian() {
     <div className="dashboard-container">
       <div className="dashboard-content">
         <div className="page-header">
-          <h1 className="page-title">Konfigurasi Penilaian</h1>
+          <h1 className="page-title">Konfigurasi Bobot</h1>
           <p className="page-subtitle">Atur bobot penilaian untuk setiap indikator performa driver</p>
         </div>
 
       {!isEditMode ? (
-        // View Mode - Simple Table
         <div className="table-container">
           <table className="config-table">
             <thead>
@@ -143,7 +100,7 @@ export default function KonfigurasiPenilaian() {
                 <th style={{ width: '80px' }}>No</th>
                 <th>Indikator</th>
                 <th style={{ width: '150px' }}>Bobot (%)</th>
-                <th style={{ width: '180px' }}>Edit Penilaian</th>
+                <th style={{ width: '180px' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -154,11 +111,8 @@ export default function KonfigurasiPenilaian() {
                   <td className="text-center">{indikator.bobot}%</td>
                   <td className="text-center">
                     {index === 0 && (
-                      <button 
-                        onClick={() => setIsEditMode(true)}
-                        className="btn-edit-config"
-                      >
-                        ✏️ Edit Penilaian
+                      <button onClick={() => setIsEditMode(true)} className="btn-edit-config">
+                        ✏️ Edit Bobot
                       </button>
                     )}
                   </td>
@@ -168,7 +122,6 @@ export default function KonfigurasiPenilaian() {
           </table>
         </div>
       ) : (
-        // Edit Mode - Editable Table with Total
         <div className="edit-config-container">
           <div className="table-container">
             <div className="table-header-actions">
@@ -234,8 +187,6 @@ export default function KonfigurasiPenilaian() {
                     </td>
                   </tr>
                 ))}
-                
-                {/* Total Row */}
                 <tr className="total-row">
                   <td colSpan={2} className="text-right font-bold">Total Bobot</td>
                   <td className="text-center font-bold">
@@ -249,7 +200,6 @@ export default function KonfigurasiPenilaian() {
             </table>
           </div>
 
-          {/* Progress Bar */}
           <div className="progress-section">
             <div className="progress-header">
               <span className="progress-label">Total Bobot: {totalBobot}%</span>
@@ -258,12 +208,9 @@ export default function KonfigurasiPenilaian() {
               </span>
             </div>
             <div className="progress-bar-container">
-              <div 
+              <div
                 className="progress-bar-fill"
-                style={{ 
-                  width: `${getProgressWidth()}%`,
-                  backgroundColor: getProgressColor()
-                }}
+                style={{ width: `${getProgressWidth()}%`, backgroundColor: getProgressColor() }}
               >
                 <span className="progress-text">{totalBobot}%</span>
               </div>
@@ -275,19 +222,9 @@ export default function KonfigurasiPenilaian() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="config-actions">
-            <button 
-              onClick={() => setIsEditMode(false)}
-              className="btn-cancel"
-            >
-              Batal
-            </button>
-            <button 
-              onClick={handleSave}
-              className="btn-save-config"
-              disabled={totalBobot !== 100}
-            >
+            <button onClick={() => setIsEditMode(false)} className="btn-cancel">Batal</button>
+            <button onClick={handleSave} className="btn-save-config" disabled={totalBobot !== 100}>
               💾 Simpan Konfigurasi
             </button>
           </div>

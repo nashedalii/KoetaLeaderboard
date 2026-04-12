@@ -10,6 +10,7 @@ import AdminDashboard from '@/components/dashboard/AdminDashboard'
 import KelolaUser from '@/components/pages/admin/KelolaUser'
 import KelolaBus from '@/components/pages/admin/KelolaBus'
 import KonfigurasiPenilaian from '@/components/pages/admin/KonfigurasiPenilaian'
+import KonfigurasiPeriode from '@/components/pages/admin/KonfigurasiPeriode'
 import KategoriPenilaianAdmin from '@/components/pages/admin/KategoriPenilaianAdmin'
 import RankingPenilaian from '@/components/pages/admin/RankingPenilaian'
 import Analytics from '@/components/pages/admin/Analytics'
@@ -101,6 +102,9 @@ export default function Home() {
 
         case 'konfigurasi':
           return <KonfigurasiPenilaian />
+
+        case 'konfigurasi-periode':
+          return <KonfigurasiPeriode />
         
         case 'kategori-penilaian':
           return <KategoriPenilaianAdmin />

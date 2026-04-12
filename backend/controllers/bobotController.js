@@ -1,26 +1,5 @@
 import pool from '../config/db.js'
 
-// ── Helper: hitung total persentase dalam satu siklus ────────────────────
-async function getTotalPersentase(siklusId, excludeBobot_id = null) {
-  const result = await pool.query(
-    `SELECT COALESCE(SUM(persentase_bobot), 0) AS total
-     FROM bobot
-     WHERE siklus_id = $1
-       AND ($2::int IS NULL OR bobot_id != $2)`,
-    [siklusId, excludeBobot_id]
-  )
-  return parseFloat(result.rows[0].total)
-}
-
-// ── Helper: cek apakah bobot sudah dipakai di penilaian_detail ───────────
-async function isUsedInPenilaian(bobotId) {
-  const result = await pool.query(
-    'SELECT 1 FROM penilaian_detail WHERE bobot_id = $1 LIMIT 1',
-    [bobotId]
-  )
-  return result.rows.length > 0
-}
-
 // ── GET /api/bobot?siklus_id= ─────────────────────────────────────────────
 export const getAllBobot = async (req, res) => {
   const { siklus_id } = req.query
@@ -31,11 +10,10 @@ export const getAllBobot = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT b.*, a.nama_admin AS dibuat_oleh
-       FROM bobot b
-       LEFT JOIN admin a ON b.admin_id = a.admin_id
-       WHERE b.siklus_id = $1
-       ORDER BY b.bobot_id`,
+      `SELECT bobot_id, nama_bobot, persentase_bobot, deskripsi, status_aktif
+       FROM bobot
+       WHERE siklus_id = $1
+       ORDER BY bobot_id`,
       [siklus_id]
     )
 
@@ -43,8 +21,7 @@ export const getAllBobot = async (req, res) => {
 
     res.json({
       bobots: result.rows,
-      total_persentase: parseFloat(total.toFixed(2)),
-      sisa_persentase: parseFloat((100 - total).toFixed(2))
+      total_persentase: parseFloat(total.toFixed(2))
     })
   } catch (err) {
     console.error('Get all bobot error:', err)
@@ -52,133 +29,86 @@ export const getAllBobot = async (req, res) => {
   }
 }
 
-// ── POST /api/bobot ───────────────────────────────────────────────────────
-export const createBobot = async (req, res) => {
-  const { nama_bobot, persentase_bobot, deskripsi, siklus_id } = req.body
+// ── PUT /api/bobot/bulk ───────────────────────────────────────────────────
+// Ganti semua bobot dalam satu siklus sekaligus
+export const bulkUpdateBobot = async (req, res) => {
+  const { siklus_id, data } = req.body
   const admin_id = req.user.user_id
 
-  if (!nama_bobot || persentase_bobot === undefined || !siklus_id) {
-    return res.status(400).json({ message: 'nama_bobot, persentase_bobot, dan siklus_id wajib diisi' })
+  // Validasi input
+  if (!siklus_id) {
+    return res.status(400).json({ message: 'siklus_id wajib diisi' })
+  }
+  if (!Array.isArray(data) || data.length === 0) {
+    return res.status(400).json({ message: 'data bobot tidak boleh kosong' })
+  }
+  for (const item of data) {
+    if (!item.nama_bobot || item.persentase_bobot === undefined) {
+      return res.status(400).json({ message: 'Setiap bobot harus memiliki nama_bobot dan persentase_bobot' })
+    }
+    if (item.persentase_bobot <= 0 || item.persentase_bobot > 100) {
+      return res.status(400).json({ message: `Persentase "${item.nama_bobot}" harus antara 1 dan 100` })
+    }
   }
 
-  if (persentase_bobot <= 0 || persentase_bobot > 100) {
-    return res.status(400).json({ message: 'persentase_bobot harus antara 1 dan 100' })
+  // Validasi total = 100
+  const total = data.reduce((sum, item) => sum + parseFloat(item.persentase_bobot), 0)
+  if (Math.abs(total - 100) > 0.01) {
+    return res.status(400).json({
+      message: `Total persentase harus 100%. Saat ini: ${total.toFixed(2)}%`
+    })
   }
 
+  const client = await pool.connect()
   try {
     // Cek siklus ada
-    const siklusCheck = await pool.query(
+    const siklusCheck = await client.query(
       'SELECT 1 FROM siklus_penilaian WHERE siklus_id = $1', [siklus_id]
     )
     if (siklusCheck.rows.length === 0) {
       return res.status(404).json({ message: 'Siklus tidak ditemukan' })
     }
 
-    // Validasi total tidak melebihi 100
-    const totalSaatIni = await getTotalPersentase(siklus_id)
-    if (totalSaatIni + parseFloat(persentase_bobot) > 100) {
-      return res.status(400).json({
-        message: `Total persentase melebihi 100%. Sisa yang tersedia: ${(100 - totalSaatIni).toFixed(2)}%`
+    // Cek apakah sudah ada penilaian yang disubmit dalam siklus ini
+    const usedCheck = await client.query(
+      `SELECT 1 FROM penilaian pn
+       JOIN periode p ON pn.periode_id = p.periode_id
+       WHERE p.siklus_id = $1
+       LIMIT 1`,
+      [siklus_id]
+    )
+    if (usedCheck.rows.length > 0) {
+      return res.status(409).json({
+        message: 'Bobot tidak bisa diubah karena sudah ada penilaian yang disubmit dalam siklus ini'
       })
     }
 
-    const result = await pool.query(
-      `INSERT INTO bobot (nama_bobot, persentase_bobot, deskripsi, siklus_id, admin_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [nama_bobot, persentase_bobot, deskripsi || null, siklus_id, admin_id]
-    )
+    await client.query('BEGIN')
 
-    const totalBaru = totalSaatIni + parseFloat(persentase_bobot)
+    // Hapus semua bobot lama dalam siklus ini
+    await client.query('DELETE FROM bobot WHERE siklus_id = $1', [siklus_id])
 
-    res.status(201).json({
-      message: 'Bobot berhasil ditambahkan',
-      bobot: result.rows[0],
-      total_persentase: parseFloat(totalBaru.toFixed(2)),
-      sisa_persentase: parseFloat((100 - totalBaru).toFixed(2))
+    // Insert semua bobot baru
+    for (const item of data) {
+      await client.query(
+        `INSERT INTO bobot (nama_bobot, persentase_bobot, deskripsi, siklus_id, admin_id)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [item.nama_bobot, item.persentase_bobot, item.deskripsi || null, siklus_id, admin_id]
+      )
+    }
+
+    await client.query('COMMIT')
+
+    res.json({
+      message: `${data.length} bobot berhasil disimpan`,
+      jumlah_bobot: data.length,
+      total_persentase: 100
     })
   } catch (err) {
-    console.error('Create bobot error:', err)
+    await client.query('ROLLBACK')
+    console.error('Bulk update bobot error:', err)
     res.status(500).json({ message: 'Terjadi kesalahan server' })
-  }
-}
-
-// ── PUT /api/bobot/:id ────────────────────────────────────────────────────
-export const updateBobot = async (req, res) => {
-  const { id } = req.params
-  const { nama_bobot, persentase_bobot, deskripsi, status_aktif } = req.body
-
-  try {
-    // Cek bobot ada
-    const bobotResult = await pool.query('SELECT * FROM bobot WHERE bobot_id = $1', [id])
-    if (bobotResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Bobot tidak ditemukan' })
-    }
-    const bobot = bobotResult.rows[0]
-
-    // Cek apakah sudah dipakai di penilaian
-    if (await isUsedInPenilaian(id)) {
-      return res.status(409).json({ message: 'Bobot tidak bisa diubah karena sudah digunakan dalam penilaian' })
-    }
-
-    // Validasi total persentase (exclude bobot ini sendiri)
-    if (persentase_bobot !== undefined) {
-      if (persentase_bobot <= 0 || persentase_bobot > 100) {
-        return res.status(400).json({ message: 'persentase_bobot harus antara 1 dan 100' })
-      }
-      const totalTanpaIni = await getTotalPersentase(bobot.siklus_id, parseInt(id))
-      if (totalTanpaIni + parseFloat(persentase_bobot) > 100) {
-        return res.status(400).json({
-          message: `Total persentase melebihi 100%. Sisa yang tersedia: ${(100 - totalTanpaIni).toFixed(2)}%`
-        })
-      }
-    }
-
-    const fields = []
-    const values = []
-    let idx = 1
-
-    if (nama_bobot !== undefined)       { fields.push(`nama_bobot = $${idx++}`);       values.push(nama_bobot) }
-    if (persentase_bobot !== undefined) { fields.push(`persentase_bobot = $${idx++}`); values.push(persentase_bobot) }
-    if (deskripsi !== undefined)        { fields.push(`deskripsi = $${idx++}`);         values.push(deskripsi) }
-    if (status_aktif !== undefined)     { fields.push(`status_aktif = $${idx++}`);      values.push(status_aktif) }
-
-    if (fields.length === 0) {
-      return res.status(400).json({ message: 'Tidak ada field yang diupdate' })
-    }
-
-    values.push(id)
-    const result = await pool.query(
-      `UPDATE bobot SET ${fields.join(', ')} WHERE bobot_id = $${idx} RETURNING *`,
-      values
-    )
-
-    res.json({ message: 'Bobot berhasil diupdate', bobot: result.rows[0] })
-  } catch (err) {
-    console.error('Update bobot error:', err)
-    res.status(500).json({ message: 'Terjadi kesalahan server' })
-  }
-}
-
-// ── DELETE /api/bobot/:id ─────────────────────────────────────────────────
-export const deleteBobot = async (req, res) => {
-  const { id } = req.params
-
-  try {
-    const bobotResult = await pool.query('SELECT * FROM bobot WHERE bobot_id = $1', [id])
-    if (bobotResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Bobot tidak ditemukan' })
-    }
-
-    // Cek apakah sudah dipakai di penilaian
-    if (await isUsedInPenilaian(id)) {
-      return res.status(409).json({ message: 'Bobot tidak bisa dihapus karena sudah digunakan dalam penilaian' })
-    }
-
-    await pool.query('DELETE FROM bobot WHERE bobot_id = $1', [id])
-    res.json({ message: 'Bobot berhasil dihapus' })
-  } catch (err) {
-    console.error('Delete bobot error:', err)
-    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  } finally {
+    client.release()
   }
 }
