@@ -2778,6 +2778,136 @@ body {
   opacity: 0.6;
 }
 
+/* Siklus Selector */
+.siklus-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.siklus-selector-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.siklus-selector {
+  flex: 1;
+  max-width: 360px;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.siklus-selector:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(3, 30, 101, 0.1);
+}
+
+.siklus-selector:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Reminder Banner */
+.reminder-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+.reminder-banner-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Locked Banner */
+.locked-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #ef4444;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #7f1d1d;
+}
+
+/* Error Banner Config */
+.error-banner-config {
+  padding: 14px 18px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #dc2626;
+}
+
+/* Loading & Empty States */
+.loading-state {
+  padding: 48px;
+  text-align: center;
+  color: #64748b;
+  font-size: 15px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.empty-state-config {
+  padding: 48px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 15px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* No Bobot State */
+.no-bobot-container {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.no-bobot-text {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
 /* Responsive Design for Konfigurasi */
 @media (max-width: 1024px) {
   .table-header-actions {
