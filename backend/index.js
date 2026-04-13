@@ -9,6 +9,7 @@ import siklusRoutes from './routes/siklus.js'
 import periodeRoutes from './routes/periode.js'
 import bobotRoutes from './routes/bobot.js'
 import penilaianRoutes from './routes/penilaian.js'
+import validasiRoutes from './routes/validasi.js'
 import { authenticate, authorize } from './middleware/authMiddleware.js'
 
 dotenv.config()
@@ -26,6 +27,7 @@ app.use('/api/siklus', siklusRoutes)
 app.use('/api/periode', periodeRoutes)
 app.use('/api/bobot', bobotRoutes)
 app.use('/api/penilaian', penilaianRoutes)
+app.use('/api/validasi', validasiRoutes)
 
 // Test protected route
 app.get('/api/test-auth', authenticate, (req, res) => {
