@@ -55,36 +55,57 @@ export const setOverridePeriode = async (req, res) => {
 
 // ── GET /api/periode/aktif?siklus_id= ────────────────────────────────────
 // Hybrid: override dulu, fallback ke CURRENT_DATE
+// siklus_id opsional — jika tidak diisi, cari di semua siklus aktif
 export const getPeriodeAktif = async (req, res) => {
   const { siklus_id } = req.query
 
-  if (!siklus_id) {
-    return res.status(400).json({ message: 'siklus_id wajib diisi' })
-  }
-
   try {
-    const result = await pool.query(`
-      SELECT *
-      FROM periode
-      WHERE siklus_id = $1
-        AND (
-          is_override = true
-          OR (
-            NOT EXISTS (
-              SELECT 1 FROM periode
-              WHERE siklus_id = $1 AND is_override = true
-            )
-            AND CURRENT_DATE BETWEEN tanggal_mulai AND tanggal_selesai
-          )
-        )
-      LIMIT 1
-    `, [siklus_id])
+    let result
 
-    if (result.rows.length === 0) {
-      return res.json({ periode_aktif: null, message: 'Tidak ada periode aktif saat ini' })
+    if (siklus_id) {
+      result = await pool.query(`
+        SELECT p.*
+        FROM periode p
+        WHERE p.siklus_id = $1
+          AND (
+            p.is_override = true
+            OR (
+              NOT EXISTS (
+                SELECT 1 FROM periode
+                WHERE siklus_id = $1 AND is_override = true
+              )
+              AND CURRENT_DATE BETWEEN p.tanggal_mulai AND p.tanggal_selesai
+            )
+          )
+        LIMIT 1
+      `, [siklus_id])
+    } else {
+      // Tanpa siklus_id: cari di semua siklus yang status_siklus = 'aktif'
+      result = await pool.query(`
+        SELECT p.*
+        FROM periode p
+        JOIN siklus_penilaian s ON p.siklus_id = s.siklus_id
+        WHERE s.status_siklus = 'aktif'
+          AND (
+            p.is_override = true
+            OR (
+              NOT EXISTS (
+                SELECT 1 FROM periode p2
+                WHERE p2.siklus_id = p.siklus_id AND p2.is_override = true
+              )
+              AND CURRENT_DATE BETWEEN p.tanggal_mulai AND p.tanggal_selesai
+            )
+          )
+        ORDER BY p.tanggal_mulai DESC
+        LIMIT 1
+      `)
     }
 
-    res.json({ periode_aktif: result.rows[0] })
+    if (result.rows.length === 0) {
+      return res.json({ periode: null, message: 'Tidak ada periode aktif saat ini' })
+    }
+
+    res.json({ periode: result.rows[0] })
   } catch (err) {
     console.error('Get periode aktif error:', err)
     res.status(500).json({ message: 'Terjadi kesalahan server' })

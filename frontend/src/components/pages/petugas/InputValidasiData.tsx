@@ -1,257 +1,413 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { dummyUsers, User } from '@/data/dummyUsers'
-import { useDataContext } from '@/contexts/DataContext'
+import { useState, useEffect, useCallback } from 'react'
 
-const bobotPenilaian = {
-  etikaAdab: 25,
-  disiplin: 20,
-  loyalitas: 20,
-  skillMengemudi: 15,
-  perawatanKendaraan: 10,
-  performa: 10
+interface Driver {
+  id: number
+  nama: string
+  nama_kernet: string | null
+  armada_id: number
+  kode_armada: string
+  nama_armada: string
+  bus_id: number | null
+  kode_bus: string | null
+  nopol: string | null
+  bus_status: string | null
+  status_aktif: string
 }
 
-type StatusInput = 'belum-diisi' | 'pending' | 'approved'
-
-interface DriverInputStatus extends User {
-  statusInput: StatusInput
-  lastInputMonth?: string
-}
-
-interface FormData {
-  driverId: number
+interface Periode {
+  periode_id: number
+  siklus_id: number
+  nama_periode: string
   bulan: string
-  etikaAdab: string
-  disiplin: string
-  loyalitas: string
-  skillMengemudi: string
-  perawatanKendaraan: string
-  performa: string
-  buktiFiles: File[]
-  catatan: string
+  tahun: number
+  tanggal_mulai: string
+  tanggal_selesai: string
+  is_aktif: boolean
+}
+
+interface Bobot {
+  bobot_id: number
+  nama_bobot: string
+  persentase_bobot: number
+}
+
+interface PenilaianStatus {
+  penilaian_id: number
+  driver_id: number
+  skor_total: number
+  status_validasi: 'pending' | 'approved' | 'rejected'
+  note_validasi: string | null
+}
+
+interface DetailInput {
+  bobot_id: number
+  nilai: string
+}
+
+interface FotoState {
+  file: File | null
+  preview: string | null
+}
+
+type ModalMode = 'input' | 'edit' | 'detail'
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || ''
+
+const getToken = () => {
+  try { return JSON.parse(localStorage.getItem('auth') || '{}').token || '' }
+  catch { return '' }
+}
+
+const getUser = () => {
+  try { return JSON.parse(localStorage.getItem('auth') || '{}').user || {} }
+  catch { return {} }
 }
 
 export default function InputValidasiData() {
-  const { addPendingValidation } = useDataContext()
-  const [selectedDriver, setSelectedDriver] = useState<DriverInputStatus | null>(null)
+  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [periodeAktif, setPeriodeAktif] = useState<Periode | null>(null)
+  const [bobotList, setBobotList] = useState<Bobot[]>([])
+  const [penilaianList, setPenilaianList] = useState<PenilaianStatus[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | StatusInput>('all')
-  const [selectedMonth, setSelectedMonth] = useState('April/2025')
-  const [petugasArmada] = useState<'A' | 'B' | 'C'>('A')
-  const [refreshKey, setRefreshKey] = useState(0) // Add this to trigger re-render
-  
-  // Form states
-  const [showInputForm, setShowInputForm] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  // Modal states
+  const [modalMode, setModalMode] = useState<ModalMode>('input')
+  const [showModal, setShowModal] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
-  const [showDetailModal, setShowDetailModal] = useState(false)
-  const [formData, setFormData] = useState<FormData>({
-    driverId: 0,
-    bulan: 'April/2025',
-    etikaAdab: '',
-    disiplin: '',
-    loyalitas: '',
-    skillMengemudi: '',
-    perawatanKendaraan: '',
-    performa: '',
-    buktiFiles: [],
-    catatan: ''
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
+  const [selectedPenilaianId, setSelectedPenilaianId] = useState<number | null>(null)
+
+  // Form states
+  const [details, setDetails] = useState<DetailInput[]>([])
+  const [catatan, setCatatan] = useState('')
+  const [foto, setFoto] = useState<FotoState>({ file: null, preview: null })
+  const [existingFoto, setExistingFoto] = useState<{ bukti_id: number; file_path: string; nama_file: string } | null>(null)
+  const [deleteFotoOnSave, setDeleteFotoOnSave] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Detail view state
+  const [detailData, setDetailData] = useState<any>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Driver | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const user = getUser()
+  const armada_id = user.armada_id
+
+  // ── Fetch initial data ────────────────────────────────────────────────
+  const fetchPenilaian = useCallback(async (periode_id: number) => {
+    try {
+      const res = await fetch(`${apiBase}/api/penilaian?periode_id=${periode_id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      const data = await res.json()
+      setPenilaianList(data.penilaians || [])
+    } catch {
+      // silent fail — penilaian list non-critical
+    }
+  }, [])
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const headers = { Authorization: `Bearer ${getToken()}` }
+
+        // Fetch drivers, periode aktif secara paralel
+        const [driversRes, periodeRes] = await Promise.all([
+          fetch(`${apiBase}/api/users/driver?armada_id=${armada_id}`, { headers }),
+          fetch(`${apiBase}/api/periode/aktif`, { headers })
+        ])
+
+        const driversData = await driversRes.json()
+        const periodeData = await periodeRes.json()
+
+        const driverList: Driver[] = (driversData || []).filter((d: Driver) => d.status_aktif === 'aktif')
+        setDrivers(driverList)
+
+        const periode = periodeData.periode || null
+        setPeriodeAktif(periode)
+
+        if (periode) {
+          // Fetch bobot dari siklus_id periode aktif
+          if (periode.siklus_id) {
+            const bobotRes = await fetch(`${apiBase}/api/bobot?siklus_id=${periode.siklus_id}`, { headers })
+            const bobotData = await bobotRes.json()
+            setBobotList(bobotData.bobots || [])
+          }
+
+          await fetchPenilaian(periode.periode_id)
+        }
+      } catch (err) {
+        setError('Gagal memuat data. Pastikan koneksi internet tersedia.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (armada_id) fetchAll()
+  }, [armada_id, fetchPenilaian])
+
+  // ── Helpers ───────────────────────────────────────────────────────────
+  const getPenilaianDriver = (driver_id: number) =>
+    penilaianList.find(p => p.driver_id === driver_id) || null
+
+  const getDriverStatus = (driver_id: number) => {
+    const p = getPenilaianDriver(driver_id)
+    if (!p) return 'belum-diisi'
+    return p.status_validasi
+  }
+
+  const calculateTotal = (currentDetails: DetailInput[]) => {
+    let total = 0
+    for (const d of currentDetails) {
+      const bobot = bobotList.find(b => b.bobot_id === d.bobot_id)
+      if (bobot && d.nilai !== '') {
+        total += (parseFloat(d.nilai) * parseFloat(String(bobot.persentase_bobot))) / 100
+      }
+    }
+    return Math.round(total * 100) / 100
+  }
+
+  const getEmptyDetails = () =>
+    bobotList.map(b => ({ bobot_id: b.bobot_id, nilai: '' }))
+
+  // ── Validation ────────────────────────────────────────────────────────
+  const getValidationErrors = () => {
+    const errors: string[] = []
+    for (const d of details) {
+      const bobot = bobotList.find(b => b.bobot_id === d.bobot_id)
+      const nama = bobot?.nama_bobot || `Indikator ${d.bobot_id}`
+      if (d.nilai === '' || d.nilai === null) {
+        errors.push(`${nama} belum diisi`)
+      } else if (parseFloat(d.nilai) < 0 || parseFloat(d.nilai) > 100) {
+        errors.push(`${nama} harus antara 0 dan 100`)
+      }
+    }
+    return errors
+  }
+
+  // ── Open modals ───────────────────────────────────────────────────────
+  const handleOpenInput = (driver: Driver) => {
+    if (!periodeAktif) return
+    if (!driver.bus_id) {
+      alert(`Driver ${driver.nama} belum memiliki bus aktif. Hubungi admin.`)
+      return
+    }
+    setSelectedDriver(driver)
+    setModalMode('input')
+    setDetails(getEmptyDetails())
+    setCatatan('')
+    setFoto({ file: null, preview: null })
+    setExistingFoto(null)
+    setDeleteFotoOnSave(false)
+    setSubmitError(null)
+    setShowModal(true)
+  }
+
+  const handleOpenEdit = async (driver: Driver) => {
+    const penilaian = getPenilaianDriver(driver.id)
+    if (!penilaian) return
+    setSelectedDriver(driver)
+    setSelectedPenilaianId(penilaian.penilaian_id)
+    setModalMode('edit')
+    setSubmitError(null)
+    setFoto({ file: null, preview: null })
+    setDeleteFotoOnSave(false)
+
+    try {
+      const res = await fetch(`${apiBase}/api/penilaian/${penilaian.penilaian_id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      const data = await res.json()
+      setDetails(data.details.map((d: any) => ({
+        bobot_id: d.bobot_id,
+        nilai: String(d.nilai)
+      })))
+      setCatatan(data.catatan_petugas || '')
+      setExistingFoto(data.fotos?.[0] || null)
+    } catch {
+      setDetails(getEmptyDetails())
+      setCatatan('')
+      setExistingFoto(null)
+    }
+    setShowModal(true)
+  }
+
+  const handleOpenDetail = async (driver: Driver) => {
+    const penilaian = getPenilaianDriver(driver.id)
+    if (!penilaian) return
+    setSelectedDriver(driver)
+    setModalMode('detail')
+    setDetailData(null)
+
+    try {
+      const res = await fetch(`${apiBase}/api/penilaian/${penilaian.penilaian_id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      const data = await res.json()
+      setDetailData(data)
+    } catch {
+      setDetailData(null)
+    }
+    setShowModal(true)
+  }
+
+  // ── Delete penilaian ──────────────────────────────────────────────────
+  const handleDelete = (driver: Driver) => {
+    setConfirmDelete(driver)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete || !periodeAktif) return
+    const penilaian = getPenilaianDriver(confirmDelete.id)
+    if (!penilaian) return
+
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`${apiBase}/api/penilaian/${penilaian.penilaian_id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setSubmitError(data.message || 'Gagal menghapus penilaian')
+      } else {
+        await fetchPenilaian(periodeAktif.periode_id)
+      }
+    } catch {
+      setSubmitError('Gagal menghapus penilaian')
+    } finally {
+      setIsDeleting(false)
+      setConfirmDelete(null)
+    }
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!selectedDriver || !periodeAktif) return
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      if (modalMode === 'input') {
+        // POST penilaian baru
+        const res = await fetch(`${apiBase}/api/penilaian`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify({
+            driver_id: selectedDriver.id,
+            periode_id: periodeAktif.periode_id,
+            catatan_petugas: catatan || null,
+            details: details.map(d => ({ bobot_id: d.bobot_id, nilai: parseFloat(d.nilai) }))
+          })
+        })
+        const result = await res.json()
+        if (!res.ok) throw new Error(result.message)
+
+        // Upload foto jika ada
+        if (foto.file) {
+          const formData = new FormData()
+          formData.append('foto', foto.file)
+          await fetch(`${apiBase}/api/penilaian/${result.penilaian_id}/foto`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getToken()}` },
+            body: formData
+          })
+        }
+      } else {
+        // PUT update penilaian
+        const res = await fetch(`${apiBase}/api/penilaian/${selectedPenilaianId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify({
+            catatan_petugas: catatan || null,
+            details: details.map(d => ({ bobot_id: d.bobot_id, nilai: parseFloat(d.nilai) }))
+          })
+        })
+        const result = await res.json()
+        if (!res.ok) throw new Error(result.message)
+
+        // Hapus foto lama jika ditandai
+        if (deleteFotoOnSave && existingFoto) {
+          await fetch(`${apiBase}/api/penilaian/foto/${existingFoto.bukti_id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${getToken()}` }
+          })
+        }
+
+        // Upload foto baru jika ada
+        if (foto.file) {
+          const formData = new FormData()
+          formData.append('foto', foto.file)
+          await fetch(`${apiBase}/api/penilaian/${selectedPenilaianId}/foto`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getToken()}` },
+            body: formData
+          })
+        }
+      }
+
+      setShowModal(false)
+      setShowPreview(false)
+      await fetchPenilaian(periodeAktif.periode_id)
+    } catch (err: any) {
+      setSubmitError(err.message || 'Gagal menyimpan penilaian')
+      setShowPreview(false)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // ── Filter drivers ────────────────────────────────────────────────────
+  const filteredDrivers = drivers.filter(driver => {
+    const matchSearch =
+      driver.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (driver.nama_kernet || '').toLowerCase().includes(searchQuery.toLowerCase())
+    const status = getDriverStatus(driver.id)
+    const matchStatus = statusFilter === 'all' || status === statusFilter
+    return matchSearch && matchStatus
   })
 
-  const availableMonths = ['Januari/2025', 'Februari/2025', 'Maret/2025', 'April/2025']
-
-  // Determine status for each driver based on selected month
-  const getDriverStatus = (driver: User, month: string): StatusInput => {
-    // Check if driver has data for selected month
-    const hasData = driver.skorBulanan?.some(sb => sb.bulan === month)
-    
-    if (!hasData) return 'belum-diisi'
-    
-    // Simulate: April is pending, previous months are approved
-    if (month === 'April/2025') return 'pending'
-    
-    return 'approved'
-  }
-
-  const driversWithStatus = useMemo(() => {
-    return dummyUsers
-      .filter((u) => u.role === 'Supir' && u.namaArmada === petugasArmada)
-      .map((d) => {
-        const statusInput = getDriverStatus(d, selectedMonth)
-        const lastInputMonth = d.skorBulanan?.[d.skorBulanan.length - 1]?.bulan
-        return { ...d, statusInput, lastInputMonth } as DriverInputStatus
-      })
-  }, [petugasArmada, selectedMonth, refreshKey]) // Add refreshKey to dependencies
-
-  const filteredDrivers = useMemo(() => {
-    return driversWithStatus.filter((driver) => {
-      const matchesSearch =
-        driver.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (driver.namaKernet || '').toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesStatus = statusFilter === 'all' ? true : driver.statusInput === statusFilter
-      return matchesSearch && matchesStatus
-    })
-  }, [driversWithStatus, searchQuery, statusFilter])
-
-  const getStatusBadge = (status: StatusInput) => {
+  // ── Status badge ──────────────────────────────────────────────────────
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'approved':
-        return { className: 'status-badge approved', text: '✓ Disetujui', icon: '✓' }
-      case 'pending':
-        return { className: 'status-badge pending', text: '⏳ Pending', icon: '⏳' }
-      case 'belum-diisi':
-        return { className: 'status-badge not-filled', text: '⚠️ Belum Diisi', icon: '⚠️' }
+      case 'approved':  return { className: 'status-badge approved',   text: '✓ Disetujui' }
+      case 'pending':   return { className: 'status-badge pending',    text: '⏳ Pending' }
+      case 'rejected':  return { className: 'status-badge rejected',   text: '✕ Ditolak' }
+      default:          return { className: 'status-badge not-filled', text: '⚠️ Belum Diisi' }
     }
   }
 
-  const handleOpenInputForm = (driver: DriverInputStatus) => {
-    setSelectedDriver(driver)
-    setFormData({
-      driverId: driver.id,
-      bulan: selectedMonth,
-      etikaAdab: '',
-      disiplin: '',
-      loyalitas: '',
-      skillMengemudi: '',
-      perawatanKendaraan: '',
-      performa: '',
-      buktiFiles: [],
-      catatan: ''
-    })
-    setShowInputForm(true)
+  const validationErrors = getValidationErrors()
+  const totalSkor = calculateTotal(details)
+
+  // ── Loading / Error state ─────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-content">
+          <div className="loading-state">Memuat data...</div>
+        </div>
+      </div>
+    )
   }
 
-  const handleFormChange = (field: keyof FormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files)
-      setFormData(prev => ({ ...prev, buktiFiles: [...prev.buktiFiles, ...files] }))
-    }
-  }
-
-  const handleRemoveFile = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      buktiFiles: prev.buktiFiles.filter((_, i) => i !== index)
-    }))
-  }
-
-  const calculateTotal = () => {
-    const total =
-      ((parseFloat(formData.etikaAdab) || 0) * bobotPenilaian.etikaAdab) / 100 +
-      ((parseFloat(formData.disiplin) || 0) * bobotPenilaian.disiplin) / 100 +
-      ((parseFloat(formData.loyalitas) || 0) * bobotPenilaian.loyalitas) / 100 +
-      ((parseFloat(formData.skillMengemudi) || 0) * bobotPenilaian.skillMengemudi) / 100 +
-      ((parseFloat(formData.perawatanKendaraan) || 0) * bobotPenilaian.perawatanKendaraan) / 100 +
-      ((parseFloat(formData.performa) || 0) * bobotPenilaian.performa) / 100
-    return Math.round(total * 10) / 10
-  }
-
-  const handlePreview = () => {
-    setShowPreview(true)
-  }
-
-  const handleSubmit = () => {
-    if (!selectedDriver) return
-    
-    // Get current logged in petugas from localStorage or default
-    const currentUserEmail = localStorage.getItem('userEmail') || 'suryadi@dishub.aceh.go.id'
-    const petugas = dummyUsers.find(u => u.role === 'Petugas' && u.email === currentUserEmail)
-    
-    if (!petugas) {
-      // Fallback to first petugas if current user not found
-      const fallbackPetugas = dummyUsers.find(u => u.role === 'Petugas')
-      if (!fallbackPetugas) {
-        alert('Error: Tidak ada data petugas!')
-        return
-      }
-      console.log('Using fallback petugas:', fallbackPetugas.nama)
-    }
-    
-    const finalPetugas = petugas || dummyUsers.find(u => u.role === 'Petugas')!
-    
-    // Add to pending validations via context
-    const skorData = {
-      etikaAdab: parseFloat(formData.etikaAdab) || 0,
-      disiplin: parseFloat(formData.disiplin) || 0,
-      loyalitas: parseFloat(formData.loyalitas) || 0,
-      skillMengemudi: parseFloat(formData.skillMengemudi) || 0,
-      perawatanKendaraan: parseFloat(formData.perawatanKendaraan) || 0,
-      performa: parseFloat(formData.performa) || 0
-    }
-    
-    const totalSkor = Math.round((
-      (skorData.etikaAdab * bobotPenilaian.etikaAdab) / 100 +
-      (skorData.disiplin * bobotPenilaian.disiplin) / 100 +
-      (skorData.loyalitas * bobotPenilaian.loyalitas) / 100 +
-      (skorData.skillMengemudi * bobotPenilaian.skillMengemudi) / 100 +
-      (skorData.perawatanKendaraan * bobotPenilaian.perawatanKendaraan) / 100 +
-      (skorData.performa * bobotPenilaian.performa) / 100
-    ) * 10) / 10
-    
-    const validationData = {
-      driverId: selectedDriver.id,
-      bulan: selectedMonth,
-      petugas: finalPetugas,
-      skor: skorData,
-      totalSkor,
-      catatanPetugas: formData.catatan || undefined,
-      buktiFiles: formData.buktiFiles
-    }
-    
-    console.log('Submitting validation data:', validationData)
-    addPendingValidation(validationData)
-    console.log('After addPendingValidation called')
-    
-    // Also add to dummyUsers for local status display
-    const driverIndex = dummyUsers.findIndex(u => u.id === selectedDriver.id)
-    if (driverIndex !== -1) {
-      const newScore = {
-        bulan: selectedMonth,
-        skor: skorData
-      }
-      
-      if (!dummyUsers[driverIndex].skorBulanan) {
-        dummyUsers[driverIndex].skorBulanan = []
-      }
-      
-      const existingScoreIndex = dummyUsers[driverIndex].skorBulanan!.findIndex(
-        s => s.bulan === selectedMonth
-      )
-      
-      if (existingScoreIndex >= 0) {
-        dummyUsers[driverIndex].skorBulanan![existingScoreIndex] = newScore
-      } else {
-        dummyUsers[driverIndex].skorBulanan!.push(newScore)
-      }
-    }
-    
-    console.log('Submit data:', formData)
-    alert(`Data untuk ${selectedDriver?.nama} bulan ${selectedMonth} berhasil disubmit!\nStatus: Menunggu approval admin.`)
-    setShowInputForm(false)
-    setShowPreview(false)
-    setSelectedDriver(null)
-    
-    // Trigger re-render to update status
-    setRefreshKey(prev => prev + 1)
-  }
-
-  const handleSaveDraft = () => {
-    console.log('Save draft:', formData)
-    alert('Draft berhasil disimpan!')
-  }
-
-  const handleViewDetail = (driver: DriverInputStatus) => {
-    setSelectedDriver(driver)
-    setShowDetailModal(true)
-  }
-
-  const getDriverScoreForMonth = (driver: User, month: string) => {
-    return driver.skorBulanan?.find(sb => sb.bulan === month)
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <div className="dashboard-content">
+          <div className="error-banner-config">{error}</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -260,9 +416,27 @@ export default function InputValidasiData() {
         <div className="page-header">
           <div>
             <h1 className="page-title">Input & Validasi Data</h1>
-            <p className="page-subtitle">Input penilaian driver dan kirim untuk persetujuan admin</p>
+            <p className="page-subtitle">
+              {periodeAktif
+                ? `Periode aktif: ${periodeAktif.nama_periode}`
+                : 'Tidak ada periode aktif saat ini'}
+            </p>
           </div>
         </div>
+
+        {!periodeAktif && (
+          <div className="reminder-banner">
+            <span>⚠️</span>
+            <span>Tidak ada periode aktif. Hubungi admin untuk mengaktifkan periode penilaian.</span>
+          </div>
+        )}
+
+        {periodeAktif && bobotList.length === 0 && (
+          <div className="reminder-banner">
+            <span>⚠️</span>
+            <span>Bobot penilaian belum dikonfigurasi oleh admin untuk siklus ini.</span>
+          </div>
+        )}
 
         {/* Summary & Controls */}
         <div className="input-controls">
@@ -271,98 +445,107 @@ export default function InputValidasiData() {
               <span className="summary-icon">✓</span>
               <div>
                 <p className="summary-label">Disetujui</p>
-                <p className="summary-value">{driversWithStatus.filter(d => d.statusInput === 'approved').length}</p>
+                <p className="summary-value">{drivers.filter(d => getDriverStatus(d.id) === 'approved').length}</p>
               </div>
             </div>
             <div className="summary-item pending">
               <span className="summary-icon">⏳</span>
               <div>
                 <p className="summary-label">Pending</p>
-                <p className="summary-value">{driversWithStatus.filter(d => d.statusInput === 'pending').length}</p>
+                <p className="summary-value">{drivers.filter(d => getDriverStatus(d.id) === 'pending').length}</p>
               </div>
             </div>
             <div className="summary-item not-filled">
               <span className="summary-icon">⚠️</span>
               <div>
                 <p className="summary-label">Belum Diisi</p>
-                <p className="summary-value">{driversWithStatus.filter(d => d.statusInput === 'belum-diisi').length}</p>
+                <p className="summary-value">{drivers.filter(d => getDriverStatus(d.id) === 'belum-diisi').length}</p>
+              </div>
+            </div>
+            <div className="summary-item rejected">
+              <span className="summary-icon">✕</span>
+              <div>
+                <p className="summary-label">Ditolak</p>
+                <p className="summary-value">{drivers.filter(d => getDriverStatus(d.id) === 'rejected').length}</p>
               </div>
             </div>
           </div>
 
           <div className="input-filters">
-            <select
-              className="filter-select month-select"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
-              {availableMonths.map(month => (
-                <option key={month} value={month}>{month}</option>
-              ))}
-            </select>
-
             <input
               className="search-input"
               placeholder="🔍 Cari driver..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
-
             <select
               className="filter-select"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={e => setStatusFilter(e.target.value)}
             >
               <option value="all">Semua Status</option>
               <option value="approved">Disetujui</option>
               <option value="pending">Pending</option>
+              <option value="rejected">Ditolak</option>
               <option value="belum-diisi">Belum Diisi</option>
             </select>
           </div>
         </div>
 
-        {/* Driver Cards Grid */}
+        {/* Driver Cards */}
         <div className="driver-grid">
-          {filteredDrivers.map((driver) => {
-            const statusBadge = getStatusBadge(driver.statusInput)
+          {filteredDrivers.map(driver => {
+            const status = getDriverStatus(driver.id)
+            const badge = getStatusBadge(status)
+            const penilaian = getPenilaianDriver(driver.id)
+
             return (
               <div key={driver.id} className="driver-card input-card">
                 <div className="driver-card-header">
                   <div>
                     <h3 className="driver-name">{driver.nama}</h3>
-                    <p className="muted small">Kernet: {driver.namaKernet || '-'}</p>
+                    <p className="muted small">Kernet: {driver.nama_kernet || '-'}</p>
                   </div>
-                  <div className="driver-right">
-                    <span className="armada-badge">Armada {driver.namaArmada}</span>
-                  </div>
+                  <span className="armada-badge">{driver.kode_armada}</span>
                 </div>
 
                 <div className="driver-card-body">
+                  <p className="muted small">
+                    Bus: <strong>{driver.kode_bus ? `${driver.kode_bus} — ${driver.nopol}` : '—'}</strong>
+                  </p>
                   <div className="status-row">
-                    <span className={statusBadge.className}>{statusBadge.text}</span>
+                    <span className={badge.className}>{badge.text}</span>
+                    {penilaian && (
+                      <span className="skor-preview">Skor: <strong>{penilaian.skor_total}</strong></span>
+                    )}
                   </div>
-
-                  <p className="muted small">Bulan: <strong>{selectedMonth}</strong></p>
+                  {status === 'rejected' && penilaian?.note_validasi && (
+                    <p className="rejected-note">Alasan: {penilaian.note_validasi}</p>
+                  )}
 
                   <div className="card-actions">
-                    {driver.statusInput === 'belum-diisi' && (
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => handleOpenInputForm(driver)}
-                      >
+                    {status === 'belum-diisi' && periodeAktif && bobotList.length > 0 && (
+                      <button className="btn btn-primary" onClick={() => handleOpenInput(driver)}>
                         📝 Input Data
                       </button>
                     )}
-                    {driver.statusInput === 'pending' && (
+                    {(status === 'pending' || status === 'rejected') && (
                       <>
-                        <button className="btn btn-secondary" onClick={() => handleOpenInputForm(driver)}>
+                        <button className="btn btn-secondary" onClick={() => handleOpenEdit(driver)}>
                           ✏️ Edit
                         </button>
-                        <button className="btn btn-outline" onClick={() => handleViewDetail(driver)}>👁️ Lihat</button>
+                        <button className="btn btn-outline" onClick={() => handleOpenDetail(driver)}>
+                          👁️ Lihat
+                        </button>
+                        <button className="btn btn-danger-outline" onClick={() => handleDelete(driver)}>
+                          🗑️
+                        </button>
                       </>
                     )}
-                    {driver.statusInput === 'approved' && (
-                      <button className="btn btn-outline" onClick={() => handleViewDetail(driver)}>👁️ Lihat Detail</button>
+                    {status === 'approved' && (
+                      <button className="btn btn-outline" onClick={() => handleOpenDetail(driver)}>
+                        👁️ Lihat Detail
+                      </button>
                     )}
                   </div>
                 </div>
@@ -379,126 +562,178 @@ export default function InputValidasiData() {
           </div>
         )}
 
-        {/* Input Form Modal */}
-        {showInputForm && selectedDriver && !showPreview && (
-          <div className="modal-overlay" onClick={() => setShowInputForm(false)}>
-            <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+        {/* ── Input / Edit Modal ── */}
+        {showModal && selectedDriver && !showPreview && (modalMode === 'input' || modalMode === 'edit') && (
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content modal-large" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
-                  <h2 className="modal-title">Input Penilaian Driver</h2>
-                  <p className="modal-subtitle">{selectedDriver.nama} - {selectedMonth}</p>
+                  <h2 className="modal-title">
+                    {modalMode === 'input' ? 'Input Penilaian Driver' : 'Edit Penilaian Driver'}
+                  </h2>
+                  <p className="modal-subtitle">
+                    {selectedDriver.nama} — {periodeAktif?.nama_periode}
+                  </p>
                 </div>
-                <button className="modal-close" onClick={() => setShowInputForm(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
               </div>
 
               <div className="modal-body">
-                <form className="input-form">
-                  {/* Scoring inputs */}
-                  <div className="form-section">
-                    <h3 className="form-section-title">Penilaian Kinerja</h3>
-                    <div className="form-grid">
-                      {[
-                        { key: 'etikaAdab', label: 'Etika & Adab', bobot: 25 },
-                        { key: 'disiplin', label: 'Disiplin', bobot: 20 },
-                        { key: 'loyalitas', label: 'Loyalitas', bobot: 20 },
-                        { key: 'skillMengemudi', label: 'Skill Mengemudi', bobot: 15 },
-                        { key: 'perawatanKendaraan', label: 'Perawatan Kendaraan', bobot: 10 },
-                        { key: 'performa', label: 'Performa', bobot: 10 }
-                      ].map(item => (
-                        <div key={item.key} className="form-group">
+                {submitError && (
+                  <div className="error-banner-config" style={{ marginBottom: '16px' }}>{submitError}</div>
+                )}
+
+                {/* Penilaian Kinerja */}
+                <div className="form-section">
+                  <h3 className="form-section-title">Penilaian Kinerja</h3>
+                  <div className="form-grid">
+                    {bobotList.map(bobot => {
+                      const detail = details.find(d => d.bobot_id === bobot.bobot_id)
+                      const nilai = detail?.nilai ?? ''
+                      const isEmpty = nilai === ''
+                      const isInvalid = nilai !== '' && (parseFloat(nilai) < 0 || parseFloat(nilai) > 100)
+
+                      return (
+                        <div key={bobot.bobot_id} className="form-group">
                           <label className="form-label">
-                            {item.label} <span className="badge-bobot">{item.bobot}%</span>
+                            {bobot.nama_bobot}{' '}
+                            <span className="badge-bobot">{bobot.persentase_bobot}%</span>
                           </label>
                           <input
-                            type="number"
-                            className="form-input"
-                            min="0"
-                            max="100"
-                            value={(formData as any)[item.key]}
-                            onChange={(e) => handleFormChange(item.key as keyof FormData, e.target.value)}
-                            placeholder="0-100"
+                            type="text"
+                            inputMode="decimal"
+                            className={`form-input ${isEmpty || isInvalid ? 'input-error' : ''}`}
+                            value={nilai}
+                            onChange={e => {
+                              const raw = e.target.value
+                              // Hanya izinkan angka dan satu titik desimal
+                              const sanitized = raw
+                                .replace(/[^0-9.]/g, '')
+                                .replace(/^(\d*\.?\d*).*$/, '$1')
+                              // Cegah lebih dari satu titik desimal
+                              const parts = sanitized.split('.')
+                              const val = parts.length > 2
+                                ? parts[0] + '.' + parts.slice(1).join('')
+                                : sanitized
+                              setDetails(prev =>
+                                prev.map(d => d.bobot_id === bobot.bobot_id
+                                  ? { ...d, nilai: val }
+                                  : d
+                                )
+                              )
+                            }}
+                            placeholder="0–100"
                           />
+                          {isEmpty && (
+                            <span className="field-warning">⚠️ {bobot.nama_bobot} belum diisi</span>
+                          )}
+                          {isInvalid && (
+                            <span className="field-warning">⚠️ Nilai harus antara 0 dan 100</span>
+                          )}
                         </div>
-                      ))}
-                    </div>
-
-                    <div className="total-score-preview">
-                      <span>Total Skor Tertimbang:</span>
-                      <strong className="total-value">{calculateTotal()}</strong>
-                    </div>
+                      )
+                    })}
                   </div>
 
-                  {/* Upload bukti */}
-                  <div className="form-section">
-                    <h3 className="form-section-title">
-                      Bukti Pendukung <span style={{ color: '#ef4444', fontSize: '0.9em' }}>*opsional</span>
-                    </h3>
-                    <div className="upload-area">
+                  <div className="total-score-preview">
+                    <span>Total Skor Tertimbang:</span>
+                    <strong className="total-value">{totalSkor}</strong>
+                  </div>
+                </div>
+
+                {/* Upload Foto */}
+                <div className="form-section">
+                  <h3 className="form-section-title">
+                    Bukti Pendukung <span style={{ color: '#94a3b8', fontSize: '0.85em' }}>opsional</span>
+                  </h3>
+
+                  {/* Foto existing saat edit */}
+                  {existingFoto && !deleteFotoOnSave && (
+                    <div className="existing-foto">
+                      <span>📎 {existingFoto.nama_file}</span>
+                      <button
+                        type="button"
+                        className="btn-remove"
+                        onClick={() => setDeleteFotoOnSave(true)}
+                      >
+                        ✕ Hapus
+                      </button>
+                    </div>
+                  )}
+
+                  {(!existingFoto || deleteFotoOnSave) && !foto.file && (
+                    <>
                       <input
                         type="file"
-                        id="file-upload"
-                        multiple
-                        accept="image/*,.pdf"
-                        onChange={handleFileUpload}
+                        id="foto-upload"
+                        accept="image/jpeg,image/png,image/webp"
                         style={{ display: 'none' }}
+                        onChange={e => {
+                          const file = e.target.files?.[0] || null
+                          if (file) {
+                            setFoto({ file, preview: URL.createObjectURL(file) })
+                          }
+                        }}
                       />
-                      <label htmlFor="file-upload" className="upload-label">
+                      <label htmlFor="foto-upload" className="upload-label">
                         <span className="upload-icon">📎</span>
-                        <span>Klik untuk upload foto/dokumen</span>
-                        <span className="upload-hint">PNG, JPG, PDF (Max 5MB per file)</span>
+                        <span>Klik untuk upload foto</span>
+                        <span className="upload-hint">JPEG, PNG, WebP — Maks 2MB</span>
                       </label>
-                    </div>
+                    </>
+                  )}
 
-                    {formData.buktiFiles.length > 0 && (
-                      <div className="uploaded-files">
-                        {formData.buktiFiles.map((file, idx) => (
-                          <div key={idx} className="file-item">
-                            <span className="file-name">📄 {file.name}</span>
-                            <button
-                              type="button"
-                              className="btn-remove"
-                              onClick={() => handleRemoveFile(idx)}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
+                  {foto.file && (
+                    <div className="uploaded-files">
+                      <div className="file-item">
+                        <span className="file-name">📄 {foto.file.name}</span>
+                        <button
+                          type="button"
+                          className="btn-remove"
+                          onClick={() => setFoto({ file: null, preview: null })}
+                        >
+                          ✕
+                        </button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Catatan */}
-                  <div className="form-section">
-                    <h3 className="form-section-title">
-                      Catatan Tambahan <span style={{ color: '#ef4444', fontSize: '0.9em' }}>*opsional</span>
-                    </h3>
-                    <textarea
-                      className="form-textarea"
-                      rows={4}
-                      placeholder="Tambahkan catatan atau keterangan tambahan..."
-                      value={formData.catatan}
-                      onChange={(e) => handleFormChange('catatan', e.target.value)}
-                    />
-                  </div>
-                </form>
+                {/* Catatan */}
+                <div className="form-section">
+                  <h3 className="form-section-title">
+                    Catatan Tambahan <span style={{ color: '#94a3b8', fontSize: '0.85em' }}>opsional</span>
+                  </h3>
+                  <textarea
+                    className="form-textarea"
+                    rows={3}
+                    placeholder="Tambahkan catatan atau keterangan tambahan..."
+                    value={catatan}
+                    onChange={e => setCatatan(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-outline" onClick={handleSaveDraft}>
-                  💾 Simpan Draft
+                <button className="btn btn-outline" onClick={() => setShowModal(false)}>
+                  Batal
                 </button>
-                <button className="btn btn-primary" onClick={handlePreview}>
-                  👁️ Preview & Submit
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowPreview(true)}
+                  disabled={validationErrors.length > 0}
+                >
+                  👁️ Preview &amp; Submit
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Preview Modal */}
+        {/* ── Preview Modal ── */}
         {showPreview && selectedDriver && (
           <div className="modal-overlay" onClick={() => setShowPreview(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <h2 className="modal-title">Preview Data Sebelum Submit</h2>
                 <button className="modal-close" onClick={() => setShowPreview(false)}>✕</button>
@@ -509,22 +744,10 @@ export default function InputValidasiData() {
                   <h3>Informasi Driver</h3>
                   <table className="preview-table">
                     <tbody>
-                      <tr>
-                        <td><strong>Nama Driver:</strong></td>
-                        <td>{selectedDriver.nama}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Kernet:</strong></td>
-                        <td>{selectedDriver.namaKernet || '-'}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Armada:</strong></td>
-                        <td>Armada {selectedDriver.namaArmada}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Bulan:</strong></td>
-                        <td>{formData.bulan}</td>
-                      </tr>
+                      <tr><td><strong>Nama Driver</strong></td><td>{selectedDriver.nama}</td></tr>
+                      <tr><td><strong>Kernet</strong></td><td>{selectedDriver.nama_kernet || '—'}</td></tr>
+                      <tr><td><strong>Bus</strong></td><td>{selectedDriver.kode_bus ? `${selectedDriver.kode_bus} — ${selectedDriver.nopol}` : '—'}</td></tr>
+                      <tr><td><strong>Periode</strong></td><td>{periodeAktif?.nama_periode}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -533,164 +756,158 @@ export default function InputValidasiData() {
                   <h3>Hasil Penilaian</h3>
                   <table className="preview-table">
                     <tbody>
-                      <tr>
-                        <td><strong>Etika & Adab (25%):</strong></td>
-                        <td>{formData.etikaAdab}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Disiplin (20%):</strong></td>
-                        <td>{formData.disiplin}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Loyalitas (20%):</strong></td>
-                        <td>{formData.loyalitas}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Skill Mengemudi (15%):</strong></td>
-                        <td>{formData.skillMengemudi}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Perawatan Kendaraan (10%):</strong></td>
-                        <td>{formData.perawatanKendaraan}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Performa (10%):</strong></td>
-                        <td>{formData.performa}</td>
-                      </tr>
+                      {details.map(d => {
+                        const bobot = bobotList.find(b => b.bobot_id === d.bobot_id)
+                        return (
+                          <tr key={d.bobot_id}>
+                            <td><strong>{bobot?.nama_bobot} ({bobot?.persentase_bobot}%)</strong></td>
+                            <td>{d.nilai}</td>
+                          </tr>
+                        )
+                      })}
                       <tr className="total-row">
-                        <td><strong>Total Skor Tertimbang:</strong></td>
-                        <td><strong className="total-score">{calculateTotal()}</strong></td>
+                        <td><strong>Total Skor Tertimbang</strong></td>
+                        <td><strong className="total-score">{totalSkor}</strong></td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                {formData.buktiFiles.length > 0 && (
+                {foto.file && (
                   <div className="preview-section">
-                    <h3>Bukti Pendukung</h3>
-                    <ul className="file-list">
-                      {formData.buktiFiles.map((file, idx) => (
-                        <li key={idx}>📄 {file.name}</li>
-                      ))}
-                    </ul>
+                    <h3>Bukti Foto</h3>
+                    <p>📄 {foto.file.name}</p>
                   </div>
                 )}
 
-                {formData.catatan && (
+                {catatan && (
                   <div className="preview-section">
                     <h3>Catatan</h3>
-                    <p className="preview-note">{formData.catatan}</p>
+                    <p className="preview-note">{catatan}</p>
                   </div>
                 )}
 
                 <div className="preview-warning">
-                  <strong>⚠️ Perhatian:</strong> Data yang sudah disubmit akan menunggu persetujuan dari Admin.
-                  Pastikan semua data sudah benar sebelum submit.
+                  <strong>⚠️ Perhatian:</strong> Data yang sudah disubmit akan menunggu persetujuan Admin.
+                  Pastikan semua data sudah benar.
                 </div>
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-outline" onClick={() => setShowPreview(false)}>
+                <button className="btn btn-outline" onClick={() => setShowPreview(false)} disabled={isSubmitting}>
                   ← Kembali Edit
                 </button>
-                <button className="btn btn-primary" onClick={handleSubmit}>
-                  ✓ Submit ke Admin
+                <button className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? 'Menyimpan...' : '✓ Submit ke Admin'}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Detail Modal - View approved/pending data */}
-        {showDetailModal && selectedDriver && (
-          <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
-            <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+        {/* ── Detail Modal ── */}
+        {showModal && selectedDriver && modalMode === 'detail' && (
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content modal-large" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
                   <h2 className="modal-title">Detail Penilaian Driver</h2>
-                  <p className="modal-subtitle">{selectedDriver.nama} - {selectedMonth}</p>
+                  <p className="modal-subtitle">{selectedDriver.nama} — {periodeAktif?.nama_periode}</p>
                 </div>
-                <button className="modal-close" onClick={() => setShowDetailModal(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
               </div>
 
               <div className="modal-body">
-                {(() => {
-                  const scoreData = getDriverScoreForMonth(selectedDriver, selectedMonth)
-                  
-                  if (!scoreData) {
-                    return (
-                      <div className="empty-state">
-                        <p>Tidak ada data untuk bulan ini</p>
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <>
-                      <div className="preview-section">
-                        <h3>Data Penilaian</h3>
-                        <table className="preview-table">
-                          <tbody>
-                            <tr>
-                              <td><strong>Etika & Adab (25%):</strong></td>
-                              <td>{scoreData.skor.etikaAdab}</td>
-                            </tr>
-                            <tr>
-                              <td><strong>Disiplin (20%):</strong></td>
-                              <td>{scoreData.skor.disiplin}</td>
-                            </tr>
-                            <tr>
-                              <td><strong>Loyalitas (20%):</strong></td>
-                              <td>{scoreData.skor.loyalitas}</td>
-                            </tr>
-                            <tr>
-                              <td><strong>Skill Mengemudi (15%):</strong></td>
-                              <td>{scoreData.skor.skillMengemudi}</td>
-                            </tr>
-                            <tr>
-                              <td><strong>Perawatan Kendaraan (10%):</strong></td>
-                              <td>{scoreData.skor.perawatanKendaraan}</td>
-                            </tr>
-                            <tr>
-                              <td><strong>Performa (10%):</strong></td>
-                              <td>{scoreData.skor.performa}</td>
-                            </tr>
-                            <tr className="total-row">
-                              <td><strong>Total Skor Tertimbang:</strong></td>
-                              <td><strong className="total-score">{
-                                Math.round((
-                                  (scoreData.skor.etikaAdab * bobotPenilaian.etikaAdab) / 100 +
-                                  (scoreData.skor.disiplin * bobotPenilaian.disiplin) / 100 +
-                                  (scoreData.skor.loyalitas * bobotPenilaian.loyalitas) / 100 +
-                                  (scoreData.skor.skillMengemudi * bobotPenilaian.skillMengemudi) / 100 +
-                                  (scoreData.skor.perawatanKendaraan * bobotPenilaian.perawatanKendaraan) / 100 +
-                                  (scoreData.skor.performa * bobotPenilaian.performa) / 100
-                                ) * 10) / 10
-                              }</strong></td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="preview-section">
-                        <h3>Status</h3>
-                        <p>
-                          {selectedDriver.statusInput === 'approved' && (
-                            <span className="status-badge approved">✓ Disetujui Admin</span>
+                {!detailData ? (
+                  <div className="loading-state">Memuat detail...</div>
+                ) : (
+                  <>
+                    <div className="preview-section">
+                      <h3>Informasi Driver</h3>
+                      <table className="preview-table">
+                        <tbody>
+                          <tr><td><strong>Bus</strong></td><td>{detailData.kode_bus} — {detailData.nopol}</td></tr>
+                          <tr><td><strong>Petugas</strong></td><td>{detailData.nama_petugas}</td></tr>
+                          <tr><td><strong>Status</strong></td><td>
+                            <span className={getStatusBadge(detailData.status_validasi).className}>
+                              {getStatusBadge(detailData.status_validasi).text}
+                            </span>
+                          </td></tr>
+                          {detailData.note_validasi && (
+                            <tr><td><strong>Catatan Admin</strong></td><td className="rejected-note">{detailData.note_validasi}</td></tr>
                           )}
-                          {selectedDriver.statusInput === 'pending' && (
-                            <span className="status-badge pending">⏳ Menunggu Persetujuan</span>
-                          )}
-                        </p>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="preview-section">
+                      <h3>Hasil Penilaian</h3>
+                      <table className="preview-table">
+                        <tbody>
+                          {detailData.details?.map((d: any) => (
+                            <tr key={d.penilaian_detail_id}>
+                              <td><strong>{d.nama_bobot} ({d.persentase_bobot}%)</strong></td>
+                              <td>{d.nilai}</td>
+                            </tr>
+                          ))}
+                          <tr className="total-row">
+                            <td><strong>Total Skor Tertimbang</strong></td>
+                            <td><strong className="total-score">{detailData.skor_total}</strong></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {detailData.fotos?.length > 0 && (
+                      <div className="preview-section">
+                        <h3>Bukti Foto</h3>
+                        <a href={detailData.fotos[0].file_path} target="_blank" rel="noreferrer" className="btn btn-outline">
+                          📎 Lihat Foto
+                        </a>
                       </div>
-                    </>
-                  )
-                })()}
+                    )}
+
+                    {detailData.catatan_petugas && (
+                      <div className="preview-section">
+                        <h3>Catatan</h3>
+                        <p className="preview-note">{detailData.catatan_petugas}</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="modal-footer">
-                <button className="btn btn-outline" onClick={() => setShowDetailModal(false)}>
-                  Tutup
+                <button className="btn btn-outline" onClick={() => setShowModal(false)}>Tutup</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Confirm Delete Modal ── */}
+        {confirmDelete && (
+          <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
+            <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+              <div className="confirm-modal-icon">🗑️</div>
+              <h3 className="confirm-modal-title">Hapus Penilaian?</h3>
+              <p className="confirm-modal-desc">
+                Penilaian <strong>{confirmDelete.nama}</strong> akan dihapus permanen.
+                Data tidak dapat dikembalikan.
+              </p>
+              <div className="confirm-modal-actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setConfirmDelete(null)}
+                  disabled={isDeleting}
+                >
+                  Batal
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
                 </button>
               </div>
             </div>

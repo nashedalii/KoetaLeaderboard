@@ -379,7 +379,18 @@ export const deletePenilaian = async (req, res) => {
       return res.status(403).json({ message: 'Penilaian yang sudah disetujui tidak dapat dihapus' })
     }
 
-    // CASCADE akan hapus penilaian_detail dan bukti_foto
+    // Hapus file foto dari Supabase Storage sebelum delete DB
+    const fotoResult = await pool.query(
+      'SELECT file_path FROM bukti_foto WHERE penilaian_id = $1', [id]
+    )
+    for (const foto of fotoResult.rows) {
+      const relativePath = foto.file_path.split('/bukti-foto/')[1]
+      if (relativePath) {
+        await supabase.storage.from('bukti-foto').remove([relativePath])
+      }
+    }
+
+    // CASCADE hapus penilaian_detail dan bukti_foto dari DB
     await pool.query('DELETE FROM penilaian WHERE penilaian_id = $1', [id])
 
     res.json({ message: 'Penilaian berhasil dihapus' })

@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.get('/',      authenticate, authorize('admin'), getAllBobot)
+router.get('/',      authenticate, authorize('admin', 'petugas'), getAllBobot)
 router.put('/bulk',  authenticate, authorize('admin'), bulkUpdateBobot)
 
 export default router
