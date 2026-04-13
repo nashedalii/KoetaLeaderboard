@@ -7629,6 +7629,25 @@ body {
   }
 }
 
+/* ── General Banners ───────────────────────────────────────────────── */
+.error-banner {
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.success-banner {
+  padding: 0.75rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #15803d;
+  font-size: 0.875rem;
+}
+
 /* ── Confirm Delete Modal ──────────────────────────────────────────── */
 .confirm-modal {
   background: #ffffff;
