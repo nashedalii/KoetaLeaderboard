@@ -69,6 +69,9 @@ export default function KonfigurasiPenilaian() {
   const [saving, setSaving]                   = useState(false)
   const [form, setForm] = useState({ nama_siklus: '', tanggal_mulai: '', tanggal_selesai: '' })
 
+  const [confirmDelete, setConfirmDelete] = useState<Siklus | null>(null)
+  const [deleting, setDeleting]           = useState(false)
+
   // ── Fetch siklus ──────────────────────────────────────────────────────────
   const fetchSikluses = async () => {
     try {
@@ -136,6 +139,21 @@ export default function KonfigurasiPenilaian() {
       alert(err.message ?? 'Gagal membuat siklus')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // ── Delete siklus ─────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!confirmDelete) return
+    setDeleting(true)
+    try {
+      await apiFetch(`/api/siklus/${confirmDelete.siklus_id}`, { method: 'DELETE' })
+      setConfirmDelete(null)
+      await fetchSikluses()
+    } catch (err: any) {
+      alert(err.message ?? 'Gagal menghapus siklus')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -285,10 +303,15 @@ export default function KonfigurasiPenilaian() {
                           {cfg.label}
                         </span>
                       </td>
-                      <td>
+                      <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <button onClick={() => openDetail(s)} className="btn-edit">
                           📋 Detail
                         </button>
+                        {s.status_display === 'belum_dimulai' && (
+                          <button onClick={() => setConfirmDelete(s)} className="btn-delete">
+                            🗑️ Hapus
+                          </button>
+                        )}
                       </td>
                     </tr>
                   )
@@ -298,6 +321,27 @@ export default function KonfigurasiPenilaian() {
             {sikluses.length === 0 && (
               <div className="no-data"><p>Belum ada siklus penilaian</p></div>
             )}
+          </div>
+        )}
+
+        {/* ── Confirm Delete Modal ── */}
+        {confirmDelete && (
+          <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
+            <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+              <div className="confirm-modal-icon">🗑️</div>
+              <h3 className="confirm-modal-title">Hapus Siklus?</h3>
+              <p className="confirm-modal-desc">
+                Siklus <strong>{confirmDelete.nama_siklus}</strong> beserta semua periode dan bobot di dalamnya akan dihapus permanen. Data tidak dapat dikembalikan.
+              </p>
+              <div className="confirm-modal-actions">
+                <button className="btn btn-outline" onClick={() => setConfirmDelete(null)} disabled={deleting}>
+                  Batal
+                </button>
+                <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

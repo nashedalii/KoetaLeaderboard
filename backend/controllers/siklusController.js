@@ -108,6 +108,42 @@ export const getSiklusById = async (req, res) => {
   }
 }
 
+// ── DELETE /api/siklus/:id ───────────────────────────────────────────────
+export const deleteSiklus = async (req, res) => {
+  const { id } = req.params
+
+  const client = await pool.connect()
+  try {
+    const siklusResult = await client.query(
+      'SELECT * FROM siklus_penilaian WHERE siklus_id = $1', [id]
+    )
+    if (siklusResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Siklus tidak ditemukan' })
+    }
+    const siklus = siklusResult.rows[0]
+
+    // Hanya bisa hapus jika belum mulai
+    const today = new Date().toISOString().split('T')[0]
+    if (siklus.tanggal_mulai <= today) {
+      return res.status(400).json({ message: 'Siklus yang sudah berjalan atau selesai tidak dapat dihapus' })
+    }
+
+    await client.query('BEGIN')
+    await client.query('DELETE FROM bobot   WHERE siklus_id = $1', [id])
+    await client.query('DELETE FROM periode WHERE siklus_id = $1', [id])
+    await client.query('DELETE FROM siklus_penilaian WHERE siklus_id = $1', [id])
+    await client.query('COMMIT')
+
+    res.json({ message: `Siklus "${siklus.nama_siklus}" berhasil dihapus` })
+  } catch (err) {
+    await client.query('ROLLBACK')
+    console.error('Delete siklus error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  } finally {
+    client.release()
+  }
+}
+
 // ── POST /api/siklus ─────────────────────────────────────────────────────
 export const createSiklus = async (req, res) => {
   const { nama_siklus, tanggal_mulai, tanggal_selesai } = req.body
