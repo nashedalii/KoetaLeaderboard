@@ -4,8 +4,8 @@ import { authenticate, authorize } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.get('/',    authenticate, authorize('admin'), getAllSiklus)
-router.get('/:id', authenticate, authorize('admin'), getSiklusById)
+router.get('/',    authenticate, authorize('admin', 'petugas', 'driver'), getAllSiklus)
+router.get('/:id', authenticate, authorize('admin', 'petugas', 'driver'), getSiklusById)
 router.post('/',   authenticate, authorize('admin'), createSiklus)
 
 export default router
