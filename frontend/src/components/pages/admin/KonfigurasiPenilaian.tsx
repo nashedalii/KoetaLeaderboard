@@ -121,6 +121,8 @@ export default function KonfigurasiPenilaian() {
   }, [selectedSiklusId, siklusList, fetchBobot])
 
   // Reminder banner: siklus aktif + bobot belum selesai + masih dalam 30 hari pertama siklus
+  const isSiklusStarted = !!selectedSiklus && selectedSiklus.status_display !== 'belum_dimulai'
+
   const reminderDeadline = (() => {
     if (!selectedSiklus || selectedSiklus.status_display !== 'Berjalan') return null
     const totalBobot = indikators.reduce((sum, ind) => sum + ind.bobot, 0)
@@ -287,11 +289,26 @@ export default function KonfigurasiPenilaian() {
           </div>
         )}
 
-        {/* Locked Banner */}
+        {/* Locked Banner (penilaian sudah ada) */}
         {isLocked && (
           <div className="locked-banner">
             <span>🔒</span>
             <span>Bobot tidak dapat diubah karena sudah ada penilaian yang disubmit dalam siklus ini.</span>
+          </div>
+        )}
+
+        {/* Siklus Started Banner */}
+        {isSiklusStarted && !isLocked && (
+          <div className="locked-banner">
+            <span>🔒</span>
+            <span>
+              Siklus <strong>{selectedSiklus?.nama_siklus}</strong> sudah{' '}
+              <strong>
+                {selectedSiklus?.status_display === 'berjalan' ? 'berjalan' :
+                 selectedSiklus?.status_display === 'selesai' ? 'selesai' : 'dinonaktifkan'}
+              </strong>{' '}
+              — bobot tidak dapat diubah agar tidak mempengaruhi hasil ranking.
+            </span>
           </div>
         )}
 
@@ -326,7 +343,7 @@ export default function KonfigurasiPenilaian() {
                     ))}
                   </tbody>
                 </table>
-                {!isLocked && (
+                {!isLocked && !isSiklusStarted && (
                   <div style={{ padding: '16px' }}>
                     <button onClick={handleStartEdit} className="btn-edit-config">
                       ✏️ Edit Bobot
@@ -337,7 +354,7 @@ export default function KonfigurasiPenilaian() {
             ) : (
               <div className="no-bobot-container">
                 <p className="no-bobot-text">Belum ada bobot yang dikonfigurasi untuk siklus ini.</p>
-                {!isLocked && (
+                {!isLocked && !isSiklusStarted && (
                   <button onClick={handleStartEdit} className="btn-save-config">
                     ➕ Konfigurasi Bobot Baru
                   </button>
