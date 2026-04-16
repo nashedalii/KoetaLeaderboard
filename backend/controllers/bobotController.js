@@ -29,6 +29,43 @@ export const getAllBobot = async (req, res) => {
   }
 }
 
+// ── PUT /api/bobot/:id/deskripsi ─────────────────────────────────────────
+// Update rubric penilaian untuk satu bobot
+export const updateBobotDeskripsi = async (req, res) => {
+  const { id } = req.params
+  const { deskripsi } = req.body
+
+  if (!Array.isArray(deskripsi) || deskripsi.length === 0) {
+    return res.status(400).json({ message: 'deskripsi harus berupa array rubric yang tidak kosong' })
+  }
+
+  for (const item of deskripsi) {
+    if (!item.range || !item.deskripsi) {
+      return res.status(400).json({ message: 'Setiap rubric harus memiliki field range dan deskripsi' })
+    }
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE bobot SET deskripsi = $1 WHERE bobot_id = $2
+       RETURNING bobot_id, nama_bobot, persentase_bobot, deskripsi`,
+      [JSON.stringify(deskripsi), id]
+    )
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Bobot tidak ditemukan' })
+    }
+
+    res.json({
+      message: 'Rubric berhasil disimpan',
+      bobot: result.rows[0]
+    })
+  } catch (err) {
+    console.error('Update bobot deskripsi error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+}
+
 // ── PUT /api/bobot/bulk ───────────────────────────────────────────────────
 // Ganti semua bobot dalam satu siklus sekaligus
 export const bulkUpdateBobot = async (req, res) => {
