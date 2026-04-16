@@ -1,130 +1,95 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { apiFetch } from '@/utils/api'
 
-interface KategoriItem {
-  id: number
-  nama: string
-  bobot: number
-  warna: string
+interface RubricItem {
+  range: string
   deskripsi: string
-  poin: string[]
 }
 
-export default function KategoriPenilaian() {
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+interface Bobot {
+  bobot_id: number
+  nama_bobot: string
+  persentase_bobot: number | string
+  deskripsi: string | null
+}
 
-  const kategoriData: KategoriItem[] = [
-    {
-      id: 1,
-      nama: 'Etika & Adab',
-      bobot: 25,
-      warna: '#ef4444',
-      deskripsi: 'Mengacu pada perilaku dan tata krama sopan santun pramudi saat bekerja, seperti:',
-      poin: [
-        'Cara berinteraksi dengan penumpang (ramah, sopan, tidak kasar)',
-        'Etika dalam berbicara, dan bersikap',
-        'Menghormati sesama petugas, atasan, dan penumpang',
-        'Tidak menunjukkan sikap arogan atau tidak profesional',
-        'Sapaan & komunikasi: menyapa, nada suara tenang, tidak membentak',
-        'Membantu penumpang rentan: difabel, lansia, ibu hamil, anak-anak',
-        'Tidak diskriminatif: layanan setara tanpa memandang latar belakang',
-        'Mengelola konflik: menenangkan situasi, tidak terpancing emosi',
-        'Kepatuhan etika layanan: tidak merokok, tidak makan/minum saat mengemudi, tidak memutar musik keras'
-      ]
-    },
-    {
-      id: 2,
-      nama: 'Kedisiplinan',
-      bobot: 20,
-      warna: '#f59e0b',
-      deskripsi: 'Menilai kedisiplinan pramudi dalam hal:',
-      poin: [
-        'Datang tepat waktu sesuai jadwal kerja',
-        'Menaati jam operasional yang ditentukan',
-        'Tidak boleh absen tanpa keterangan yang jelas',
-        'Ketepatan hadir/berangkat (on-time start/finish, headway)',
-        'Kepatuhan SOP: pemeriksaan pra-berangkat, prosedur berhenti/naik-turun',
-        'Kepatuhan jadwal istirahat & pergantian kru',
-        'Administrasi: isi logbook, serah terima unit'
-      ]
-    },
-    {
-      id: 3,
-      nama: 'Loyalitas',
-      bobot: 20,
-      warna: '#10b981',
-      deskripsi: 'Mengukur seberapa besar komitmen dan rasa tanggung jawab super crew terhadap pekerjaannya:',
-      poin: [
-        'Kesetiaan terhadap perusahaan/operator',
-        'Tidak terlibat dalam pelanggaran yang merugikan instansi',
-        'Tidak berpindah-pindah armada tanpa prosedur resmi',
-        'Ketersediaan membantu saat kekurangan kru/shift darurat (terukur jam/kali)',
-        'Kepatuhan kebijakan: tidak menyalahgunakan fasilitas, tidak menyebar citra buruk',
-        'Partisipasi pelatihan/briefing & memberi masukan perbaikan',
-        'Stabilitas: tidak sering cuti mendadak/bolos',
-        'Membantu pihak dinas dalam kegiatan-kegiatan tertentu'
-      ]
-    },
-    {
-      id: 4,
-      nama: 'Skill Mengemudi',
-      bobot: 15,
-      warna: '#3b82f6',
-      deskripsi: 'Menilai kemampuan teknis dalam mengemudikan bus:',
-      poin: [
-        'Mengemudi dengan aman dan lancar',
-        'Mampu mengatasi situasi lalu lintas yang sulit',
-        'Tidak melakukan pelanggaran lalu lintas',
-        'Mampu menjaga kenyamanan penumpang selama perjalanan',
-        'Defensive driving: antisipasi bahaya, jaga jarak',
-        'Halus: akselerasi & pengereman tidak mendadak; manuver stabil',
-        'Kepatuhan lalu lintas: marka, batas kecepatan, lampu isyarat',
-        'Teknik khusus: parkir & berhenti di halte ketika naik turun penumpang, putar balik, medan sempit/menanjak',
-        'Manajemen risiko: tidak memakai HP saat berkendara, fokus',
-        'Mematuhi seluruh peraturan lalu lintas yang berlaku'
-      ]
-    },
-    {
-      id: 5,
-      nama: 'Perawatan Kendaraan',
-      bobot: 10,
-      warna: '#8b5cf6',
-      deskripsi: 'Penilaian ini berfokus pada tanggung jawab super crew terhadap kondisi armada:',
-      poin: [
-        'Melaporkan jika ada kerusakan kendaraan',
-        'Tidak sembarangan memperlakukan kendaraan',
-        'Checklist pra-jalan & pasca-jalan: lampu, rem, wiper, pintu, ban, kaca, P3K, APAR',
-        'Pelaporan kerusakan cepat & jelas (form/aplikasi)',
-        'Kebersihan kabin & eksterior sepanjang operasi',
-        'Penggunaan peralatan (mis. AC, ramp difabel) sesuai SOP',
-        'Kepedulian: mencegah kerusakan berulang, tidak kasar memakai unit',
-        'Pengisian logbook terhadap perawatan berkala (form terlampir)'
-      ]
-    },
-    {
-      id: 6,
-      nama: 'Performa',
-      bobot: 10,
-      warna: '#ec4899',
-      deskripsi: 'Menilai kinerja keseluruhan selama menjalankan tugas, termasuk:',
-      poin: [
-        'Ketepatan waktu tiba dan berangkat',
-        'Jumlah trip yang berhasil diselesaikan',
-        'Konsistensi kualitas layanan',
-        'Tidak ada keluhan dari penumpang terkait performa',
-        'Kualitas perjalanan: berhenti di halte yang benar, time table terkendali',
-        'Efisiensi: konsumsi BBM wajar (indikasi eco-driving), minim idle (meminimalkan waktu mesin kendaraan menyala tanpa bergerak)',
-        'Penanganan situasi: hujan, macet, gangguan rute tetap aman & lancar',
-        'Zero accident: bebas insiden karena kelalaian',
-        'Berpakaian sesuai SOP'
-      ]
+interface Siklus {
+  siklus_id: number
+  nama_siklus: string
+  status_display: string
+}
+
+const WARNA_LIST = [
+  '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6',
+  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+]
+
+export default function KategoriPenilaian() {
+  const [siklusList, setSiklusList]           = useState<Siklus[]>([])
+  const [selectedSiklusId, setSelectedSiklusId] = useState<number | null>(null)
+  const [bobotList, setBobotList]             = useState<Bobot[]>([])
+  const [expandedId, setExpandedId]           = useState<number | null>(null)
+  const [isLoadingSiklus, setIsLoadingSiklus] = useState(true)
+  const [isLoadingBobot, setIsLoadingBobot]   = useState(false)
+  const [error, setError]                     = useState<string | null>(null)
+
+  // Fetch daftar siklus
+  useEffect(() => {
+    const fetchSiklus = async () => {
+      try {
+        const data = await apiFetch('/api/siklus')
+        setSiklusList(data || [])
+        if (data && data.length > 0) {
+          setSelectedSiklusId(data[0].siklus_id)
+        }
+      } catch {
+        setError('Gagal memuat daftar siklus')
+      } finally {
+        setIsLoadingSiklus(false)
+      }
     }
-  ]
+    fetchSiklus()
+  }, [])
+
+  // Fetch bobot saat siklus berubah
+  const fetchBobot = useCallback(async () => {
+    if (!selectedSiklusId) return
+    setIsLoadingBobot(true)
+    setError(null)
+    try {
+      const data = await apiFetch(`/api/bobot?siklus_id=${selectedSiklusId}`)
+      setBobotList(data?.bobots || [])
+    } catch {
+      setError('Gagal memuat data bobot')
+    } finally {
+      setIsLoadingBobot(false)
+    }
+  }, [selectedSiklusId])
+
+  useEffect(() => {
+    fetchBobot()
+  }, [fetchBobot])
+
+  const parseRubric = (deskripsi: string | null): RubricItem[] => {
+    if (!deskripsi) return []
+    try {
+      const arr = JSON.parse(deskripsi)
+      return Array.isArray(arr) ? arr : []
+    } catch { return [] }
+  }
 
   const toggleExpand = (id: number) => {
-    console.log('Clicked ID:', id, 'Current expandedId:', expandedId)
     setExpandedId(expandedId === id ? null : id)
+  }
+
+  if (isLoadingSiklus) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-message">Memuat data siklus...</div>
+      </div>
+    )
   }
 
   return (
@@ -132,149 +97,153 @@ export default function KategoriPenilaian() {
       <div className="dashboard-content">
         <div className="page-header">
           <h1 className="page-title">Kategori Penilaian Driver</h1>
-          <p className="page-subtitle">Indikator dan kriteria penilaian performa driver</p>
+          <p className="page-subtitle">Indikator dan rubric penilaian performa driver</p>
         </div>
 
-        <div className="kategori-penilaian-container">
-          {/* Info Box */}
-          <div className="kategori-info-box">
-            <svg 
-              className="kategori-info-icon" 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              strokeWidth={1.5} 
-              stroke="currentColor"
+        {/* Pilih Siklus */}
+        <div className="filter-bar">
+          <div className="filter-group">
+            <label>Siklus Penilaian</label>
+            <select
+              value={selectedSiklusId ?? ''}
+              onChange={e => setSelectedSiklusId(Number(e.target.value))}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-            </svg>
-            <div className="kategori-info-content">
-              <h3>Sistem Penilaian Berbobot</h3>
-              <p>Penilaian driver menggunakan 6 kategori dengan total bobot 100%. Klik setiap kategori untuk melihat detail kriteria penilaian.</p>
-            </div>
+              {siklusList.map(s => (
+                <option key={s.siklus_id} value={s.siklus_id}>
+                  {s.nama_siklus}
+                </option>
+              ))}
+            </select>
           </div>
+        </div>
 
-          {/* Kategori Cards Grid */}
-          <div className="kategori-grid">
-            {kategoriData.map((kategori) => (
-              <div 
-                key={kategori.id} 
-                data-kategori-id={kategori.id}
-                className={`kategori-card ${expandedId === kategori.id ? 'expanded' : ''}`}
-                style={{ borderColor: expandedId === kategori.id ? kategori.warna : 'transparent' }}
-              >
-                <div 
-                  className="kategori-header"
-                  onClick={() => toggleExpand(kategori.id)}
-                >
-                  <div className="kategori-header-left">
-                    <div 
-                      className="kategori-icon-wrapper" 
-                      style={{ backgroundColor: kategori.warna }}
-                    >
-                      <svg 
-                        className="kategori-icon" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        strokeWidth={2} 
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="kategori-header-text">
-                      <h3>{kategori.nama}</h3>
-                      <p>{kategori.poin.length} kriteria penilaian</p>
-                    </div>
-                  </div>
-                  <div className="kategori-header-right">
-                    <span 
-                      className="kategori-bobot-badge"
-                      style={{ backgroundColor: kategori.warna }}
-                    >
-                      {kategori.bobot}%
-                    </span>
-                    <svg 
-                      className="kategori-toggle-icon" 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      strokeWidth={2.5} 
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                    </svg>
-                  </div>
-                </div>
+        {error && <div className="alert-error">{error}</div>}
 
-                <div className="kategori-content">
-                  <div className="kategori-content-inner">
-                    <p 
-                      className="kategori-deskripsi"
-                      style={{ borderLeftColor: kategori.warna }}
-                    >
-                      {kategori.deskripsi}
-                    </p>
-                    <h4 className="kategori-poin-title">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        strokeWidth={2} 
-                        stroke="currentColor"
-                        style={{ width: '20px', height: '20px' }}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Kriteria Penilaian
-                    </h4>
-                    <ul className="kategori-poin-list">
-                      {kategori.poin.map((poin, index) => (
-                        <li key={index} className="kategori-poin-item">
-                          <span 
-                            className="kategori-poin-bullet" 
-                            style={{ backgroundColor: kategori.warna }}
-                          ></span>
-                          {poin}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+        {isLoadingBobot ? (
+          <div className="loading-message">Memuat data bobot...</div>
+        ) : bobotList.length === 0 ? (
+          <div className="empty-state">
+            <p>Belum ada data bobot untuk siklus ini.</p>
+          </div>
+        ) : (
+          <div className="kategori-penilaian-container">
+            {/* Info Box */}
+            <div className="kategori-info-box">
+              <svg className="kategori-info-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+              </svg>
+              <div className="kategori-info-content">
+                <h3>Sistem Penilaian Berbobot</h3>
+                <p>Penilaian driver menggunakan {bobotList.length} indikator dengan total bobot 100%. Klik setiap indikator untuk melihat rubric penilaian.</p>
               </div>
-            ))}
-          </div>
+            </div>
 
-          {/* Summary Section */}
-          <div className="kategori-summary">
-            <h3 className="kategori-summary-title">Distribusi Bobot Penilaian</h3>
-            <div className="kategori-summary-grid">
-              {kategoriData.map((kategori) => (
-                <div key={kategori.id} className="kategori-summary-item">
-                  <div className="kategori-summary-label">
-                    <span 
-                      className="kategori-summary-color" 
-                      style={{ backgroundColor: kategori.warna }}
-                    ></span>
-                    {kategori.nama}
-                  </div>
-                  <div className="kategori-progress-bar">
-                    <div 
-                      className="kategori-progress-fill" 
-                      style={{ 
-                        width: `${kategori.bobot}%`,
-                        backgroundColor: kategori.warna 
-                      }}
-                    >
-                      {kategori.bobot}%
-                    </div>
-                  </div>
+            {/* Kategori Cards — 2 kolom independen */}
+            <div className="kategori-columns">
+              {[
+                bobotList.filter((_, i) => i % 2 === 0),
+                bobotList.filter((_, i) => i % 2 !== 0),
+              ].map((col, colIdx) => (
+                <div key={colIdx} className="kategori-col">
+                  {col.map((bobot) => {
+                    const index = bobotList.indexOf(bobot)
+                    const warna = WARNA_LIST[index % WARNA_LIST.length]
+                    const rubric = parseRubric(bobot.deskripsi)
+                    const isExpanded = expandedId === bobot.bobot_id
+
+                    return (
+                      <div
+                        key={bobot.bobot_id}
+                        className={`kategori-card ${isExpanded ? 'expanded' : ''}`}
+                        style={{ borderColor: isExpanded ? warna : 'transparent' }}
+                      >
+                        {/* Header card */}
+                        <div className="kategori-header" onClick={() => toggleExpand(bobot.bobot_id)}>
+                          <div className="kategori-header-left">
+                            <div className="kategori-icon-wrapper" style={{ backgroundColor: warna }}>
+                              <svg className="kategori-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <div className="kategori-header-text">
+                              <h3>{bobot.nama_bobot}</h3>
+                              <p>{rubric.length > 0 ? `${rubric.length} range rubric` : 'Belum ada rubric'}</p>
+                            </div>
+                          </div>
+                          <div className="kategori-header-right">
+                            <span className="kategori-bobot-badge" style={{ backgroundColor: warna }}>
+                              {parseFloat(String(bobot.persentase_bobot))}%
+                            </span>
+                            <svg className="kategori-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Konten expandable */}
+                        <div className="kategori-content">
+                          <div className="kategori-content-inner">
+                            {rubric.length === 0 ? (
+                              <p className="kategori-deskripsi" style={{ borderLeftColor: warna }}>
+                                Rubric belum diisi. Hubungi admin untuk melengkapi panduan penilaian.
+                              </p>
+                            ) : (
+                              <table className="rubric-table">
+                                <thead>
+                                  <tr>
+                                    <th className="rubric-th-range">Rentang Nilai</th>
+                                    <th className="rubric-th-desc">Deskripsi Kriteria</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {rubric.map((item, i) => (
+                                    <tr key={i} className={i % 2 === 0 ? 'rubric-row-even' : 'rubric-row-odd'}>
+                                      <td className="rubric-td-range" style={{ borderLeftColor: warna }}>
+                                        {item.range}
+                                      </td>
+                                      <td className="rubric-td-desc">{item.deskripsi}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               ))}
             </div>
+
+            {/* Summary bobot */}
+            <div className="kategori-summary">
+              <h3 className="kategori-summary-title">Distribusi Bobot Penilaian</h3>
+              <div className="kategori-summary-grid">
+                {bobotList.map((bobot, index) => {
+                  const warna = WARNA_LIST[index % WARNA_LIST.length]
+                  const pct = parseFloat(String(bobot.persentase_bobot))
+                  return (
+                    <div key={bobot.bobot_id} className="kategori-summary-item">
+                      <div className="kategori-summary-label">
+                        <span className="kategori-summary-color" style={{ backgroundColor: warna }}></span>
+                        {bobot.nama_bobot}
+                      </div>
+                      <div className="kategori-progress-bar">
+                        <div
+                          className="kategori-progress-fill"
+                          style={{ width: `${pct}%`, backgroundColor: warna }}
+                        >
+                          {pct}%
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

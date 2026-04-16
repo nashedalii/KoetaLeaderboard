@@ -7071,6 +7071,21 @@ body {
   margin-bottom: 2rem;
 }
 
+.kategori-columns {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.kategori-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
 /* Kategori Card */
 .kategori-card {
   background: white;
@@ -7534,6 +7549,177 @@ body {
 .btn-delete-small svg {
   width: 16px;
   height: 16px;
+}
+
+/* ── Rubric Status Badge ─────────────────────────────────────── */
+.rubric-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.rubric-status.filled {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.rubric-status.empty {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+/* ── Rubric Modal Editor ─────────────────────────────────────── */
+.rubric-table-header {
+  display: grid;
+  grid-template-columns: 130px 1fr 36px;
+  gap: 8px;
+  padding: 8px 4px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rubric-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rubric-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 36px;
+  gap: 8px;
+  align-items: start;
+}
+
+.rubric-col-range,
+.rubric-col-desc,
+.rubric-col-action {
+  display: flex;
+  flex-direction: column;
+}
+
+.rubric-input-range {
+  padding: 8px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #1e293b;
+  background: #fff;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rubric-input-range:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.rubric-input-desc {
+  padding: 8px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #1e293b;
+  background: #fff;
+  resize: vertical;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.rubric-input-desc:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.rubric-col-action {
+  justify-content: center;
+  padding-top: 6px;
+}
+
+/* ── Rubric Table (petugas read-only) ────────────────────────── */
+.rubric-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+  font-size: 0.88rem;
+}
+
+.rubric-th-range,
+.rubric-th-desc {
+  padding: 8px 12px;
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #475569;
+  text-align: left;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rubric-th-range {
+  width: 130px;
+  border-radius: 6px 0 0 0;
+}
+
+.rubric-th-desc {
+  border-radius: 0 6px 0 0;
+}
+
+.rubric-row-even {
+  background: #fff;
+}
+
+.rubric-row-odd {
+  background: #f8fafc;
+}
+
+.rubric-td-range {
+  padding: 10px 12px;
+  font-weight: 700;
+  color: #1e293b;
+  border-left: 4px solid;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.rubric-td-desc {
+  padding: 10px 12px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* ── Alert feedback ──────────────────────────────────────────── */
+.alert-success {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.alert-error {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 16px;
 }
 
 /* Modal Large */
