@@ -1,24 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
-const ROLE_LABEL: Record<string, string> = {
-  admin: 'Admin',
-  petugas: 'Petugas',
-  driver: 'Supir'
+const ROLE_REDIRECT: Record<string, string> = {
+  admin:   '/admin/dashboard',
+  petugas: '/petugas/dashboard',
+  driver:  '/driver/dashboard',
 }
 
-interface LoginFormProps {
-  onLoginSuccess?: (role: string, nama: string) => void
-}
-
-export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
+export default function LoginForm() {
+  const router = useRouter()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const raw = localStorage.getItem('auth')
+    if (!raw) return
+    try {
+      const auth = JSON.parse(raw)
+      const role = auth?.user?.role
+      if (auth?.token && role && ROLE_REDIRECT[role]) {
+        router.replace(ROLE_REDIRECT[role])
+      }
+    } catch {
+      localStorage.removeItem('auth')
+    }
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,7 +52,9 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
         return
       }
 
-      const roleLabel = ROLE_LABEL[data.user.role] ?? data.user.role
+      const roleLabel: Record<string, string> = {
+        admin: 'Admin', petugas: 'Petugas', driver: 'Supir'
+      }
 
       const auth = {
         token: data.token,
@@ -47,18 +62,15 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
           id: data.user.id,
           nama: data.user.nama,
           role: data.user.role,
-          roleLabel,
+          roleLabel: roleLabel[data.user.role] ?? data.user.role,
           ...(data.user.armada_id !== undefined && { armada_id: data.user.armada_id })
         }
       }
 
       localStorage.setItem('auth', JSON.stringify(auth))
+      router.push(ROLE_REDIRECT[data.user.role] ?? '/')
 
-      if (onLoginSuccess) {
-        onLoginSuccess(roleLabel, data.user.nama)
-      }
-
-    } catch (err) {
+    } catch {
       setErrorMessage('Tidak dapat terhubung ke server')
     } finally {
       setIsLoading(false)

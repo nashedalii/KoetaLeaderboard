@@ -1,22 +1,23 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 
 interface SidebarProps {
-  currentPage: string
-  onNavigate: (page: string) => void
   onLogout: () => void
   userRole: 'Admin' | 'Petugas' | 'Supir'
 }
 
-export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }: SidebarProps) {
+export default function Sidebar({ onLogout, userRole }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true)
+  const pathname = usePathname()
 
   // Menu items untuk Admin
   const adminMenuItems = [
     {
-      id: 'dashboard',
+      href: '/admin/dashboard',
       label: 'Dashboard',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -25,7 +26,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'kelola-user',
+      href: '/admin/kelola-user',
       label: 'Kelola Supir & Petugas',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -34,7 +35,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'kelola-bus',
+      href: '/admin/kelola-bus',
       label: 'Kelola Bus',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -43,7 +44,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'konfigurasi',
+      href: '/admin/konfigurasi',
       label: 'Konfigurasi Bobot',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -52,7 +53,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'konfigurasi-periode',
+      href: '/admin/konfigurasi-periode',
       label: 'Konfigurasi Periode',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -61,7 +62,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'kategori-penilaian',
+      href: '/admin/kategori-penilaian',
       label: 'Kategori Penilaian',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -70,7 +71,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'analytics',
+      href: '/admin/analytics',
       label: 'Grafik & Analitik',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -79,7 +80,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'validasi',
+      href: '/admin/validasi',
       label: 'Validasi Data Petugas',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -88,7 +89,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'ranking',
+      href: '/admin/ranking',
       label: 'Ranking Penilaian',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -101,7 +102,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
   // Menu items untuk Petugas
   const petugasMenuItems = [
     {
-      id: 'petugas-dashboard',
+      href: '/petugas/dashboard',
       label: 'Dashboard Utama Petugas',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -110,7 +111,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'manajemen-driver',
+      href: '/petugas/manajemen-driver',
       label: 'Monitoring Driver',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -119,7 +120,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'input-validasi',
+      href: '/petugas/input-validasi',
       label: 'Input & Validasi Data',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -128,7 +129,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'kategori-penilaian',
+      href: '/petugas/kategori-penilaian',
       label: 'Kategori Penilaian',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -137,7 +138,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'petugas-ranking',
+      href: '/petugas/ranking',
       label: 'Ranking Penilaian',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -150,7 +151,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
   // Menu items untuk Driver/Supir
   const driverMenuItems = [
     {
-      id: 'driver-dashboard',
+      href: '/driver/dashboard',
       label: 'Dashboard',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -159,7 +160,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'driver-ranking',
+      href: '/driver/ranking',
       label: 'Ranking Penilaian',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -168,7 +169,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
       )
     },
     {
-      id: 'driver-visualisasi',
+      href: '/driver/visualisasi',
       label: 'Visualisasi Progress',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -178,17 +179,16 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
     }
   ]
 
-  // Pilih menu items berdasarkan role
-  const menuItems = 
-    userRole === 'Petugas' ? petugasMenuItems : 
-    userRole === 'Supir' ? driverMenuItems : 
+  const menuItems =
+    userRole === 'Petugas' ? petugasMenuItems :
+    userRole === 'Supir'   ? driverMenuItems  :
     adminMenuItems
 
   return (
     <>
       {/* Overlay untuk mobile */}
       {isOpen && (
-        <div 
+        <div
           className="sidebar-overlay"
           onClick={() => setIsOpen(false)}
         />
@@ -200,18 +200,18 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
         <div className="sidebar-header">
           <div className="logo-container">
             {isOpen ? (
-              <Image 
-                src="/logopanjangdishub.png" 
-                alt="Logo Dishub Aceh" 
+              <Image
+                src="/logopanjangdishub.png"
+                alt="Logo Dishub Aceh"
                 width={180}
                 height={60}
                 className="logo-full"
                 priority
               />
             ) : (
-              <Image 
-                src="/logodishub.png" 
-                alt="Logo Dishub" 
+              <Image
+                src="/logodishub.png"
+                alt="Logo Dishub"
                 width={40}
                 height={40}
                 className="logo-icon"
@@ -219,7 +219,7 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
               />
             )}
           </div>
-          <button 
+          <button
             className="toggle-btn"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle Sidebar"
@@ -233,15 +233,15 @@ export default function Sidebar({ currentPage, onNavigate, onLogout, userRole }:
         {/* Navigation Menu */}
         <nav className="sidebar-nav">
           {menuItems.map((item) => (
-            <button
-              key={item.id}
-              className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-              onClick={() => onNavigate(item.id)}
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`nav-item ${pathname === item.href ? 'active' : ''}`}
               title={!isOpen ? item.label : undefined}
             >
               <span className="nav-icon">{item.icon}</span>
               {isOpen && <span className="nav-label">{item.label}</span>}
-            </button>
+            </Link>
           ))}
         </nav>
 
