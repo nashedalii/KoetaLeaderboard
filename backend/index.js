@@ -11,6 +11,7 @@ import bobotRoutes from './routes/bobot.js'
 import penilaianRoutes from './routes/penilaian.js'
 import validasiRoutes from './routes/validasi.js'
 import rankingRoutes from './routes/ranking.js'
+import driverRoutes from './routes/driver.js'
 import { authenticate, authorize } from './middleware/authMiddleware.js'
 
 dotenv.config()
@@ -30,6 +31,7 @@ app.use('/api/bobot', bobotRoutes)
 app.use('/api/penilaian', penilaianRoutes)
 app.use('/api/validasi', validasiRoutes)
 app.use('/api/ranking', rankingRoutes)
+app.use('/api/driver',  driverRoutes)
 
 // Test protected route
 app.get('/api/test-auth', authenticate, (req, res) => {
