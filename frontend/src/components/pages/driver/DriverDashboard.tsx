@@ -1,86 +1,95 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { dummyUsers, User } from '@/data/dummyUsers'
+import { apiFetch } from '@/utils/api'
 
-// Bobot penilaian (SAMA dengan RankingPenilaian)
-const bobotPenilaian = {
-  etikaAdab: 25,
-  disiplin: 20,
-  loyalitas: 20,
-  skillMengemudi: 15,
-  perawatanKendaraan: 10,
-  performa: 10
+interface DriverProfile {
+  driver_id: number
+  nama_driver: string
+  nama_kernet: string | null
+  email: string
+  status_aktif: string
+  nama_armada: string | null
+  kode_bus: string | null
+  nopol: string | null
+}
+
+interface ScoreItem {
+  bobot_id: number
+  nama_bobot: string
+  persentase_bobot: number
+  nilai: number
+  weighted_score: number
+}
+
+interface PeriodeTerakhir {
+  skor_total: number
+  nama_periode: string
+  bulan: string
+  tahun: number
+  scores: ScoreItem[]
+}
+
+interface RankingData {
+  rank: number | null
+  skor_total: number | null
+  total_driver: number
+  periode_terakhir: PeriodeTerakhir | null
+}
+
+interface Siklus {
+  siklus_id: number
+  nama_siklus: string
 }
 
 export default function DriverDashboard() {
-  const [driverData, setDriverData] = useState<User | null>(null)
-  const [skorAkhirMaret, setSkorAkhirMaret] = useState(0)
-  const [rankingMaret, setRankingMaret] = useState(0)
-  const [totalDrivers, setTotalDrivers] = useState(0)
+  const [profile, setProfile]       = useState<DriverProfile | null>(null)
+  const [ranking, setRanking]       = useState<RankingData | null>(null)
+  const [siklusList, setSiklusList] = useState<Siklus[]>([])
+  const [selectedSiklusId, setSelectedSiklusId] = useState<number | null>(null)
+  const [isLoading, setIsLoading]   = useState(true)
+  const [error, setError]           = useState<string | null>(null)
 
-  // Calculate weighted score (SAMA dengan RankingPenilaian)
-  const calculateWeightedScore = (value: number, bobot: number) => {
-    return Math.round((value * bobot / 100) * 10) / 10
-  }
-
-  // Calculate total score based on bobot (SAMA dengan RankingPenilaian)
-  const calculateTotalScore = (skor: any) => {
-    if (!skor) return 0
-    
-    const total = 
-      calculateWeightedScore(skor.etikaAdab || 0, bobotPenilaian.etikaAdab) +
-      calculateWeightedScore(skor.disiplin || 0, bobotPenilaian.disiplin) +
-      calculateWeightedScore(skor.loyalitas || 0, bobotPenilaian.loyalitas) +
-      calculateWeightedScore(skor.skillMengemudi || 0, bobotPenilaian.skillMengemudi) +
-      calculateWeightedScore(skor.perawatanKendaraan || 0, bobotPenilaian.perawatanKendaraan) +
-      calculateWeightedScore(skor.performa || 0, bobotPenilaian.performa)
-    
-    return Math.round(total * 10) / 10
-  }
-
+  // Fetch siklus list
   useEffect(() => {
-    // Ambil username dari localStorage
-    const username = localStorage.getItem('username')
-    
-    // Cari driver berdasarkan username (untuk supir_01) atau fallback ke Budiman Santoso
-    const loggedInDriver = dummyUsers.find(
-      (user) => user.role === 'Supir' && (user.username === username || user.nama === 'Budiman Santoso')
-    )
-    
-    if (loggedInDriver) {
-      setDriverData(loggedInDriver)
-      
-      // Ambil skor bulan Maret 2025
-      const skorMaret = loggedInDriver.skorBulanan?.find(sb => sb.bulan === 'Maret/2025')
-      
-      if (skorMaret) {
-        // Hitung skor akhir bulan Maret
-        const totalScore = calculateTotalScore(skorMaret.skor)
-        setSkorAkhirMaret(totalScore)
-        
-        // Hitung ranking di bulan Maret (SAMA dengan RankingPenilaian)
-        const allDrivers = dummyUsers.filter(user => user.role === 'Supir')
-        setTotalDrivers(allDrivers.length)
-        
-        // Hitung skor Maret untuk semua driver dan ranking
-        const driversWithMaretScore = allDrivers
-          .map(d => {
-            const skorMaretDriver = d.skorBulanan?.find(sb => sb.bulan === 'Maret/2025')
-            return {
-              ...d,
-              skorMaret: skorMaretDriver ? calculateTotalScore(skorMaretDriver.skor) : 0
-            }
-          })
-          .sort((a, b) => b.skorMaret - a.skorMaret)
-        
-        const driverRank = driversWithMaretScore.findIndex(d => d.id === loggedInDriver.id) + 1
-        setRankingMaret(driverRank)
+    const fetchSiklus = async () => {
+      try {
+        const data = await apiFetch('/api/siklus')
+        setSiklusList(data || [])
+        if (data && data.length > 0) {
+          setSelectedSiklusId(data[0].siklus_id)
+        }
+      } catch {
+        setError('Gagal memuat data siklus')
       }
     }
+    fetchSiklus()
   }, [])
 
-  if (!driverData) {
+  // Fetch profil + ranking saat siklus berubah
+  useEffect(() => {
+    if (!selectedSiklusId) return
+
+    const fetchData = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const [profileData, rankingData] = await Promise.all([
+          apiFetch('/api/driver/me'),
+          apiFetch(`/api/driver/me/ranking?siklus_id=${selectedSiklusId}`),
+        ])
+        setProfile(profileData)
+        setRanking(rankingData)
+      } catch {
+        setError('Gagal memuat data dashboard')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [selectedSiklusId])
+
+  if (isLoading) {
     return (
       <div className="dashboard-container">
         <div className="loading-message">Memuat data...</div>
@@ -88,17 +97,25 @@ export default function DriverDashboard() {
     )
   }
 
+  if (error || !profile) {
+    return (
+      <div className="dashboard-container">
+        <div className="alert-error">{error || 'Data tidak ditemukan'}</div>
+      </div>
+    )
+  }
+
+  const periode = ranking?.periode_terakhir
+
   return (
     <div className="driver-dashboard">
       {/* Welcome Section */}
       <div className="welcome-section">
         <div className="welcome-content">
           <h1 className="welcome-title">
-            Selamat Datang, <span className="driver-name">{driverData.nama}</span>
+            Selamat Datang, <span className="driver-name">{profile.nama_driver}</span>
           </h1>
-          <p className="welcome-subtitle">
-            Dashboard Informasi & Performa Anda
-          </p>
+          <p className="welcome-subtitle">Dashboard Informasi & Performa Anda</p>
         </div>
         <div className="welcome-icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -107,17 +124,32 @@ export default function DriverDashboard() {
         </div>
       </div>
 
-      {/* Identity Card - Simple Version */}
+      {/* Pilih Siklus */}
+      <div className="filter-bar" style={{ marginBottom: '1.5rem' }}>
+        <div className="filter-group">
+          <label>Siklus Penilaian</label>
+          <select
+            value={selectedSiklusId ?? ''}
+            onChange={e => setSelectedSiklusId(Number(e.target.value))}
+          >
+            {siklusList.map(s => (
+              <option key={s.siklus_id} value={s.siklus_id}>{s.nama_siklus}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Identity Card */}
       <div className="identity-simple-card">
         <div className="identity-status-row">
-          <div className="status-badge-inline active">
+          <div className={`status-badge-inline ${profile.status_aktif === 'aktif' ? 'active' : 'inactive'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
-            <span>Status: {driverData.status}</span>
+            <span>Status: {profile.status_aktif === 'aktif' ? 'Aktif' : 'Nonaktif'}</span>
           </div>
         </div>
-        
+
         <div className="identity-row">
           <div className="identity-item">
             <span className="identity-icon">
@@ -127,34 +159,20 @@ export default function DriverDashboard() {
             </span>
             <div className="identity-info">
               <span className="identity-simple-label">Nama:</span>
-              <span className="identity-simple-value">{driverData.nama}</span>
+              <span className="identity-simple-value">{profile.nama_driver}</span>
             </div>
           </div>
           <div className="identity-item">
             <span className="identity-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m6-3.75h6.375a1.125 1.125 0 0 1 1.125 1.125v3.75m-6 3.75v-3.75a1.125 1.125 0 0 0-1.125-1.125H9.75m12 3.75h2.625a1.125 1.125 0 0 1 1.125-1.125V9.75A1.125 1.125 0 0 0 21.75 8.625H18a2.25 2.25 0 0 0-2.25 2.25m9 1.5h-6.375a1.125 1.125 0 0 1-1.125-1.125v-2.25a1.125 1.125 0 0 1 1.125-1.125H21M8.25 9.75H3.375A1.125 1.125 0 0 1 2.25 8.625V6.375a1.125 1.125 0 0 1 1.125-1.125h4.5m0 6.75v-3a1.125 1.125 0 0 1 1.125-1.125h2.25m-6 3V9.75a1.125 1.125 0 0 1 1.125-1.125H9.75" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5h-6m3 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497" />
               </svg>
             </span>
             <div className="identity-info">
               <span className="identity-simple-label">Armada:</span>
-              <span className="identity-simple-value">{driverData.namaArmada || '-'}</span>
+              <span className="identity-simple-value">{profile.nama_armada || '-'}</span>
             </div>
           </div>
-          <div className="identity-item">
-            <span className="identity-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m6-3.75h6.375a1.125 1.125 0 0 1 1.125 1.125v3.75m-6 3.75v-3.75a1.125 1.125 0 0 0-1.125-1.125H9.75m12 3.75h2.625a1.125 1.125 0 0 1 1.125-1.125V9.75A1.125 1.125 0 0 0 21.75 8.625H18a2.25 2.25 0 0 0-2.25 2.25m9 1.5h-6.375a1.125 1.125 0 0 1-1.125-1.125v-2.25a1.125 1.125 0 0 1 1.125-1.125H21M8.25 9.75H3.375A1.125 1.125 0 0 1 2.25 8.625V6.375a1.125 1.125 0 0 1 1.125-1.125h4.5m0 6.75v-3a1.125 1.125 0 0 1 1.125-1.125h2.25m-6 3V9.75a1.125 1.125 0 0 1 1.125-1.125H9.75" />
-              </svg>
-            </span>
-            <div className="identity-info">
-              <span className="identity-simple-label">Kode Bus:</span>
-              <span className="identity-simple-value" style={{ color: '#667eea', fontWeight: '600' }}>{driverData.kodeBus || '-'}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="identity-row">
           <div className="identity-item">
             <span className="identity-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -162,10 +180,13 @@ export default function DriverDashboard() {
               </svg>
             </span>
             <div className="identity-info">
-              <span className="identity-simple-label">Nomor Polisi:</span>
-              <span className="identity-simple-value" style={{ fontWeight: '600' }}>{driverData.nomorPolisi || '-'}</span>
+              <span className="identity-simple-label">Kode Bus:</span>
+              <span className="identity-simple-value" style={{ color: '#667eea', fontWeight: '600' }}>{profile.kode_bus || '-'}</span>
             </div>
           </div>
+        </div>
+
+        <div className="identity-row">
           <div className="identity-item">
             <span className="identity-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -173,8 +194,19 @@ export default function DriverDashboard() {
               </svg>
             </span>
             <div className="identity-info">
+              <span className="identity-simple-label">Nomor Polisi:</span>
+              <span className="identity-simple-value" style={{ fontWeight: '600' }}>{profile.nopol || '-'}</span>
+            </div>
+          </div>
+          <div className="identity-item">
+            <span className="identity-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+            </span>
+            <div className="identity-info">
               <span className="identity-simple-label">ID Driver:</span>
-              <span className="identity-simple-value">{driverData.id}</span>
+              <span className="identity-simple-value">{profile.driver_id}</span>
             </div>
           </div>
           <div className="identity-item">
@@ -185,11 +217,11 @@ export default function DriverDashboard() {
             </span>
             <div className="identity-info">
               <span className="identity-simple-label">Nama Kernet:</span>
-              <span className="identity-simple-value">{driverData.namaKernet || '-'}</span>
+              <span className="identity-simple-value">{profile.nama_kernet || '-'}</span>
             </div>
           </div>
         </div>
-        
+
         <div className="identity-row">
           <div className="identity-item identity-item-full">
             <span className="identity-icon">
@@ -199,13 +231,13 @@ export default function DriverDashboard() {
             </span>
             <div className="identity-info">
               <span className="identity-simple-label">Email:</span>
-              <span className="identity-simple-value">{driverData.email}</span>
+              <span className="identity-simple-value">{profile.email}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Performance Stats - Simplified */}
+      {/* Performance Stats */}
       <div className="performance-simple-section">
         <div className="performance-simple-grid">
           <div className="stat-simple-card score-card">
@@ -215,11 +247,15 @@ export default function DriverDashboard() {
               </svg>
             </span>
             <div className="stat-simple-content">
-              <span className="stat-simple-label">Skor Akhir Bulan Maret:</span>
-              <span className="stat-simple-value">{skorAkhirMaret}/100</span>
+              <span className="stat-simple-label">
+                Skor {periode ? `${periode.bulan} ${periode.tahun}` : 'Terkini'}:
+              </span>
+              <span className="stat-simple-value">
+                {periode ? `${parseFloat(String(periode.skor_total)).toFixed(1)}/100` : '-'}
+              </span>
             </div>
           </div>
-          
+
           <div className="stat-simple-card rank-card">
             <span className="stat-simple-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -227,96 +263,46 @@ export default function DriverDashboard() {
               </svg>
             </span>
             <div className="stat-simple-content">
-              <span className="stat-simple-label">Peringkat:</span>
-              <span className="stat-simple-value">#{rankingMaret} dari {totalDrivers} supir</span>
+              <span className="stat-simple-label">Peringkat dalam Siklus:</span>
+              <span className="stat-simple-value">
+                {ranking?.rank != null
+                  ? `#${ranking.rank} dari ${ranking.total_driver} driver`
+                  : 'Belum ada data'}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Detailed Scores - Data Bulan Maret */}
-      {driverData.skorBulanan && driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025') && (
+      {/* Rincian Skor Periode Terakhir */}
+      {periode && periode.scores.length > 0 && (
         <div className="detailed-scores-section">
-          <h3 className="detailed-scores-title">Rincian Penilaian Bulan Maret 2025</h3>
+          <h3 className="detailed-scores-title">
+            Rincian Penilaian — {periode.nama_periode}
+          </h3>
           <div className="scores-grid">
-            <div className="score-item">
-              <div className="score-item-header">
-                <span className="score-item-label">Etika & Adab</span>
-                <span className="score-item-value">{driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.etikaAdab}/100</span>
+            {periode.scores.map((score) => (
+              <div key={score.bobot_id} className="score-item">
+                <div className="score-item-header">
+                  <span className="score-item-label">{score.nama_bobot}</span>
+                  <span className="score-item-value">{score.nilai}/100</span>
+                </div>
+                <div className="score-bar-container">
+                  <div
+                    className="score-bar"
+                    style={{ width: `${score.nilai}%` }}
+                  />
+                </div>
               </div>
-              <div className="score-bar-container">
-                <div 
-                  className="score-bar"
-                  style={{ width: `${driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.etikaAdab}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="score-item">
-              <div className="score-item-header">
-                <span className="score-item-label">Disiplin</span>
-                <span className="score-item-value">{driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.disiplin}/100</span>
-              </div>
-              <div className="score-bar-container">
-                <div 
-                  className="score-bar"
-                  style={{ width: `${driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.disiplin}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="score-item">
-              <div className="score-item-header">
-                <span className="score-item-label">Loyalitas</span>
-                <span className="score-item-value">{driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.loyalitas}/100</span>
-              </div>
-              <div className="score-bar-container">
-                <div 
-                  className="score-bar"
-                  style={{ width: `${driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.loyalitas}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="score-item">
-              <div className="score-item-header">
-                <span className="score-item-label">Skill Mengemudi</span>
-                <span className="score-item-value">{driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.skillMengemudi}/100</span>
-              </div>
-              <div className="score-bar-container">
-                <div 
-                  className="score-bar"
-                  style={{ width: `${driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.skillMengemudi}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="score-item">
-              <div className="score-item-header">
-                <span className="score-item-label">Perawatan Kendaraan</span>
-                <span className="score-item-value">{driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.perawatanKendaraan}/100</span>
-              </div>
-              <div className="score-bar-container">
-                <div 
-                  className="score-bar"
-                  style={{ width: `${driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.perawatanKendaraan}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="score-item">
-              <div className="score-item-header">
-                <span className="score-item-label">Performa</span>
-                <span className="score-item-value">{driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.performa}/100</span>
-              </div>
-              <div className="score-bar-container">
-                <div 
-                  className="score-bar"
-                  style={{ width: `${driverData.skorBulanan.find(sb => sb.bulan === 'Maret/2025')?.skor.performa}%` }}
-                />
-              </div>
-            </div>
+            ))}
           </div>
+        </div>
+      )}
+
+      {/* Jika belum ada penilaian dalam siklus ini */}
+      {(!periode) && (
+        <div className="empty-state" style={{ marginTop: '1.5rem' }}>
+          <p>Belum ada penilaian yang disetujui dalam siklus ini.</p>
         </div>
       )}
     </div>
