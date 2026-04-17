@@ -148,7 +148,7 @@ export default function LoginForm() {
             Sistem Penilaian<br />Kinerja Driver
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', lineHeight: '1.75', marginBottom: '36px' }}>
-            Platform manajemen dan evaluasi kinerja pengemudi angkutan umum secara digital dan terukur.
+            Platform manajemen dan evaluasi kinerja supir TransKoetaradja secara digital dan terukur.
           </p>
 
           {/* Features */}
@@ -156,7 +156,7 @@ export default function LoginForm() {
             {[
               { label: 'Manajemen Data Driver', desc: 'Kelola data pengemudi terpusat' },
               { label: 'Penilaian Terstruktur', desc: 'Evaluasi berbasis kriteria bobot' },
-              { label: 'Laporan Real-time', desc: 'Pantau kinerja secara langsung' },
+            
             ].map((f) => (
               <div key={f.label} style={{
                 display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left',
