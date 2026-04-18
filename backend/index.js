@@ -13,6 +13,7 @@ import validasiRoutes from './routes/validasi.js'
 import rankingRoutes from './routes/ranking.js'
 import driverRoutes from './routes/driver.js'
 import dashboardRoutes from './routes/dashboard.js'
+import profileRoutes from './routes/profile.js'
 import { authenticate, authorize } from './middleware/authMiddleware.js'
 
 dotenv.config()
@@ -34,6 +35,7 @@ app.use('/api/validasi', validasiRoutes)
 app.use('/api/ranking', rankingRoutes)
 app.use('/api/driver',    driverRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/profile',  profileRoutes)
 
 // Test protected route
 app.get('/api/test-auth', authenticate, (req, res) => {
