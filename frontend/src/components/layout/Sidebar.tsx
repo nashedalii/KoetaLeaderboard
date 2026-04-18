@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
@@ -13,6 +13,22 @@ interface SidebarProps {
 export default function Sidebar({ onLogout, userRole }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true)
   const pathname = usePathname()
+  const [userName, setUserName] = useState('')
+  const [userFoto, setUserFoto] = useState<string | null>(null)
+
+  useEffect(() => {
+    const raw = localStorage.getItem('auth')
+    if (!raw) return
+    try {
+      const auth = JSON.parse(raw)
+      setUserName(auth?.user?.nama ?? '')
+      setUserFoto(auth?.user?.foto_profil ?? null)
+    } catch { /* ignore */ }
+  }, [])
+
+  const profileHref =
+    userRole === 'Petugas' ? '/petugas/profile' :
+    userRole === 'Supir'   ? '/driver/profile'  : '#'
 
   // Menu items untuk Admin
   const adminMenuItems = [
@@ -245,8 +261,39 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Logout Button */}
+        {/* Footer: Profile + Logout */}
         <div className="sidebar-footer">
+          {/* Profile link — hanya untuk petugas & driver */}
+          {userRole !== 'Admin' && (
+            <Link
+              href={profileHref}
+              className={`nav-item ${pathname === profileHref ? 'active' : ''}`}
+              title={!isOpen ? 'Profil Saya' : undefined}
+            >
+              <span className="nav-icon">
+                {userFoto ? (
+                  <Image
+                    src={userFoto}
+                    alt="Foto Profil"
+                    width={24}
+                    height={24}
+                    className="rounded-full object-cover"
+                    style={{ width: 24, height: 24 }}
+                  />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                )}
+              </span>
+              {isOpen && (
+                <span className="nav-label" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {userName || 'Profil Saya'}
+                </span>
+              )}
+            </Link>
+          )}
+
           <button
             className="logout-button"
             onClick={onLogout}

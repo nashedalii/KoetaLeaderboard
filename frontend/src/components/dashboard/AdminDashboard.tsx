@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { apiFetch } from '@/utils/api'
 
 interface Top5Item {
   rank: number
   nama_driver: string
+  foto_profil: string | null
   nama_armada: string
   kode_bus: string
   skor_total: string | number
@@ -42,7 +44,7 @@ function getInitials(name: string) {
     .toUpperCase()
 }
 
-function AvatarInitials({ name, rank }: { name: string; rank: number }) {
+function DriverAvatar({ name, rank, foto }: { name: string; rank: number; foto: string | null }) {
   const bg = RANK_COLORS[rank - 1] ?? '#667eea'
   return (
     <div
@@ -51,17 +53,31 @@ function AvatarInitials({ name, rank }: { name: string; rank: number }) {
         height: 40,
         borderRadius: '50%',
         background: bg,
-        color: '#fff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '0.8rem',
-        fontWeight: 700,
         flexShrink: 0,
-        letterSpacing: '0.04em',
+        overflow: 'hidden',
+        position: 'relative',
+        border: `2px solid ${bg}`,
       }}
     >
-      {getInitials(name)}
+      {foto ? (
+        <Image src={foto} alt={name} fill sizes="40px" style={{ objectFit: 'cover' }} />
+      ) : (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+          }}
+        >
+          {getInitials(name)}
+        </div>
+      )}
     </div>
   )
 }
@@ -429,7 +445,7 @@ export default function AdminDashboard() {
                     <RankBadge rank={index + 1} />
 
                     {/* Avatar */}
-                    <AvatarInitials name={item.nama_driver} rank={index + 1} />
+                    <DriverAvatar name={item.nama_driver} rank={index + 1} foto={item.foto_profil ?? null} />
 
                     {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>

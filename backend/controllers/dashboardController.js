@@ -43,6 +43,7 @@ export const getAdminDashboard = async (req, res) => {
         SELECT
           DENSE_RANK() OVER (ORDER BY p.skor_total DESC) AS rank,
           d.nama_driver,
+          d.foto_profil,
           a.nama_armada,
           b.kode_bus,
           p.skor_total
@@ -72,6 +73,7 @@ export const getAdminDashboard = async (req, res) => {
           SELECT
             DENSE_RANK() OVER (ORDER BY p.skor_total DESC) AS rank,
             d.nama_driver,
+            d.foto_profil,
             a.nama_armada,
             b.kode_bus,
             p.skor_total,
