@@ -56,8 +56,3 @@ backend/package-lock.json
 frontend/node_modules/
 frontend/.next/
 frontend/package-lock.json
-
-# ================================
-# Claude Code
-# ================================
-.claude/
