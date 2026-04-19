@@ -28,44 +28,84 @@ const ARMADA_OPTIONS = [
   { value: '3', label: 'Armada C' },
 ]
 
-const EMPTY_FORM: FormData = {
-  kode_bus: '',
-  nopol: '',
-  armada_id: '',
-  status_aktif: 'aktif'
+const EMPTY_FORM: FormData = { kode_bus: '', nopol: '', armada_id: '', status_aktif: 'aktif' }
+
+// ── SVG Icons ──────────────────────────────────────────────────────────
+const SearchIcon = () => (
+  <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+  </svg>
+)
+const PlusIcon = () => (
+  <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+    <path d="M12 5v14M5 12h14"/>
+  </svg>
+)
+const EditIcon = () => (
+  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+)
+const TrashIcon = () => (
+  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+  </svg>
+)
+const CloseIcon = () => (
+  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+    <path d="M18 6 6 18M6 6l12 12"/>
+  </svg>
+)
+const WarningIcon = ({ size = 28, color = '#f59e0b' }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+)
+const DriverIcon = () => (
+  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+)
+
+function StatusDot({ status }: { status: string }) {
+  const active = status === 'aktif'
+  return (
+    <span className={`status-badge status-${status}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: active ? '#10b981' : '#ef4444', display: 'inline-block', flexShrink: 0 }} />
+      {active ? 'Aktif' : 'Nonaktif'}
+    </span>
+  )
 }
 
+// ── Component ──────────────────────────────────────────────────────────
 export default function KelolaBus() {
-  const [buses, setBuses] = useState<BusData[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [buses, setBuses]         = useState<BusData[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [armadaFilter, setArmadaFilter] = useState('All')
 
-  const [showModal, setShowModal] = useState(false)
+  const [showModal, setShowModal]           = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add')
-  const [selectedBus, setSelectedBus] = useState<BusData | null>(null)
-  const [formData, setFormData] = useState<FormData>(EMPTY_FORM)
-  const [saving, setSaving] = useState(false)
+  const [modalMode, setModalMode]           = useState<'add' | 'edit'>('add')
+  const [selectedBus, setSelectedBus]       = useState<BusData | null>(null)
+  const [formData, setFormData]             = useState<FormData>(EMPTY_FORM)
+  const [saving, setSaving]                 = useState(false)
 
-  // ── Fetch ────────────────────────────────────────────────────────────
   const fetchBuses = async () => {
     try {
-      setLoading(true)
-      setError('')
+      setLoading(true); setError('')
       const data = await apiFetch('/api/bus')
       setBuses(data ?? [])
     } catch (err: any) {
       setError(err.message ?? 'Gagal memuat data bus')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { fetchBuses() }, [])
 
-  // ── Filter ───────────────────────────────────────────────────────────
   const filtered = buses.filter(b => {
     const matchSearch =
       b.kode_bus.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,61 +115,34 @@ export default function KelolaBus() {
     return matchSearch && matchArmada
   })
 
-  // ── Add ──────────────────────────────────────────────────────────────
-  const openAdd = () => {
-    setModalMode('add')
-    setFormData(EMPTY_FORM)
-    setSelectedBus(null)
-    setShowModal(true)
-  }
+  const openAdd = () => { setModalMode('add'); setFormData(EMPTY_FORM); setSelectedBus(null); setShowModal(true) }
 
-  // ── Edit ─────────────────────────────────────────────────────────────
   const openEdit = (bus: BusData) => {
-    setModalMode('edit')
-    setSelectedBus(bus)
-    setFormData({
-      kode_bus: bus.kode_bus,
-      nopol: bus.nopol,
-      armada_id: bus.armada_id?.toString() ?? '',
-      status_aktif: bus.status_aktif
-    })
+    setModalMode('edit'); setSelectedBus(bus)
+    setFormData({ kode_bus: bus.kode_bus, nopol: bus.nopol, armada_id: bus.armada_id?.toString() ?? '', status_aktif: bus.status_aktif })
     setShowModal(true)
   }
 
   const handleSave = async () => {
     if (!formData.kode_bus || !formData.nopol || !formData.armada_id) {
-      alert('Kode bus, nopol, dan armada wajib diisi')
-      return
+      alert('Kode bus, nopol, dan armada wajib diisi'); return
     }
     setSaving(true)
     try {
-      const body = {
-        kode_bus: formData.kode_bus,
-        nopol: formData.nopol,
-        armada_id: parseInt(formData.armada_id),
-        status_aktif: formData.status_aktif
-      }
-
+      const body = { kode_bus: formData.kode_bus, nopol: formData.nopol, armada_id: parseInt(formData.armada_id), status_aktif: formData.status_aktif }
       if (modalMode === 'add') {
         await apiFetch('/api/bus', { method: 'POST', body: JSON.stringify(body) })
       } else if (selectedBus) {
         await apiFetch(`/api/bus/${selectedBus.bus_id}`, { method: 'PUT', body: JSON.stringify(body) })
       }
-
       await fetchBuses()
       setShowModal(false)
     } catch (err: any) {
       alert(err.message ?? 'Gagal menyimpan data bus')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
-  // ── Delete ───────────────────────────────────────────────────────────
-  const openDelete = (bus: BusData) => {
-    setSelectedBus(bus)
-    setShowDeleteModal(true)
-  }
+  const openDelete = (bus: BusData) => { setSelectedBus(bus); setShowDeleteModal(true) }
 
   const confirmDelete = async () => {
     if (!selectedBus) return
@@ -140,21 +153,18 @@ export default function KelolaBus() {
       setShowDeleteModal(false)
     } catch (err: any) {
       alert(err.message ?? 'Gagal menghapus bus')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
-  // ── Render ───────────────────────────────────────────────────────────
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
         <h1 className="page-title">Kelola Bus</h1>
 
-        {/* Controls */}
+        {/* ── Controls ── */}
         <div className="table-controls">
           <div className="search-box">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><SearchIcon /></span>
             <input
               type="text"
               placeholder="Cari kode bus, nopol, atau driver..."
@@ -164,11 +174,7 @@ export default function KelolaBus() {
             />
           </div>
 
-          <select
-            value={armadaFilter}
-            onChange={e => setArmadaFilter(e.target.value)}
-            className="role-filter"
-          >
+          <select value={armadaFilter} onChange={e => setArmadaFilter(e.target.value)} className="role-filter">
             <option value="All">Semua Armada</option>
             <option value="A">Armada A</option>
             <option value="B">Armada B</option>
@@ -176,12 +182,12 @@ export default function KelolaBus() {
           </select>
 
           <button onClick={openAdd} className="btn-add-user">
-            <span>➕</span>
+            <PlusIcon />
             <span>Tambah Bus</span>
           </button>
         </div>
 
-        {/* Table */}
+        {/* ── Table ── */}
         {loading ? (
           <div className="loading-state">Memuat data bus...</div>
         ) : error ? (
@@ -194,13 +200,8 @@ export default function KelolaBus() {
             <table className="user-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Kode Bus</th>
-                  <th>Nomor Polisi</th>
-                  <th>Armada</th>
-                  <th>Driver</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
+                  <th>#</th><th>Kode Bus</th><th>Nomor Polisi</th>
+                  <th>Armada</th><th>Driver</th><th>Status</th><th>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -210,37 +211,35 @@ export default function KelolaBus() {
                     <td><strong style={{ color: '#667eea' }}>{bus.kode_bus}</strong></td>
                     <td>{bus.nopol}</td>
                     <td>
-                      {bus.nama_armada ? (
-                        <span className="role-badge role-petugas">{bus.nama_armada}</span>
-                      ) : (
-                        <span style={{ color: '#94a3b8' }}>-</span>
-                      )}
+                      {bus.nama_armada
+                        ? <span className="role-badge role-petugas">{bus.nama_armada}</span>
+                        : <span style={{ color: '#94a3b8' }}>-</span>}
                     </td>
                     <td>
                       {bus.status_aktif === 'nonaktif' ? (
                         <span style={{ color: '#94a3b8' }}>—</span>
                       ) : bus.nama_driver ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          🚌 {bus.nama_driver}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <DriverIcon />
+                          {bus.nama_driver}
                         </span>
                       ) : (
                         <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Belum ada driver</span>
                       )}
                     </td>
-                    <td>
-                      <span className={`status-badge status-${bus.status_aktif}`}>
-                        {bus.status_aktif === 'aktif' ? '🟢 Aktif' : '🔴 Nonaktif'}
-                      </span>
-                    </td>
+                    <td><StatusDot status={bus.status_aktif} /></td>
                     <td className="action-buttons">
-                      <button onClick={() => openEdit(bus)} className="btn-edit">✏️ Edit</button>
-                      <button onClick={() => openDelete(bus)} className="btn-delete">🗑️ Hapus</button>
+                      <button onClick={() => openEdit(bus)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <EditIcon /> Edit
+                      </button>
+                      <button onClick={() => openDelete(bus)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <TrashIcon /> Hapus
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-
             {filtered.length === 0 && (
               <div className="no-data"><p>Tidak ada data bus yang ditemukan</p></div>
             )}
@@ -253,61 +252,34 @@ export default function KelolaBus() {
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>{modalMode === 'add' ? 'Tambah Bus Baru' : 'Edit Bus'}</h2>
-                <button onClick={() => setShowModal(false)} className="modal-close">✖️</button>
+                <button onClick={() => setShowModal(false)} className="modal-close"><CloseIcon /></button>
               </div>
-
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Kode Bus <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    value={formData.kode_bus}
-                    onChange={e => setFormData({ ...formData, kode_bus: e.target.value })}
-                    placeholder="Contoh: TR 01"
-                    className="form-input"
-                  />
+                  <input type="text" value={formData.kode_bus} onChange={e => setFormData({ ...formData, kode_bus: e.target.value })} placeholder="Contoh: TR 01" className="form-input" />
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Nomor Polisi <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    value={formData.nopol}
-                    onChange={e => setFormData({ ...formData, nopol: e.target.value })}
-                    placeholder="Contoh: BL 1234 AB"
-                    className="form-input"
-                  />
+                  <input type="text" value={formData.nopol} onChange={e => setFormData({ ...formData, nopol: e.target.value })} placeholder="Contoh: BL 1234 AB" className="form-input" />
                 </div>
-
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Armada <span className="required">*</span></label>
-                    <select
-                      value={formData.armada_id}
-                      onChange={e => setFormData({ ...formData, armada_id: e.target.value })}
-                      className="form-select"
-                    >
+                    <select value={formData.armada_id} onChange={e => setFormData({ ...formData, armada_id: e.target.value })} className="form-select">
                       <option value="">Pilih Armada</option>
-                      {ARMADA_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
+                      {ARMADA_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                     </select>
                   </div>
-
                   <div className="form-group">
                     <label className="form-label">Status</label>
-                    <select
-                      value={formData.status_aktif}
-                      onChange={e => setFormData({ ...formData, status_aktif: e.target.value as any })}
-                      className="form-select"
-                    >
+                    <select value={formData.status_aktif} onChange={e => setFormData({ ...formData, status_aktif: e.target.value as any })} className="form-select">
                       <option value="aktif">Aktif</option>
                       <option value="nonaktif">Nonaktif</option>
                     </select>
                   </div>
                 </div>
               </div>
-
               <div className="modal-footer">
                 <button onClick={() => setShowModal(false)} className="btn-cancel">Batal</button>
                 <button onClick={handleSave} disabled={saving} className="btn-save">
@@ -322,7 +294,7 @@ export default function KelolaBus() {
         {showDeleteModal && selectedBus && (
           <div className="modal-overlay delete-modal" onClick={() => setShowDeleteModal(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <div className="delete-icon">⚠️</div>
+              <div className="delete-icon"><WarningIcon size={32} /></div>
               <h2 className="modal-title">Konfirmasi Hapus Bus</h2>
               <p className="delete-message">Apakah Anda yakin ingin menghapus bus ini?</p>
               <div className="delete-user-info">
@@ -330,8 +302,9 @@ export default function KelolaBus() {
                 <div className="delete-user-role">{selectedBus.nopol} • {selectedBus.nama_armada}</div>
               </div>
               {selectedBus.driver_id && (
-                <p style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center', margin: '0.5rem 0' }}>
-                  ⚠️ Bus ini masih digunakan oleh {selectedBus.nama_driver}
+                <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#ef4444', fontSize: '0.85rem', textAlign: 'center', margin: '0.5rem 0' }}>
+                  <WarningIcon size={14} color="#ef4444" />
+                  Bus ini masih digunakan oleh {selectedBus.nama_driver}
                 </p>
               )}
               <div className="form-actions">
