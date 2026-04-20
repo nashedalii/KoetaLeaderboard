@@ -216,9 +216,6 @@ export const rejectPenilaian = async (req, res) => {
     if (check.rows.length === 0) {
       return res.status(404).json({ message: 'Penilaian tidak ditemukan' })
     }
-    if (check.rows[0].status_validasi === 'approved') {
-      return res.status(409).json({ message: 'Penilaian yang sudah disetujui tidak bisa ditolak' })
-    }
 
     await client.query('BEGIN')
 

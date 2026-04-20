@@ -51,45 +51,102 @@ interface DetailData {
   log: LogItem[]
 }
 
+type ViewMode = 'grid' | 'list'
+
 const apiBase = process.env.NEXT_PUBLIC_API_URL || ''
-
 const getToken = () => {
-  try { return JSON.parse(localStorage.getItem('auth') || '{}').token || '' }
-  catch { return '' }
+  try { return JSON.parse(localStorage.getItem('auth') || '{}').token || '' } catch { return '' }
 }
-
 const authHeader = () => ({ Authorization: `Bearer ${getToken()}` })
 
+// ── Status config ──────────────────────────────────────────────────────
+const STATUS_CFG = {
+  pending:  { label: 'Menunggu',  color: '#d97706', bg: '#fef3c7', border: '#fcd34d' },
+  approved: { label: 'Disetujui', color: '#059669', bg: '#d1fae5', border: '#6ee7b7' },
+  rejected: { label: 'Ditolak',   color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
+}
+const ROW_BG = {
+  pending:  '#fffbeb',
+  approved: '#f0fdf4',
+  rejected: '#fef2f2',
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const cfg = STATUS_CFG[status as keyof typeof STATUS_CFG] ?? { label: status, color: '#6b7280', bg: '#f3f4f6', border: '#e5e7eb' }
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999,
+      color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}`,
+      whiteSpace: 'nowrap',
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color, flexShrink: 0 }} />
+      {cfg.label}
+    </span>
+  )
+}
+
+function ScoreBadge({ score }: { score: number }) {
+  const color = score >= 90 ? '#059669' : score >= 75 ? '#2563eb' : score >= 60 ? '#d97706' : '#dc2626'
+  const bg    = score >= 90 ? '#d1fae5' : score >= 75 ? '#dbeafe' : score >= 60 ? '#fef3c7' : '#fee2e2'
+  return (
+    <div style={{ background: bg, borderRadius: 12, padding: '10px 16px', textAlign: 'center', minWidth: 80 }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Skor Total</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums' }}>{Number(score).toFixed(2)}</div>
+    </div>
+  )
+}
+
+// ── SVG Icons ──────────────────────────────────────────────────────────
+const GridIcon  = () => <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+const ListIcon  = () => <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+const CloseIcon = () => <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+const SearchIcon = () => <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+const RefreshIcon = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+const EyeIcon   = () => <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+const CheckIcon = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+const XIcon     = () => <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+
+const SUMMARY_ICONS = {
+  total:    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 12 2 2 4-4"/></svg>,
+  pending:  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  approved: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+  rejected: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>,
+}
+
+const SUMMARY_STYLE = {
+  total:    { color: '#2563eb', bg: '#dbeafe', gradient: 'linear-gradient(135deg,#eff6ff,#dbeafe)' },
+  pending:  { color: '#d97706', bg: '#fef3c7', gradient: 'linear-gradient(135deg,#fffbeb,#fef3c7)' },
+  approved: { color: '#059669', bg: '#d1fae5', gradient: 'linear-gradient(135deg,#f0fdf4,#d1fae5)' },
+  rejected: { color: '#dc2626', bg: '#fee2e2', gradient: 'linear-gradient(135deg,#fef2f2,#fee2e2)' },
+}
+
+// ── Main Component ─────────────────────────────────────────────────────
 export default function ValidasiDataPetugas() {
-  const [list, setList]               = useState<PenilaianItem[]>([])
-  const [isLoading, setIsLoading]     = useState(true)
-  const [error, setError]             = useState<string | null>(null)
+  const [list, setList]             = useState<PenilaianItem[]>([])
+  const [isLoading, setIsLoading]   = useState(true)
+  const [error, setError]           = useState<string | null>(null)
+  const [viewMode, setViewMode]     = useState<ViewMode>('grid')
 
-  // Filter state
-  const [filterStatus, setFilterStatus]   = useState<string>('all')
-  const [filterArmada, setFilterArmada]   = useState<string>('all')
-  const [searchQuery, setSearchQuery]     = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterArmada, setFilterArmada] = useState<string>('all')
+  const [searchQuery, setSearchQuery]   = useState('')
 
-  // Detail modal
-  const [detailData, setDetailData]         = useState<DetailData | null>(null)
+  const [detailData, setDetailData]           = useState<DetailData | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
-  const [showDetail, setShowDetail]         = useState(false)
+  const [showDetail, setShowDetail]           = useState(false)
 
-  // Reject modal
   const [showReject, setShowReject]     = useState(false)
   const [rejectAlasan, setRejectAlasan] = useState('')
+  const [isRejectUlang, setIsRejectUlang] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [actionMsg, setActionMsg]       = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [actionMsg, setActionMsg]       = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // ── Fetch list ───────────────────────────────────────────────────────────
   const fetchList = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true); setError(null)
     try {
       const params = new URLSearchParams()
       if (filterStatus !== 'all') params.set('status_validasi', filterStatus)
-      if (filterArmada !== 'all') params.set('armada_id', filterArmada) // armada_id filter by name below
-
       const res = await fetch(`${apiBase}/api/validasi?${params}`, { headers: authHeader() })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Gagal memuat data')
@@ -103,17 +160,14 @@ export default function ValidasiDataPetugas() {
 
   useEffect(() => { fetchList() }, [fetchList])
 
-  // ── Derived unique armada list for filter ────────────────────────────────
   const armadaList = Array.from(new Set(list.map(p => p.nama_armada))).sort()
 
-  // ── Client-side search + armada filter ──────────────────────────────────
   const filtered = list.filter(p => {
     const matchArmada = filterArmada === 'all' || p.nama_armada === filterArmada
     const matchSearch = p.nama_driver.toLowerCase().includes(searchQuery.toLowerCase())
     return matchArmada && matchSearch
   })
 
-  // ── Summary counts (from full list) ─────────────────────────────────────
   const counts = {
     total:    list.length,
     pending:  list.filter(p => p.status_validasi === 'pending').length,
@@ -121,254 +175,373 @@ export default function ValidasiDataPetugas() {
     rejected: list.filter(p => p.status_validasi === 'rejected').length,
   }
 
-  // ── Open detail ──────────────────────────────────────────────────────────
   const openDetail = async (id: number) => {
-    setIsLoadingDetail(true)
-    setShowDetail(true)
-    setDetailData(null)
-    setActionMsg(null)
+    setIsLoadingDetail(true); setShowDetail(true); setDetailData(null); setActionMsg(null)
     try {
       const res = await fetch(`${apiBase}/api/validasi/${id}`, { headers: authHeader() })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
       setDetailData(data)
     } catch (err: any) {
-      setShowDetail(false)
-      setError(err.message)
-    } finally {
-      setIsLoadingDetail(false)
-    }
+      setShowDetail(false); setError(err.message)
+    } finally { setIsLoadingDetail(false) }
   }
 
-  const closeDetail = () => {
-    setShowDetail(false)
-    setDetailData(null)
-    setActionMsg(null)
-  }
+  const closeDetail = () => { setShowDetail(false); setDetailData(null); setActionMsg(null) }
 
-  // ── Approve ──────────────────────────────────────────────────────────────
   const handleApprove = async () => {
     if (!detailData) return
     setIsSubmitting(true)
     try {
-      const res = await fetch(
-        `${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}/approve`,
-        { method: 'PUT', headers: authHeader() }
-      )
+      const res = await fetch(`${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}/approve`, { method: 'PUT', headers: authHeader() })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
       setActionMsg({ type: 'success', text: data.message })
       fetchList()
-      // Refresh detail
-      const res2 = await fetch(
-        `${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}`,
-        { headers: authHeader() }
-      )
+      const res2 = await fetch(`${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}`, { headers: authHeader() })
       const data2 = await res2.json()
       if (res2.ok) setDetailData(data2)
     } catch (err: any) {
       setActionMsg({ type: 'error', text: err.message })
-    } finally {
-      setIsSubmitting(false)
-    }
+    } finally { setIsSubmitting(false) }
   }
 
-  // ── Reject ───────────────────────────────────────────────────────────────
-  const openReject = () => {
-    setRejectAlasan('')
-    setShowReject(true)
+  const openReject = (isUlang = false) => {
+    setRejectAlasan(''); setIsRejectUlang(isUlang); setShowReject(true)
   }
 
   const handleReject = async () => {
     if (!detailData || !rejectAlasan.trim()) return
     setIsSubmitting(true)
     try {
-      const res = await fetch(
-        `${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}/reject`,
-        {
-          method: 'PUT',
-          headers: { ...authHeader(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ alasan: rejectAlasan.trim() })
-        }
-      )
+      const res = await fetch(`${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}/reject`, {
+        method: 'PUT',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alasan: rejectAlasan.trim() }),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
       setShowReject(false)
       setActionMsg({ type: 'success', text: data.message })
       fetchList()
-      const res2 = await fetch(
-        `${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}`,
-        { headers: authHeader() }
-      )
+      const res2 = await fetch(`${apiBase}/api/validasi/${detailData.penilaian.penilaian_id}`, { headers: authHeader() })
       const data2 = await res2.json()
       if (res2.ok) setDetailData(data2)
     } catch (err: any) {
       setActionMsg({ type: 'error', text: err.message })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      pending:  'status-badge pending',
-      approved: 'status-badge approved',
-      rejected: 'status-badge rejected',
-    }
-    const label: Record<string, string> = {
-      pending:  'Menunggu',
-      approved: 'Disetujui',
-      rejected: 'Ditolak',
-    }
-    return <span className={map[status] || 'status-badge'}>{label[status] || status}</span>
+    } finally { setIsSubmitting(false) }
   }
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-
   const fmtDateTime = (iso: string) =>
     new Date(iso).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
 
-        {/* Header */}
-        <div className="page-header">
+        {/* ── Page Header ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 className="page-title">Validasi Data Petugas</h1>
-            <p className="page-subtitle">Review dan validasi penilaian driver yang disubmit petugas</p>
+            <h1 className="page-title" style={{ marginBottom: 4 }}>Validasi Data Petugas</h1>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, margin: 0 }}>
+              Review dan validasi penilaian driver yang disubmit petugas
+            </p>
           </div>
-          <button className="btn btn-outline" onClick={fetchList} disabled={isLoading}>
-            {isLoading ? 'Memuat...' : 'Refresh'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {/* View toggle */}
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: 3, gap: 2 }}>
+              {(['grid', 'list'] as ViewMode[]).map(mode => (
+                <button key={mode} onClick={() => setViewMode(mode)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 500,
+                    background: viewMode === mode ? '#fff' : 'transparent',
+                    color: viewMode === mode ? '#1e293b' : 'rgba(255,255,255,0.7)',
+                    transition: 'all 0.2s',
+                  }}>
+                  {mode === 'grid' ? <GridIcon /> : <ListIcon />}
+                  {mode === 'grid' ? 'Grid' : 'Tabel'}
+                </button>
+              ))}
+            </div>
+            <button onClick={fetchList} disabled={isLoading}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.25)',
+                background: 'rgba(255,255,255,0.1)', color: 'white',
+                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              }}>
+              <RefreshIcon />
+              {isLoading ? 'Memuat...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
-        {/* Error banner */}
         {error && (
-          <div className="error-banner" style={{ marginBottom: '1rem' }}>
+          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
             {error}
           </div>
         )}
 
-        {/* Summary Cards */}
-        <div className="input-summary">
-          <div className="summary-item total" style={{ cursor: 'pointer' }} onClick={() => setFilterStatus('all')}>
-            <span className="summary-icon">📋</span>
-            <div>
-              <p className="summary-label">Total Penilaian</p>
-              <p className="summary-value">{counts.total}</p>
-            </div>
-          </div>
-          <div className="summary-item pending" style={{ cursor: 'pointer' }} onClick={() => setFilterStatus('pending')}>
-            <span className="summary-icon">⏳</span>
-            <div>
-              <p className="summary-label">Menunggu Validasi</p>
-              <p className="summary-value">{counts.pending}</p>
-            </div>
-          </div>
-          <div className="summary-item approved" style={{ cursor: 'pointer' }} onClick={() => setFilterStatus('approved')}>
-            <span className="summary-icon">✓</span>
-            <div>
-              <p className="summary-label">Disetujui</p>
-              <p className="summary-value">{counts.approved}</p>
-            </div>
-          </div>
-          <div className="summary-item rejected" style={{ cursor: 'pointer' }} onClick={() => setFilterStatus('rejected')}>
-            <span className="summary-icon">✕</span>
-            <div>
-              <p className="summary-label">Ditolak</p>
-              <p className="summary-value">{counts.rejected}</p>
-            </div>
-          </div>
+        {/* ── Summary Cards ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 24 }}>
+          {(['total', 'pending', 'approved', 'rejected'] as const).map(key => {
+            const s = SUMMARY_STYLE[key]
+            const labels = { total: 'Total Penilaian', pending: 'Menunggu Validasi', approved: 'Disetujui', rejected: 'Ditolak' }
+            const isActive = filterStatus === (key === 'total' ? 'all' : key)
+            return (
+              <div key={key} onClick={() => setFilterStatus(key === 'total' ? 'all' : key)}
+                style={{
+                  background: '#fff', borderRadius: 16, padding: '16px 18px',
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  cursor: 'pointer', border: `2px solid ${isActive ? s.color : 'transparent'}`,
+                  boxShadow: isActive ? `0 0 0 3px ${s.bg}` : '0 2px 12px rgba(0,0,0,0.08)',
+                  transition: 'all 0.2s',
+                }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: s.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, flexShrink: 0 }}>
+                  {SUMMARY_ICONS[key]}
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>{labels[key]}</p>
+                  <p style={{ fontSize: 26, fontWeight: 800, color: s.color, margin: '2px 0 0', fontVariantNumeric: 'tabular-nums' }}>{counts[key]}</p>
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Filters */}
-        <div className="input-controls">
-          <div className="filter-group">
-            <label className="filter-label">Status:</label>
-            <select className="filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        {/* ── Filters ── */}
+        <div style={{
+          background: '#fff', borderRadius: 14, padding: '14px 18px',
+          display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center',
+          marginBottom: 20, boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200 }}>
+            <SearchIcon />
+            <input type="text" placeholder="Cari nama driver..." value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ border: 'none', outline: 'none', fontSize: 14, color: '#1e293b', width: '100%', background: 'transparent' }} />
+          </div>
+          <div style={{ width: 1, height: 24, background: '#e5e7eb' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Armada:</span>
+            <select value={filterArmada} onChange={e => setFilterArmada(e.target.value)}
+              style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 13, color: '#1e293b', background: '#f9fafb', outline: 'none', cursor: 'pointer' }}>
+              <option value="all">Semua Armada</option>
+              {armadaList.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Status:</span>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+              style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 13, color: '#1e293b', background: '#f9fafb', outline: 'none', cursor: 'pointer' }}>
               <option value="all">Semua</option>
               <option value="pending">Menunggu</option>
               <option value="approved">Disetujui</option>
               <option value="rejected">Ditolak</option>
             </select>
           </div>
-          <div className="filter-group">
-            <label className="filter-label">Armada:</label>
-            <select className="filter-select" value={filterArmada} onChange={e => setFilterArmada(e.target.value)}>
-              <option value="all">Semua Armada</option>
-              {armadaList.map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </div>
-          <div className="search-box">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Cari nama driver..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
+          <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto' }}>{filtered.length} data</span>
         </div>
 
-        {/* List */}
+        {/* ── Content ── */}
         {isLoading ? (
-          <div className="loading-state">
-            <div className="loading-spinner" />
-            <p>Memuat data penilaian...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, gap: 12 }}>
+            <div style={{ width: 36, height: 36, border: '3px solid #e5e7eb', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>Memuat data penilaian...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">✓</div>
-            <h3>Tidak ada data</h3>
-            <p>Tidak ada penilaian yang sesuai dengan filter yang dipilih</p>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
+            <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={1.8} strokeLinecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+            </div>
+            <p style={{ fontWeight: 600, color: '#374151', margin: 0 }}>Tidak ada data</p>
+            <p style={{ color: '#9ca3af', fontSize: 13, marginTop: 4 }}>Tidak ada penilaian yang sesuai dengan filter</p>
           </div>
-        ) : (
-          <div className="validation-list">
-            {filtered.map(p => (
-              <div key={p.penilaian_id} className="validation-card">
-                <div className="validation-header">
-                  <div className="validation-info">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <h3 className="validation-driver-name">{p.nama_driver}</h3>
-                      {statusBadge(p.status_validasi)}
+
+        ) : viewMode === 'grid' ? (
+          /* ── GRID VIEW ── */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+            {filtered.map(p => {
+              const cfg = STATUS_CFG[p.status_validasi]
+              return (
+                <div key={p.penilaian_id} style={{
+                  background: '#fff', borderRadius: 16,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                  borderTop: `3px solid ${cfg.color}`,
+                  overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                  transition: 'box-shadow 0.2s, transform 0.2s',
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.13)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLDivElement).style.transform = 'none' }}
+                >
+                  <div style={{ padding: '16px 18px', flex: 1 }}>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                      <div>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>{p.nama_driver}</p>
+                        <p style={{ fontSize: 12, color: '#9ca3af', margin: '3px 0 0' }}>{p.nama_periode}</p>
+                      </div>
+                      <StatusBadge status={p.status_validasi} />
                     </div>
-                    <p className="validation-meta">
-                      <span className="badge-armada">{p.nama_armada}</span>
-                      <span className="divider">•</span>
-                      <span>{p.nama_periode}</span>
-                      <span className="divider">•</span>
-                      <span>{p.kode_bus} / {p.nopol}</span>
-                    </p>
-                    <p className="validation-petugas">
-                      Diinput oleh: <strong>{p.nama_petugas_input}</strong>
-                      {' '}&nbsp;•&nbsp; {fmtDate(p.created_at)}
-                    </p>
+
+                    {/* Info rows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#9ca3af' }}>Armada</span>
+                        <span style={{ fontWeight: 600, color: '#374151' }}>{p.nama_armada}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#9ca3af' }}>Bus</span>
+                        <span style={{ fontWeight: 600, color: '#374151' }}>{p.kode_bus} / {p.nopol}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#9ca3af' }}>Skor</span>
+                        <span style={{ fontWeight: 800, fontSize: 14, color: cfg.color }}>{Number(p.skor_total).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ height: 1, background: '#f3f4f6', margin: '12px 0' }} />
+
+                    {/* Input info */}
+                    <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                      <span>Input: </span>
+                      <span style={{ fontWeight: 600, color: '#d97706' }}>{p.nama_petugas_input}</span>
+                      <span> · {fmtDate(p.created_at)}</span>
+                    </div>
+                    {p.nama_admin_validasi && (
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>
+                        <span>Validasi: </span>
+                        <span style={{ fontWeight: 600, color: '#2563eb' }}>{p.nama_admin_validasi}</span>
+                      </div>
+                    )}
                     {p.status_validasi === 'rejected' && p.note_validasi && (
-                      <p className="rejected-note">Alasan tolak: {p.note_validasi}</p>
+                      <div style={{ marginTop: 8, padding: '6px 10px', background: '#fef2f2', borderRadius: 6, fontSize: 11, color: '#dc2626', borderLeft: '3px solid #fca5a5' }}>
+                        Alasan: {p.note_validasi}
+                      </div>
                     )}
                   </div>
-                  <div className="validation-score">
-                    <div className="score-label">Skor Total</div>
-                    <div className="score-value">{Number(p.skor_total).toFixed(2)}</div>
+
+                  <div style={{ padding: '10px 18px', borderTop: '1px solid #f3f4f6', background: '#fafafa' }}>
+                    <button onClick={() => openDetail(p.penilaian_id)}
+                      style={{
+                        width: '100%', padding: '8px', borderRadius: 8,
+                        border: '1.5px solid #e5e7eb', background: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff' }}
+                    >
+                      <EyeIcon /> Lihat Detail
+                    </button>
                   </div>
                 </div>
-                <div className="validation-actions">
-                  <button className="btn btn-outline" onClick={() => openDetail(p.penilaian_id)}>
-                    Lihat Detail
-                  </button>
+              )
+            })}
+          </div>
+
+        ) : (
+          /* ── TABLE / LIST VIEW ── */
+          <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'linear-gradient(135deg,#1e40af,#3b82f6)' }}>
+                    {['#', 'Driver', 'Armada', 'Bus', 'Periode', 'Diinput Oleh', 'Tgl Input', 'Divalidasi', 'Skor', 'Status', 'Aksi'].map(col => (
+                      <th key={col} style={{
+                        padding: '12px 14px', textAlign: 'left', fontWeight: 600,
+                        fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em',
+                        color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap',
+                        borderBottom: '2px solid rgba(255,255,255,0.15)',
+                      }}>{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((p, idx) => {
+                    const rowBg = ROW_BG[p.status_validasi] ?? '#fff'
+                    const cfg = STATUS_CFG[p.status_validasi]
+                    const score = Number(p.skor_total)
+                    const scoreColor = score >= 90 ? '#059669' : score >= 75 ? '#2563eb' : score >= 60 ? '#d97706' : '#dc2626'
+                    return (
+                      <tr key={p.penilaian_id} style={{ background: idx % 2 === 0 ? rowBg : '#fff', borderBottom: '1px solid #f3f4f6', transition: 'background 0.15s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = '#f8fafc'}
+                        onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? rowBg : '#fff'}
+                      >
+                        <td style={{ padding: '11px 14px', color: '#9ca3af', fontWeight: 500 }}>{idx + 1}</td>
+                        <td style={{ padding: '11px 14px', fontWeight: 700, color: '#111827', whiteSpace: 'nowrap' }}>{p.nama_driver}</td>
+                        <td style={{ padding: '11px 14px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#ede9fe', padding: '2px 8px', borderRadius: 999 }}>{p.nama_armada}</span>
+                        </td>
+                        <td style={{ padding: '11px 14px', color: '#374151', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 600, color: '#2563eb' }}>{p.kode_bus}</span>
+                          <span style={{ color: '#9ca3af' }}> / {p.nopol}</span>
+                        </td>
+                        <td style={{ padding: '11px 14px', color: '#374151', whiteSpace: 'nowrap' }}>{p.nama_periode}</td>
+                        {/* Highlighted: Petugas Input */}
+                        <td style={{ padding: '11px 14px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 600, color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: 6, fontSize: 12 }}>{p.nama_petugas_input}</span>
+                        </td>
+                        <td style={{ padding: '11px 14px', color: '#6b7280', whiteSpace: 'nowrap', fontSize: 12 }}>{fmtDate(p.created_at)}</td>
+                        {/* Highlighted: Admin Validasi */}
+                        <td style={{ padding: '11px 14px', whiteSpace: 'nowrap' }}>
+                          {p.nama_admin_validasi
+                            ? <span style={{ fontWeight: 600, color: '#2563eb', background: '#dbeafe', padding: '2px 8px', borderRadius: 6, fontSize: 12 }}>{p.nama_admin_validasi}</span>
+                            : <span style={{ color: '#d1d5db' }}>—</span>}
+                        </td>
+                        {/* Score */}
+                        <td style={{ padding: '11px 14px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 800, fontSize: 15, color: scoreColor, fontVariantNumeric: 'tabular-nums' }}>
+                            {score.toFixed(2)}
+                          </span>
+                        </td>
+                        <td style={{ padding: '11px 14px' }}>
+                          <StatusBadge status={p.status_validasi} />
+                        </td>
+                        <td style={{ padding: '11px 14px' }}>
+                          <button onClick={() => openDetail(p.penilaian_id)}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              padding: '5px 10px', borderRadius: 7,
+                              border: '1.5px solid #e5e7eb', background: '#fff',
+                              fontSize: 12, fontWeight: 600, color: '#374151', cursor: 'pointer',
+                              whiteSpace: 'nowrap', transition: 'all 0.15s',
+                            }}
+                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'}
+                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#fff'}
+                          >
+                            <EyeIcon /> Detail
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Table legend */}
+            <div style={{ padding: '10px 16px', borderTop: '1px solid #f3f4f6', background: '#fafafa', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              {Object.entries(STATUS_CFG).map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#6b7280' }}>
+                  <div style={{ width: 12, height: 12, borderRadius: 3, background: ROW_BG[k as keyof typeof ROW_BG], border: `1px solid ${v.border}` }} />
+                  Baris {v.label}
                 </div>
+              ))}
+              <div style={{ marginLeft: 'auto', fontSize: 11, color: '#9ca3af' }}>
+                <span style={{ fontWeight: 600, color: '#d97706' }}>Kuning</span> = Petugas Input &nbsp;|&nbsp;
+                <span style={{ fontWeight: 600, color: '#2563eb' }}>Biru</span> = Admin Validasi
               </div>
-            ))}
+            </div>
           </div>
         )}
 
-        {/* ── Detail Modal ──────────────────────────────────────────────── */}
+        {/* ── Detail Modal ── */}
         {showDetail && (
           <div className="modal-overlay" onClick={closeDetail}>
             <div className="modal-content modal-large" onClick={e => e.stopPropagation()}>
@@ -376,79 +549,89 @@ export default function ValidasiDataPetugas() {
                 <div>
                   <h2 className="modal-title">Detail Penilaian</h2>
                   {detailData && (
-                    <p className="modal-subtitle">
-                      {detailData.penilaian.nama_driver} — {detailData.penilaian.nama_periode}
-                    </p>
+                    <p className="modal-subtitle">{detailData.penilaian.nama_driver} — {detailData.penilaian.nama_periode}</p>
                   )}
                 </div>
-                <button className="modal-close" onClick={closeDetail}>✕</button>
+                <button className="modal-close" onClick={closeDetail}><CloseIcon /></button>
               </div>
 
               <div className="modal-body">
                 {isLoadingDetail ? (
-                  <div className="loading-state">
-                    <div className="loading-spinner" />
-                    <p>Memuat detail...</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 0', gap: 12 }}>
+                    <div style={{ width: 32, height: 32, border: '3px solid #e5e7eb', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    <p style={{ color: '#9ca3af' }}>Memuat detail...</p>
                   </div>
                 ) : detailData ? (
                   <>
-                    {/* Action message */}
                     {actionMsg && (
-                      <div className={actionMsg.type === 'success' ? 'success-banner' : 'error-banner'}
-                           style={{ marginBottom: '1rem' }}>
+                      <div style={{ padding: '10px 14px', borderRadius: 10, marginBottom: 16, fontSize: 13, fontWeight: 500,
+                        background: actionMsg.type === 'success' ? '#d1fae5' : '#fee2e2',
+                        color: actionMsg.type === 'success' ? '#065f46' : '#991b1b',
+                        border: `1px solid ${actionMsg.type === 'success' ? '#6ee7b7' : '#fca5a5'}`,
+                      }}>
                         {actionMsg.text}
                       </div>
                     )}
 
-                    {/* Info Penilaian */}
-                    <div className="preview-section">
-                      <h3>Informasi Penilaian</h3>
-                      <table className="preview-table">
-                        <tbody>
-                          <tr><td><strong>Driver</strong></td><td>{detailData.penilaian.nama_driver}</td></tr>
-                          <tr><td><strong>Kernet</strong></td><td>{(detailData.penilaian as any).nama_kernet || '-'}</td></tr>
-                          <tr><td><strong>Bus</strong></td><td>{detailData.penilaian.kode_bus} / {detailData.penilaian.nopol}</td></tr>
-                          <tr><td><strong>Armada</strong></td><td>{detailData.penilaian.nama_armada}</td></tr>
-                          <tr><td><strong>Periode</strong></td><td>{detailData.penilaian.nama_periode}</td></tr>
-                          <tr><td><strong>Petugas Input</strong></td><td>{detailData.penilaian.nama_petugas_input}</td></tr>
-                          <tr><td><strong>Tanggal Input</strong></td><td>{fmtDateTime(detailData.penilaian.created_at)}</td></tr>
-                          <tr><td><strong>Status</strong></td><td>{statusBadge(detailData.penilaian.status_validasi)}</td></tr>
-                          {detailData.penilaian.nama_admin_validasi && (
-                            <tr><td><strong>Divalidasi oleh</strong></td><td>{detailData.penilaian.nama_admin_validasi}</td></tr>
-                          )}
-                        </tbody>
-                      </table>
+                    {/* Info + Score side-by-side */}
+                    <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, background: '#f8fafc', borderRadius: 12, padding: '16px', minWidth: 240 }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#9ca3af', margin: '0 0 12px' }}>Informasi Penilaian</p>
+                        {[
+                          ['Driver', detailData.penilaian.nama_driver],
+                          ['Bus', `${detailData.penilaian.kode_bus} / ${detailData.penilaian.nopol}`],
+                          ['Armada', detailData.penilaian.nama_armada],
+                          ['Periode', detailData.penilaian.nama_periode],
+                          ['Tgl Input', fmtDateTime(detailData.penilaian.created_at)],
+                        ].map(([label, val]) => (
+                          <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #e5e7eb', fontSize: 13 }}>
+                            <span style={{ color: '#6b7280' }}>{label}</span>
+                            <span style={{ fontWeight: 600, color: '#111827', textAlign: 'right', maxWidth: '60%' }}>{val}</span>
+                          </div>
+                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #e5e7eb', fontSize: 13 }}>
+                          <span style={{ color: '#6b7280' }}>Petugas Input</span>
+                          <span style={{ fontWeight: 600, color: '#d97706' }}>{detailData.penilaian.nama_petugas_input}</span>
+                        </div>
+                        {detailData.penilaian.nama_admin_validasi && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13 }}>
+                            <span style={{ color: '#6b7280' }}>Divalidasi</span>
+                            <span style={{ fontWeight: 600, color: '#2563eb' }}>{detailData.penilaian.nama_admin_validasi}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', justifyContent: 'center', minWidth: 140 }}>
+                        <ScoreBadge score={Number(detailData.penilaian.skor_total)} />
+                        <StatusBadge status={detailData.penilaian.status_validasi} />
+                      </div>
                     </div>
 
-                    {/* Indikator */}
+                    {/* Detail Indikator */}
                     <div className="preview-section">
-                      <h3>Detail Indikator</h3>
-                      <table className="preview-table">
+                      <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280', marginBottom: 10 }}>Detail Indikator</h3>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                         <thead>
-                          <tr>
-                            <th style={{ textAlign: 'left', paddingBottom: '0.5rem' }}>Indikator</th>
-                            <th style={{ textAlign: 'center' }}>Bobot</th>
-                            <th style={{ textAlign: 'center' }}>Nilai</th>
-                            <th style={{ textAlign: 'center' }}>Kontribusi</th>
+                          <tr style={{ background: '#f1f5f9' }}>
+                            {['Indikator', 'Bobot', 'Nilai', 'Kontribusi'].map(h => (
+                              <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Indikator' ? 'left' : 'center', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                            ))}
                           </tr>
                         </thead>
                         <tbody>
                           {detailData.details.map(d => (
-                            <tr key={d.penilaian_detail_id}>
-                              <td>{d.nama_bobot}</td>
-                              <td style={{ textAlign: 'center' }}>{d.persentase_bobot}%</td>
-                              <td style={{ textAlign: 'center' }}>{Number(d.nilai).toFixed(2)}</td>
-                              <td style={{ textAlign: 'center' }}>
+                            <tr key={d.penilaian_detail_id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                              <td style={{ padding: '8px 12px', color: '#374151' }}>{d.nama_bobot}</td>
+                              <td style={{ padding: '8px 12px', textAlign: 'center', color: '#6b7280' }}>{d.persentase_bobot}%</td>
+                              <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600 }}>{Number(d.nilai).toFixed(2)}</td>
+                              <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>
                                 {((Number(d.nilai) * Number(d.persentase_bobot)) / 100).toFixed(2)}
                               </td>
                             </tr>
                           ))}
-                          <tr className="total-row">
-                            <td colSpan={3}><strong>Skor Total</strong></td>
-                            <td style={{ textAlign: 'center' }}>
-                              <strong className="total-score">
-                                {Number(detailData.penilaian.skor_total).toFixed(2)}
-                              </strong>
+                          <tr style={{ background: '#f8fafc', borderTop: '2px solid #e5e7eb' }}>
+                            <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: '#111827' }}>Skor Total</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 800, fontSize: 16, color: '#2563eb' }}>
+                              {Number(detailData.penilaian.skor_total).toFixed(2)}
                             </td>
                           </tr>
                         </tbody>
@@ -458,31 +641,33 @@ export default function ValidasiDataPetugas() {
                     {/* Catatan Petugas */}
                     {detailData.penilaian.catatan_petugas && (
                       <div className="preview-section">
-                        <h3>Catatan Petugas</h3>
-                        <p className="preview-note">{detailData.penilaian.catatan_petugas}</p>
+                        <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280', marginBottom: 8 }}>Catatan Petugas</h3>
+                        <p style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#92400e', margin: 0 }}>
+                          {detailData.penilaian.catatan_petugas}
+                        </p>
                       </div>
                     )}
 
-                    {/* Note Validasi */}
+                    {/* Note Penolakan */}
                     {detailData.penilaian.note_validasi && (
                       <div className="preview-section">
-                        <h3>Alasan Penolakan</h3>
-                        <p className="rejected-note">{detailData.penilaian.note_validasi}</p>
+                        <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#dc2626', marginBottom: 8 }}>Alasan Penolakan</h3>
+                        <p style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#991b1b', margin: 0 }}>
+                          {detailData.penilaian.note_validasi}
+                        </p>
                       </div>
                     )}
 
                     {/* Bukti Foto */}
                     {detailData.foto.length > 0 && (
                       <div className="preview-section">
-                        <h3>Bukti Foto</h3>
-                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280', marginBottom: 8 }}>Bukti Foto</h3>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                           {detailData.foto.map(f => (
-                            <a key={f.bukti_id} href={f.file_path} target="_blank" rel="noreferrer">
-                              <img
-                                src={f.file_path}
-                                alt={f.nama_file || 'Bukti foto'}
-                                style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }}
-                              />
+                            <a key={f.bukti_id} href={f.file_path} target="_blank" rel="noreferrer"
+                              style={{ display: 'block', borderRadius: 8, overflow: 'hidden', border: '2px solid #e5e7eb' }}>
+                              <img src={f.file_path} alt={f.nama_file || 'Bukti foto'}
+                                style={{ width: 120, height: 90, objectFit: 'cover', display: 'block' }} />
                             </a>
                           ))}
                         </div>
@@ -492,65 +677,85 @@ export default function ValidasiDataPetugas() {
                     {/* Riwayat Validasi */}
                     {detailData.log.length > 0 && (
                       <div className="preview-section">
-                        <h3>Riwayat Validasi</h3>
-                        <table className="preview-table">
-                          <tbody>
-                            {detailData.log.map(l => (
-                              <tr key={l.validasi_log_id}>
-                                <td>{fmtDateTime(l.created_at)}</td>
-                                <td>{l.nama_admin}</td>
-                                <td>{statusBadge(l.aksi)}</td>
-                                <td>{l.alasan || '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280', marginBottom: 8 }}>Riwayat Validasi</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {detailData.log.map(l => (
+                            <div key={l.validasi_log_id} style={{
+                              display: 'flex', alignItems: 'flex-start', gap: 12,
+                              padding: '10px 14px', background: '#f8fafc', borderRadius: 10,
+                              border: '1px solid #e5e7eb',
+                            }}>
+                              <StatusBadge status={l.aksi} />
+                              <div style={{ flex: 1 }}>
+                                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>{l.nama_admin}</p>
+                                {l.alasan && <p style={{ margin: '3px 0 0', fontSize: 12, color: '#dc2626' }}>{l.alasan}</p>}
+                              </div>
+                              <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap' }}>{fmtDateTime(l.created_at)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </>
                 ) : null}
               </div>
 
-              {/* Footer actions — only show for pending */}
-              {detailData && detailData.penilaian.status_validasi === 'pending' && (
+              {/* Footer actions */}
+              {detailData && (
                 <div className="modal-footer">
-                  <button
-                    className="btn btn-danger-outline"
-                    onClick={openReject}
-                    disabled={isSubmitting}
-                  >
-                    Tolak
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleApprove}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Memproses...' : 'Setujui'}
-                  </button>
+                  {detailData.penilaian.status_validasi === 'pending' && (
+                    <>
+                      <button className="btn btn-danger-outline" onClick={() => openReject(false)} disabled={isSubmitting}>
+                        <XIcon /> Tolak
+                      </button>
+                      <button className="btn btn-primary" onClick={handleApprove} disabled={isSubmitting}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <CheckIcon /> {isSubmitting ? 'Memproses...' : 'Setujui'}
+                      </button>
+                    </>
+                  )}
+                  {detailData.penilaian.status_validasi === 'approved' && (
+                    <button onClick={() => openReject(true)} disabled={isSubmitting}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '9px 18px', borderRadius: 10, border: '1.5px solid #fca5a5',
+                        background: '#fff', color: '#dc2626', fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#fef2f2'}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#fff'}
+                    >
+                      <XIcon /> Tolak Ulang
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* ── Reject Modal ─────────────────────────────────────────────── */}
+        {/* ── Reject / Tolak Ulang Modal ── */}
         {showReject && detailData && (
           <div className="modal-overlay" onClick={() => setShowReject(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
-                  <h2 className="modal-title">Tolak Penilaian</h2>
+                  <h2 className="modal-title" style={{ color: '#dc2626' }}>
+                    {isRejectUlang ? 'Tolak Ulang Penilaian' : 'Tolak Penilaian'}
+                  </h2>
                   <p className="modal-subtitle">{detailData.penilaian.nama_driver} — {detailData.penilaian.nama_periode}</p>
                 </div>
-                <button className="modal-close" onClick={() => setShowReject(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowReject(false)}><CloseIcon /></button>
               </div>
               <div className="modal-body">
+                {isRejectUlang && (
+                  <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#92400e' }}>
+                    Penilaian ini sebelumnya telah disetujui. Tolak ulang akan mengubah status kembali menjadi <strong>Ditolak</strong>.
+                  </div>
+                )}
                 <div className="form-section">
-                  <h3 className="form-section-title">Alasan Penolakan</h3>
-                  <p className="form-help-text">
-                    Berikan penjelasan mengapa data ini ditolak. Catatan ini akan ditampilkan ke petugas.
-                  </p>
+                  <h3 className="form-section-title">Alasan Penolakan <span style={{ color: '#ef4444' }}>*</span></h3>
+                  <p className="form-help-text">Penjelasan ini akan ditampilkan ke petugas yang menginput data.</p>
                   <textarea
                     className="form-textarea"
                     rows={5}
@@ -558,22 +763,13 @@ export default function ValidasiDataPetugas() {
                     value={rejectAlasan}
                     onChange={e => setRejectAlasan(e.target.value)}
                   />
+                  <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{rejectAlasan.trim().length} karakter</p>
                 </div>
               </div>
               <div className="modal-footer">
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setShowReject(false)}
-                  disabled={isSubmitting}
-                >
-                  Batal
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={handleReject}
-                  disabled={isSubmitting || !rejectAlasan.trim()}
-                >
-                  {isSubmitting ? 'Memproses...' : 'Konfirmasi Tolak'}
+                <button className="btn btn-outline" onClick={() => setShowReject(false)} disabled={isSubmitting}>Batal</button>
+                <button className="btn btn-danger" onClick={handleReject} disabled={isSubmitting || !rejectAlasan.trim()}>
+                  {isSubmitting ? 'Memproses...' : isRejectUlang ? 'Konfirmasi Tolak Ulang' : 'Konfirmasi Tolak'}
                 </button>
               </div>
             </div>
