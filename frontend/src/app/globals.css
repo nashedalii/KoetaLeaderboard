@@ -8134,4 +8134,267 @@ body {
   cursor: not-allowed;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   UI OVERRIDES — fixes cascading conflicts from earlier definitions
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Search box: fix icon overlap ──────────────────────────────────── */
+.search-box {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.search-box .search-icon {
+  position: absolute !important;
+  left: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  display: flex !important;
+  align-items: center !important;
+  z-index: 1 !important;
+}
+
+.search-box .search-input {
+  padding: 10px 16px 10px 42px !important;
+  width: 100% !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+  background: #fff !important;
+  outline: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.search-box .search-input:focus {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12) !important;
+}
+
+.search-box .search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* ── Dropdown / select controls ─────────────────────────────────────── */
+.role-filter,
+.form-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  padding: 10px 36px 10px 14px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+  background-color: #fff !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.role-filter:focus,
+.form-select:focus {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12) !important;
+}
+
+/* ── Modal header: gradient band ────────────────────────────────────── */
+.modal-content .modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-radius: 16px 16px 0 0 !important;
+  padding: 20px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: none !important;
+}
+
+.modal-content .modal-header h2,
+.modal-content .modal-header .modal-title {
+  color: #ffffff !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.modal-content .modal-header .modal-close {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background 0.2s !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.modal-content .modal-header .modal-close:hover {
+  background: rgba(255, 255, 255, 0.30) !important;
+}
+
+.modal-content .modal-header .modal-close svg {
+  stroke: #ffffff !important;
+}
+
+/* ── Modal body & footer ─────────────────────────────────────────────── */
+.modal-content .modal-body {
+  padding: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.modal-content .modal-footer {
+  padding: 16px 24px 20px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+/* ── Form internals ──────────────────────────────────────────────────── */
+.modal-content .form-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 14px !important;
+}
+
+.modal-content .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.modal-content .form-label {
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: uppercase !important;
+}
+
+.modal-content .form-label .required {
+  color: #ef4444 !important;
+  margin-left: 2px !important;
+}
+
+.modal-content .form-input {
+  padding: 10px 14px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+  background: #f8fafc !important;
+  outline: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.modal-content .form-input:focus {
+  border-color: #667eea !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12) !important;
+}
+
+.modal-content .form-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.modal-content .form-select {
+  padding: 10px 36px 10px 14px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+  background-color: #f8fafc !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.modal-content .form-select:focus {
+  border-color: #667eea !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12) !important;
+}
+
+/* ── Modal action buttons ────────────────────────────────────────────── */
+.modal-content .btn-cancel {
+  padding: 10px 20px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #64748b !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background 0.2s, border-color 0.2s !important;
+}
+
+.modal-content .btn-cancel:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.modal-content .btn-save {
+  padding: 10px 24px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #fff !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s, transform 0.15s !important;
+}
+
+.modal-content .btn-save:hover:not(:disabled) {
+  opacity: 0.92 !important;
+  transform: translateY(-1px) !important;
+}
+
+.modal-content .btn-save:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* ── Delete modal specifics ──────────────────────────────────────────── */
+.delete-modal .modal-content .form-actions {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  padding: 4px 0 4px !important;
+}
+
+.modal-content .btn-confirm-delete {
+  padding: 10px 24px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #fff !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s !important;
+}
+
+.modal-content .btn-confirm-delete:hover:not(:disabled) {
+  opacity: 0.88 !important;
+}
+
+.modal-content .btn-confirm-delete:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
 
