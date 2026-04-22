@@ -37,6 +37,16 @@ app.use('/api/driver',    driverRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/profile',  profileRoutes)
 
+// GET /api/armada — daftar armada untuk filter (super_admin)
+app.get('/api/armada', authenticate, authorize('super_admin', 'admin', 'petugas', 'driver'), async (req, res) => {
+  try {
+    const result = await pool.query('SELECT armada_id, kode_armada, nama_armada FROM armada ORDER BY kode_armada')
+    res.json(result.rows)
+  } catch (err) {
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+})
+
 // Test protected route
 app.get('/api/test-auth', authenticate, (req, res) => {
   res.json({ message: 'Token valid', user: req.user })

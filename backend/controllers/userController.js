@@ -9,27 +9,33 @@ const generatePassword = () => {
   return password
 }
 
-// POST /api/users/admin
+// POST /api/users/admin  — hanya super_admin
 export const createAdmin = async (req, res) => {
-  const { nama_admin, nomor_pegawai, username, email } = req.body
+  const { nama_admin, nomor_pegawai, username, email, armada_id, role: newRole } = req.body
 
   if (!nama_admin || !nomor_pegawai || !username || !email) {
     return res.status(400).json({ message: 'Semua field wajib diisi' })
+  }
+
+  const adminRole = newRole === 'super_admin' ? 'super_admin' : 'admin'
+  // admin vendor wajib punya armada_id
+  if (adminRole === 'admin' && !armada_id) {
+    return res.status(400).json({ message: 'armada_id wajib diisi untuk admin vendor' })
   }
 
   const password = generatePassword()
 
   try {
     const result = await pool.query(
-      `INSERT INTO admin (nama_admin, nomor_pegawai, username, email, password)
-       VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf')))
-       RETURNING admin_id AS id, nama_admin AS nama, username`,
-      [nama_admin, nomor_pegawai, username, email, password]
+      `INSERT INTO admin (nama_admin, nomor_pegawai, username, email, password, role, armada_id)
+       VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf')), $6, $7)
+       RETURNING admin_id AS id, nama_admin AS nama, username, role`,
+      [nama_admin, nomor_pegawai, username, email, password, adminRole, armada_id || null]
     )
 
     res.status(201).json({
       message: 'Admin berhasil dibuat',
-      user: { ...result.rows[0], role: 'admin' },
+      user: result.rows[0],
       password_awal: password
     })
   } catch (err) {
@@ -43,7 +49,14 @@ export const createAdmin = async (req, res) => {
 
 // POST /api/users/petugas
 export const createPetugas = async (req, res) => {
-  const { nama_petugas, nomor_pegawai, username, email, armada_id } = req.body
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
+  const { nama_petugas, nomor_pegawai, username, email } = req.body
+  let { armada_id } = req.body
+
+  // admin vendor wajib pakai armada_id dari JWT
+  if (callerRole !== 'super_admin') {
+    armada_id = callerArmadaId
+  }
 
   if (!nama_petugas || !nomor_pegawai || !username || !email || !armada_id) {
     return res.status(400).json({ message: 'Semua field wajib diisi' })
@@ -76,7 +89,13 @@ export const createPetugas = async (req, res) => {
 // PUT /api/users/admin/:id/reset-password
 export const resetAdminPassword = async (req, res) => {
   const { id } = req.params
+  const { role: callerRole } = req.user
   const password = generatePassword()
+
+  // admin vendor tidak bisa reset password admin lain
+  if (callerRole !== 'super_admin') {
+    return res.status(403).json({ message: 'Hanya super admin yang dapat mereset password admin' })
+  }
 
   try {
     const result = await pool.query(
@@ -104,7 +123,15 @@ export const resetAdminPassword = async (req, res) => {
 // PUT /api/users/petugas/:id/reset-password
 export const resetPetugasPassword = async (req, res) => {
   const { id } = req.params
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
   const password = generatePassword()
+
+  // admin vendor hanya bisa reset password petugas di armadanya
+  if (callerRole !== 'super_admin') {
+    const check = await pool.query(`SELECT armada_id FROM petugas WHERE petugas_id = $1`, [id])
+    if (check.rows.length === 0) return res.status(404).json({ message: 'Petugas tidak ditemukan' })
+    if (check.rows[0].armada_id !== callerArmadaId) return res.status(403).json({ message: 'Akses ditolak' })
+  }
 
   try {
     const result = await pool.query(
@@ -132,7 +159,15 @@ export const resetPetugasPassword = async (req, res) => {
 // PUT /api/users/driver/:id/reset-password
 export const resetDriverPassword = async (req, res) => {
   const { id } = req.params
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
   const password = generatePassword()
+
+  // admin vendor hanya bisa reset password driver di armadanya
+  if (callerRole !== 'super_admin') {
+    const check = await pool.query(`SELECT armada_id FROM driver WHERE driver_id = $1`, [id])
+    if (check.rows.length === 0) return res.status(404).json({ message: 'Driver tidak ditemukan' })
+    if (check.rows[0].armada_id !== callerArmadaId) return res.status(403).json({ message: 'Akses ditolak' })
+  }
 
   try {
     const result = await pool.query(
@@ -159,30 +194,64 @@ export const resetDriverPassword = async (req, res) => {
 
 // GET /api/users
 export const getAllUsers = async (req, res) => {
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
+
   try {
-    const adminResult = await pool.query(
-      `SELECT admin_id AS id, nama_admin AS nama, nomor_pegawai AS identifier,
-              email, status_aktif, 'admin' AS role
-       FROM admin`
-    )
+    let adminResult = { rows: [] }
+    let petugasResult
+    let driverResult
 
-    const petugasResult = await pool.query(
-      `SELECT p.petugas_id AS id, p.nama_petugas AS nama, p.nomor_pegawai AS identifier,
-              p.email, p.status_aktif, 'petugas' AS role,
-              a.kode_armada, a.nama_armada
-       FROM petugas p
-       LEFT JOIN armada a ON p.armada_id = a.armada_id`
-    )
+    if (callerRole === 'super_admin') {
+      // Super admin melihat semua admin
+      adminResult = await pool.query(
+        `SELECT admin_id AS id, nama_admin AS nama, nomor_pegawai AS identifier,
+                email, status_aktif, role,
+                a.kode_armada, a.nama_armada
+         FROM admin
+         LEFT JOIN armada a ON admin.armada_id = a.armada_id`
+      )
 
-    const driverResult = await pool.query(
-      `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
-              d.nama_kernet, d.email, d.status_aktif, 'driver' AS role,
-              a.armada_id, a.kode_armada, a.nama_armada,
-              b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
-       FROM driver d
-       LEFT JOIN armada a ON d.armada_id = a.armada_id
-       LEFT JOIN bus b ON b.driver_id = d.driver_id`
-    )
+      petugasResult = await pool.query(
+        `SELECT p.petugas_id AS id, p.nama_petugas AS nama, p.nomor_pegawai AS identifier,
+                p.email, p.status_aktif, 'petugas' AS role,
+                a.kode_armada, a.nama_armada
+         FROM petugas p
+         LEFT JOIN armada a ON p.armada_id = a.armada_id`
+      )
+
+      driverResult = await pool.query(
+        `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
+                d.nama_kernet, d.email, d.status_aktif, 'driver' AS role,
+                a.armada_id, a.kode_armada, a.nama_armada,
+                b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
+         FROM driver d
+         LEFT JOIN armada a ON d.armada_id = a.armada_id
+         LEFT JOIN bus b ON b.driver_id = d.driver_id`
+      )
+    } else {
+      // Admin vendor hanya melihat petugas & driver di armadanya
+      petugasResult = await pool.query(
+        `SELECT p.petugas_id AS id, p.nama_petugas AS nama, p.nomor_pegawai AS identifier,
+                p.email, p.status_aktif, 'petugas' AS role,
+                a.kode_armada, a.nama_armada
+         FROM petugas p
+         LEFT JOIN armada a ON p.armada_id = a.armada_id
+         WHERE p.armada_id = $1`,
+        [callerArmadaId]
+      )
+
+      driverResult = await pool.query(
+        `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
+                d.nama_kernet, d.email, d.status_aktif, 'driver' AS role,
+                a.armada_id, a.kode_armada, a.nama_armada,
+                b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
+         FROM driver d
+         LEFT JOIN armada a ON d.armada_id = a.armada_id
+         LEFT JOIN bus b ON b.driver_id = d.driver_id
+         WHERE d.armada_id = $1`,
+        [callerArmadaId]
+      )
+    }
 
     const users = [
       ...adminResult.rows,
@@ -199,7 +268,15 @@ export const getAllUsers = async (req, res) => {
 
 // GET /api/users/driver?armada_id=1
 export const getAllDrivers = async (req, res) => {
-  const { armada_id } = req.query
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
+
+  // Tentukan filter armada: admin vendor wajib pakai armadanya
+  let effectiveArmadaId
+  if (callerRole === 'super_admin') {
+    effectiveArmadaId = req.query.armada_id ? parseInt(req.query.armada_id) : null
+  } else {
+    effectiveArmadaId = callerArmadaId
+  }
 
   try {
     let query = `
@@ -213,9 +290,9 @@ export const getAllDrivers = async (req, res) => {
     `
     const params = []
 
-    if (armada_id) {
+    if (effectiveArmadaId) {
       query += ' WHERE d.armada_id = $1'
-      params.push(armada_id)
+      params.push(effectiveArmadaId)
     }
 
     query += ' ORDER BY a.kode_armada, d.nama_driver'
@@ -237,8 +314,19 @@ const TABLE_MAP = {
   driver:  { table: 'driver',  idCol: 'driver_id',  namaCol: 'nama_driver',  identifierCol: 'username'      }
 }
 
+// Validasi akses armada sebelum update/delete
+async function checkArmadaAccess(role, table, idCol, id, callerRole, callerArmadaId) {
+  if (callerRole === 'super_admin') return true
+  if (role === 'admin') return false // admin vendor tidak bisa edit admin lain
+
+  const check = await pool.query(`SELECT armada_id FROM ${table} WHERE ${idCol} = $1`, [id])
+  if (check.rows.length === 0) return null // tidak ditemukan
+  return check.rows[0].armada_id === callerArmadaId
+}
+
 export const updateUser = async (req, res) => {
   const { role, id } = req.params
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
   const { nama, identifier, email, status_aktif, armada_id, nama_kernet, bus_id } = req.body
 
   if (!VALID_ROLES.includes(role)) {
@@ -246,6 +334,11 @@ export const updateUser = async (req, res) => {
   }
 
   const { table, idCol, namaCol, identifierCol } = TABLE_MAP[role]
+
+  // Cek akses armada
+  const access = await checkArmadaAccess(role, table, idCol, id, callerRole, callerArmadaId)
+  if (access === null) return res.status(404).json({ message: 'User tidak ditemukan' })
+  if (access === false) return res.status(403).json({ message: 'Akses ditolak' })
 
   const fields = []
   const values = []
@@ -321,12 +414,18 @@ export const updateUser = async (req, res) => {
 // DELETE /api/users/:role/:id
 export const deleteUser = async (req, res) => {
   const { role, id } = req.params
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
 
   if (!VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: 'Role tidak valid. Gunakan: admin, petugas, driver' })
   }
 
   const { table, idCol, namaCol } = TABLE_MAP[role]
+
+  // Cek akses armada
+  const access = await checkArmadaAccess(role, table, idCol, id, callerRole, callerArmadaId)
+  if (access === null) return res.status(404).json({ message: 'User tidak ditemukan' })
+  if (access === false) return res.status(403).json({ message: 'Akses ditolak' })
 
   try {
     const result = await pool.query(
@@ -353,7 +452,14 @@ export const deleteUser = async (req, res) => {
 
 // POST /api/users/driver
 export const createDriver = async (req, res) => {
-  const { nama_driver, nama_kernet, username, email, armada_id } = req.body
+  const { role: callerRole, armada_id: callerArmadaId } = req.user
+  const { nama_driver, nama_kernet, username, email } = req.body
+  let { armada_id } = req.body
+
+  // admin vendor wajib pakai armada_id dari JWT
+  if (callerRole !== 'super_admin') {
+    armada_id = callerArmadaId
+  }
 
   if (!nama_driver || !username || !email || !armada_id) {
     return res.status(400).json({ message: 'Semua field wajib diisi' })

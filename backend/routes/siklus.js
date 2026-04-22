@@ -4,9 +4,10 @@ import { authenticate, authorize } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.get('/',    authenticate, authorize('admin', 'petugas', 'driver'), getAllSiklus)
-router.get('/:id', authenticate, authorize('admin', 'petugas', 'driver'), getSiklusById)
-router.post('/',      authenticate, authorize('admin'), createSiklus)
-router.delete('/:id', authenticate, authorize('admin'), deleteSiklus)
+// Semua admin bisa baca siklus; hanya super_admin bisa buat/hapus
+router.get('/',    authenticate, authorize('super_admin', 'admin', 'petugas', 'driver'), getAllSiklus)
+router.get('/:id', authenticate, authorize('super_admin', 'admin', 'petugas', 'driver'), getSiklusById)
+router.post('/',      authenticate, authorize('super_admin'), createSiklus)
+router.delete('/:id', authenticate, authorize('super_admin'), deleteSiklus)
 
 export default router

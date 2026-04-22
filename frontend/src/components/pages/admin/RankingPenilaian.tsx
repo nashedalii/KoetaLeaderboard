@@ -21,6 +21,12 @@ interface Bobot {
   persentase_bobot: number
 }
 
+interface Armada {
+  armada_id: number
+  kode_armada: string
+  nama_armada: string
+}
+
 interface DriverRanking {
   rank: number
   driver_id: number
@@ -63,30 +69,52 @@ const getToken = () => {
   try { return JSON.parse(localStorage.getItem('auth') || '{}').token || '' }
   catch { return '' }
 }
+const getAuth = () => {
+  try { return JSON.parse(localStorage.getItem('auth') || '{}') }
+  catch { return {} }
+}
 const authHeader = () => ({ Authorization: `Bearer ${getToken()}` })
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function RankingPenilaian() {
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+
   // Selectors
-  const [siklusList, setSiklusList]       = useState<Siklus[]>([])
+  const [siklusList, setSiklusList]         = useState<Siklus[]>([])
   const [selectedSiklus, setSelectedSiklus] = useState<number | ''>('')
-  const [periodeList, setPeriodeList]     = useState<Periode[]>([])
+  const [periodeList, setPeriodeList]       = useState<Periode[]>([])
   const [selectedPeriode, setSelectedPeriode] = useState<number | 'all'>('all')
 
-  // Filter & sort
-  const [filterArmada, setFilterArmada]   = useState<string>('all')
-  const [sortField, setSortField]         = useState<string>('rank')
-  const [sortDir, setSortDir]             = useState<'asc' | 'desc'>('asc')
+  // Armada filter (super_admin only)
+  const [armadaList, setArmadaList]         = useState<Armada[]>([])
+  const [selectedArmada, setSelectedArmada] = useState<number | ''>('')
+
+  // Sort
+  const [sortField, setSortField]   = useState<string>('rank')
+  const [sortDir, setSortDir]       = useState<'asc' | 'desc'>('asc')
 
   // Data
-  const [rankingData, setRankingData]     = useState<RankingData | null>(null)
-  const [isLoading, setIsLoading]         = useState(false)
-  const [error, setError]                 = useState<string | null>(null)
+  const [rankingData, setRankingData] = useState<RankingData | null>(null)
+  const [isLoading, setIsLoading]     = useState(false)
+  const [error, setError]             = useState<string | null>(null)
 
   // Detail view
-  const [detailDriver, setDetailDriver]   = useState<DriverRanking | null>(null)
-  const [detailData, setDetailData]       = useState<DetailData | null>(null)
+  const [detailDriver, setDetailDriver]     = useState<DriverRanking | null>(null)
+  const [detailData, setDetailData]         = useState<DetailData | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
+
+  // ── Detect role & fetch armada list (super_admin only) ─────────────────────
+  useEffect(() => {
+    const auth = getAuth()
+    const role = auth?.user?.role
+    if (role === 'super_admin') {
+      setIsSuperAdmin(true)
+      fetch(`${apiBase}/api/armada`, { headers: authHeader() })
+        .then(r => r.json())
+        .then(d => setArmadaList(Array.isArray(d) ? d : []))
+        .catch(() => {})
+    }
+  }, [])
 
   // ── Fetch siklus list ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -121,6 +149,10 @@ export default function RankingPenilaian() {
         params.set('mode', 'periode')
         params.set('periode_id', String(selectedPeriode))
       }
+      // Super admin: server-side armada filter
+      if (isSuperAdmin && selectedArmada) {
+        params.set('armada_id', String(selectedArmada))
+      }
 
       const res  = await fetch(`${apiBase}/api/ranking?${params}`, { headers: authHeader() })
       const data = await res.json()
@@ -131,7 +163,7 @@ export default function RankingPenilaian() {
     } finally {
       setIsLoading(false)
     }
-  }, [selectedSiklus, selectedPeriode])
+  }, [selectedSiklus, selectedPeriode, selectedArmada, isSuperAdmin])
 
   useEffect(() => { fetchRanking() }, [fetchRanking])
 
@@ -152,18 +184,11 @@ export default function RankingPenilaian() {
     finally { setIsLoadingDetail(false) }
   }
 
-  // ── Derived armada list ────────────────────────────────────────────────────
-  const armadaList = useMemo(() =>
-    Array.from(new Set((rankingData?.ranking || []).map(r => r.nama_armada))).sort()
-  , [rankingData])
-
-  // ── Client-side filter + sort ──────────────────────────────────────────────
+  // ── Client-side sort only (armada filter is server-side for super_admin) ──
   const displayRows = useMemo(() => {
     if (!rankingData) return []
 
-    let rows = rankingData.ranking.filter(r =>
-      filterArmada === 'all' || r.nama_armada === filterArmada
-    )
+    let rows = [...rankingData.ranking]
 
     if (sortField === 'rank') {
       rows = [...rows].sort((a, b) =>
@@ -185,7 +210,7 @@ export default function RankingPenilaian() {
       })
     }
     return rows
-  }, [rankingData, filterArmada, sortField, sortDir])
+  }, [rankingData, sortField, sortDir])
 
   // ── Sort handler ───────────────────────────────────────────────────────────
   const handleSort = (field: string) => {
@@ -333,21 +358,25 @@ export default function RankingPenilaian() {
                 </select>
               </div>
 
-              {/* Armada filter */}
-              <div className="filter-group">
-                <label className="filter-label">Armada:</label>
-                <select
-                  className="filter-select"
-                  value={filterArmada}
-                  onChange={e => setFilterArmada(e.target.value)}
-                  disabled={!rankingData}
-                >
-                  <option value="all">Semua Armada</option>
-                  {armadaList.map(a => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Armada filter — super_admin only */}
+              {isSuperAdmin && (
+                <div className="filter-group">
+                  <label className="filter-label">Armada:</label>
+                  <select
+                    className="filter-select"
+                    value={selectedArmada}
+                    onChange={e => {
+                      setSelectedArmada(e.target.value ? Number(e.target.value) : '')
+                      setRankingData(null)
+                    }}
+                  >
+                    <option value="">Semua Armada</option>
+                    {armadaList.map(a => (
+                      <option key={a.armada_id} value={a.armada_id}>{a.nama_armada}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Error */}

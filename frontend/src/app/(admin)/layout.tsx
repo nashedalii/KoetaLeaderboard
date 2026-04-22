@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!raw) { router.replace('/'); return }
     try {
       const auth = JSON.parse(raw)
-      if (auth?.user?.role !== 'admin') { router.replace('/'); return }
+      if (auth?.user?.role !== 'admin' && auth?.user?.role !== 'super_admin') { router.replace('/'); return }
       setReady(true)
     } catch {
       localStorage.removeItem('auth')

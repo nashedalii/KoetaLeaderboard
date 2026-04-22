@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.get('/',                authenticate, authorize('admin', 'petugas', 'driver'), getRanking)
-router.get('/driver/:driver_id', authenticate, authorize('admin', 'petugas', 'driver'), getDriverDetail)
+router.get('/',                authenticate, authorize('super_admin', 'admin', 'petugas', 'driver'), getRanking)
+router.get('/driver/:driver_id', authenticate, authorize('super_admin', 'admin', 'petugas', 'driver'), getDriverDetail)
 
 export default router

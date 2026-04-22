@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
 const ROLE_REDIRECT: Record<string, string> = {
-  admin:   '/admin/dashboard',
-  petugas: '/petugas/dashboard',
-  driver:  '/driver/dashboard',
+  super_admin: '/admin/dashboard',
+  admin:       '/admin/dashboard',
+  petugas:     '/petugas/dashboard',
+  driver:      '/driver/dashboard',
 }
 
 export default function LoginForm() {
@@ -42,7 +43,7 @@ export default function LoginForm() {
       })
       const data = await res.json()
       if (!res.ok) { setErrorMessage(data.message || 'Login gagal'); return }
-      const roleLabel: Record<string, string> = { admin: 'Admin', petugas: 'Petugas', driver: 'Supir' }
+      const roleLabel: Record<string, string> = { super_admin: 'Admin', admin: 'Admin', petugas: 'Petugas', driver: 'Supir' }
       const auth = {
         token: data.token,
         user: {

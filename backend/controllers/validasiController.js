@@ -3,18 +3,24 @@ import pool from '../config/db.js'
 // ── GET /api/validasi ─────────────────────────────────────────────────────────
 // List semua penilaian dengan filter opsional: status, armada_id, periode_id, driver_id
 export const getAllValidasi = async (req, res) => {
+  const { role, armada_id: callerArmadaId } = req.user
   const { status_validasi, armada_id, periode_id, driver_id } = req.query
 
   try {
     const conditions = ['1=1']
     const params = []
 
+    // Admin vendor dipaksa filter ke armadanya sendiri
+    const effectiveArmadaId = role === 'super_admin'
+      ? (armada_id || null)
+      : callerArmadaId
+
     if (status_validasi) {
       params.push(status_validasi)
       conditions.push(`p.status_validasi = $${params.length}`)
     }
-    if (armada_id) {
-      params.push(armada_id)
+    if (effectiveArmadaId) {
+      params.push(effectiveArmadaId)
       conditions.push(`d.armada_id = $${params.length}`)
     }
     if (periode_id) {
@@ -63,12 +69,11 @@ export const getAllValidasi = async (req, res) => {
 }
 
 // ── GET /api/validasi/:id ─────────────────────────────────────────────────────
-// Detail penilaian: header + semua indikator + foto (jika ada)
 export const getValidasiById = async (req, res) => {
   const { id } = req.params
+  const { role, armada_id: callerArmadaId } = req.user
 
   try {
-    // Header penilaian
     const penilaianResult = await pool.query(`
       SELECT
         p.penilaian_id,
@@ -80,6 +85,7 @@ export const getValidasiById = async (req, res) => {
         p.updated_at,
         d.nama_driver,
         d.nama_kernet,
+        d.armada_id AS driver_armada_id,
         b.kode_bus,
         b.nopol,
         a.nama_armada,
@@ -103,7 +109,13 @@ export const getValidasiById = async (req, res) => {
       return res.status(404).json({ message: 'Penilaian tidak ditemukan' })
     }
 
-    // Detail indikator
+    const penilaian = penilaianResult.rows[0]
+
+    // Admin vendor tidak boleh akses penilaian di luar armadanya
+    if (role !== 'super_admin' && penilaian.driver_armada_id !== callerArmadaId) {
+      return res.status(403).json({ message: 'Akses ditolak' })
+    }
+
     const detailResult = await pool.query(`
       SELECT
         pd.penilaian_detail_id,
@@ -117,7 +129,6 @@ export const getValidasiById = async (req, res) => {
       ORDER BY bbt.bobot_id
     `, [id])
 
-    // Bukti foto
     const fotoResult = await pool.query(`
       SELECT bukti_id, file_path, nama_file, uploaded_at
       FROM bukti_foto
@@ -125,7 +136,6 @@ export const getValidasiById = async (req, res) => {
       ORDER BY uploaded_at
     `, [id])
 
-    // Riwayat validasi log
     const logResult = await pool.query(`
       SELECT
         vl.validasi_log_id,
@@ -140,10 +150,10 @@ export const getValidasiById = async (req, res) => {
     `, [id])
 
     res.json({
-      penilaian: penilaianResult.rows[0],
-      details:   detailResult.rows,
-      foto:      fotoResult.rows,
-      log:       logResult.rows
+      penilaian,
+      details: detailResult.rows,
+      foto:    fotoResult.rows,
+      log:     logResult.rows
     })
   } catch (err) {
     console.error('Get validasi by id error:', err)
@@ -154,17 +164,25 @@ export const getValidasiById = async (req, res) => {
 // ── PUT /api/validasi/:id/approve ─────────────────────────────────────────────
 export const approvePenilaian = async (req, res) => {
   const admin_id = req.user.user_id
+  const { role, armada_id: callerArmadaId } = req.user
   const { id } = req.params
 
   const client = await pool.connect()
   try {
     const check = await client.query(
-      'SELECT status_validasi FROM penilaian WHERE penilaian_id = $1',
+      `SELECT p.status_validasi, d.armada_id AS driver_armada_id
+       FROM penilaian p JOIN driver d ON p.driver_id = d.driver_id
+       WHERE p.penilaian_id = $1`,
       [id]
     )
     if (check.rows.length === 0) {
       return res.status(404).json({ message: 'Penilaian tidak ditemukan' })
     }
+
+    if (role !== 'super_admin' && check.rows[0].driver_armada_id !== callerArmadaId) {
+      return res.status(403).json({ message: 'Akses ditolak' })
+    }
+
     if (check.rows[0].status_validasi === 'approved') {
       return res.status(409).json({ message: 'Penilaian sudah disetujui sebelumnya' })
     }
@@ -200,6 +218,7 @@ export const approvePenilaian = async (req, res) => {
 // ── PUT /api/validasi/:id/reject ──────────────────────────────────────────────
 export const rejectPenilaian = async (req, res) => {
   const admin_id = req.user.user_id
+  const { role, armada_id: callerArmadaId } = req.user
   const { id } = req.params
   const { alasan } = req.body || {}
 
@@ -210,11 +229,17 @@ export const rejectPenilaian = async (req, res) => {
   const client = await pool.connect()
   try {
     const check = await client.query(
-      'SELECT status_validasi FROM penilaian WHERE penilaian_id = $1',
+      `SELECT p.status_validasi, d.armada_id AS driver_armada_id
+       FROM penilaian p JOIN driver d ON p.driver_id = d.driver_id
+       WHERE p.penilaian_id = $1`,
       [id]
     )
     if (check.rows.length === 0) {
       return res.status(404).json({ message: 'Penilaian tidak ditemukan' })
+    }
+
+    if (role !== 'super_admin' && check.rows[0].driver_armada_id !== callerArmadaId) {
+      return res.status(403).json({ message: 'Akses ditolak' })
     }
 
     await client.query('BEGIN')

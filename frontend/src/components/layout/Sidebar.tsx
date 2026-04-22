@@ -15,6 +15,7 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
   const pathname = usePathname()
   const [userName, setUserName] = useState('')
   const [userFoto, setUserFoto] = useState<string | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     const raw = localStorage.getItem('auth')
@@ -23,6 +24,7 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
       const auth = JSON.parse(raw)
       setUserName(auth?.user?.nama ?? '')
       setUserFoto(auth?.user?.foto_profil ?? null)
+      setIsSuperAdmin(auth?.user?.role === 'super_admin')
     } catch { /* ignore */ }
   }, [])
 
@@ -195,10 +197,15 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
     }
   ]
 
+  // Admin vendor tidak bisa akses Konfigurasi Periode
+  const filteredAdminMenuItems = userRole === 'Admin' && !isSuperAdmin
+    ? adminMenuItems.filter(item => item.href !== '/admin/konfigurasi-periode')
+    : adminMenuItems
+
   const menuItems =
     userRole === 'Petugas' ? petugasMenuItems :
     userRole === 'Supir'   ? driverMenuItems  :
-    adminMenuItems
+    filteredAdminMenuItems
 
   return (
     <>

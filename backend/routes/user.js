@@ -10,25 +10,25 @@ const router = express.Router()
 
 // ── GET ──────────────────────────────────────────────────────────────
 // /driver harus sebelum /:role/:id agar tidak tertangkap sebagai param
-router.get('/driver', authenticate, authorize('admin', 'petugas'), getAllDrivers)
-router.get('/', authenticate, authorize('admin'), getAllUsers)
+router.get('/driver', authenticate, authorize('super_admin', 'admin', 'petugas'), getAllDrivers)
+router.get('/', authenticate, authorize('super_admin', 'admin'), getAllUsers)
 
 // ── POST (Create) ─────────────────────────────────────────────────────
-router.post('/admin',   authenticate, authorize('admin'), createAdmin)
-router.post('/petugas', authenticate, authorize('admin'), createPetugas)
-router.post('/driver',  authenticate, authorize('admin'), createDriver)
+router.post('/admin',   authenticate, authorize('super_admin'), createAdmin)
+router.post('/petugas', authenticate, authorize('super_admin', 'admin'), createPetugas)
+router.post('/driver',  authenticate, authorize('super_admin', 'admin'), createDriver)
 
 // ── PUT (Update & Reset Password) ─────────────────────────────────────
-router.put('/:role/:id/reset-password', authenticate, authorize('admin'), (req, res, next) => {
+router.put('/:role/:id/reset-password', authenticate, authorize('super_admin', 'admin'), (req, res, next) => {
   const { role } = req.params
   if (role === 'admin')   return resetAdminPassword(req, res, next)
   if (role === 'petugas') return resetPetugasPassword(req, res, next)
   if (role === 'driver')  return resetDriverPassword(req, res, next)
   res.status(400).json({ message: 'Role tidak valid' })
 })
-router.put('/:role/:id', authenticate, authorize('admin'), updateUser)
+router.put('/:role/:id', authenticate, authorize('super_admin', 'admin'), updateUser)
 
 // ── DELETE ────────────────────────────────────────────────────────────
-router.delete('/:role/:id', authenticate, authorize('admin'), deleteUser)
+router.delete('/:role/:id', authenticate, authorize('super_admin', 'admin'), deleteUser)
 
 export default router

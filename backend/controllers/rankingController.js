@@ -2,19 +2,36 @@ import pool from '../config/db.js'
 
 // ── GET /api/ranking ──────────────────────────────────────────────────────────
 // Query params:
-//   mode       : 'periode' | 'siklus'  (default: 'periode')
+//   mode       : 'periode' | 'siklus'  (default: 'siklus')
 //   periode_id : wajib jika mode=periode
 //   siklus_id  : wajib jika mode=siklus
-//   armada_id  : opsional, filter per armada
+//   armada_id  : hanya dipakai super_admin sebagai filter opsional (dropdown)
+//
+// Logika armada:
+//   super_admin → pakai armada_id dari query param (opsional, null = semua)
+//   admin       → paksa armada_id dari JWT, abaikan query param
+//   petugas     → paksa armada_id dari JWT
+//   driver      → paksa armada_id dari JWT
 export const getRanking = async (req, res) => {
-  const { mode = 'periode', periode_id, siklus_id, armada_id } = req.query
+  const { mode = 'siklus', periode_id, siklus_id } = req.query
+  const { role, armada_id: jwtArmadaId } = req.user
+
+  // Tentukan filter armada berdasarkan role
+  let effectiveArmadaId
+  if (role === 'super_admin') {
+    // Super admin boleh filter via query param, atau null = semua armada
+    effectiveArmadaId = req.query.armada_id ? parseInt(req.query.armada_id) : null
+  } else {
+    // Admin vendor, petugas, driver → wajib pakai armada dari JWT
+    effectiveArmadaId = jwtArmadaId
+  }
 
   try {
     if (mode === 'periode') {
       if (!periode_id) {
         return res.status(400).json({ message: 'periode_id wajib diisi untuk mode periode' })
       }
-      const result = await getRankingByPeriode(periode_id, armada_id)
+      const result = await getRankingByPeriode(periode_id, effectiveArmadaId)
       return res.json(result)
     }
 
@@ -22,7 +39,7 @@ export const getRanking = async (req, res) => {
       if (!siklus_id) {
         return res.status(400).json({ message: 'siklus_id wajib diisi untuk mode siklus' })
       }
-      const result = await getRankingBySiklus(siklus_id, armada_id)
+      const result = await getRankingBySiklus(siklus_id, effectiveArmadaId)
       return res.json(result)
     }
 
@@ -39,12 +56,27 @@ export const getRanking = async (req, res) => {
 export const getDriverDetail = async (req, res) => {
   const { driver_id } = req.params
   const { siklus_id } = req.query
+  const { role, armada_id: jwtArmadaId } = req.user
 
   if (!siklus_id) {
     return res.status(400).json({ message: 'siklus_id wajib diisi' })
   }
 
   try {
+    // Validasi akses: admin vendor hanya boleh lihat driver di armadanya
+    if (role !== 'super_admin') {
+      const driverCheck = await pool.query(
+        `SELECT armada_id FROM driver WHERE driver_id = $1`,
+        [driver_id]
+      )
+      if (driverCheck.rows.length === 0) {
+        return res.status(404).json({ message: 'Driver tidak ditemukan' })
+      }
+      if (driverCheck.rows[0].armada_id !== jwtArmadaId) {
+        return res.status(403).json({ message: 'Akses ditolak' })
+      }
+    }
+
     // Ambil bobot untuk siklus ini
     const bobotResult = await pool.query(
       `SELECT bobot_id, nama_bobot, persentase_bobot
@@ -197,6 +229,7 @@ async function getRankingBySiklus(siklus_id, armada_id) {
       JOIN periode          pr  ON p.periode_id   = pr.periode_id
       JOIN penilaian_detail pd  ON pd.penilaian_id = p.penilaian_id
       JOIN bobot            bbt ON pd.bobot_id     = bbt.bobot_id
+      JOIN driver           d   ON p.driver_id     = d.driver_id
       WHERE p.status_validasi = 'approved'
         AND pr.siklus_id = $1
         ${armadaClause}
