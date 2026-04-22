@@ -10,7 +10,7 @@ interface UserData {
   identifier: string
   email: string
   status_aktif: 'aktif' | 'nonaktif'
-  role: 'admin' | 'petugas' | 'driver'
+  role: 'super_admin' | 'admin' | 'petugas' | 'driver'
   nama_kernet?: string
   armada_id?: number
   kode_armada?: string
@@ -19,6 +19,12 @@ interface UserData {
   kode_bus?: string
   nopol?: string
   bus_status?: 'aktif' | 'nonaktif'
+}
+
+interface ArmadaOption {
+  armada_id: number
+  kode_armada: string
+  nama_armada: string
 }
 
 interface BusOption {
@@ -40,7 +46,7 @@ interface FormData {
 }
 
 interface AddFormData {
-  role: 'admin' | 'petugas' | 'driver'
+  role: 'super_admin' | 'admin' | 'petugas' | 'driver'
   nama: string
   nomor_pegawai: string
   username: string
@@ -55,12 +61,12 @@ const EMPTY_ADD_FORM: AddFormData = {
   email: '', armada_id: '', nama_kernet: '', bus_id: '',
 }
 
-const ROLE_LABEL: Record<string, string> = { admin: 'Admin', petugas: 'Petugas', driver: 'Supir' }
-const ARMADA_OPTIONS = [
-  { value: '1', label: 'Armada A' },
-  { value: '2', label: 'Armada B' },
-  { value: '3', label: 'Armada C' },
-]
+const ROLE_LABEL: Record<string, string> = {
+  super_admin: 'Super Admin',
+  admin:       'Admin',
+  petugas:     'Petugas',
+  driver:      'Supir',
+}
 
 // ── SVG Icons ──────────────────────────────────────────────────────────
 const SearchIcon = () => (
@@ -103,9 +109,10 @@ const KeyIcon = () => (
 
 function RoleInitial({ role }: { role: string }) {
   const cfg: Record<string, { bg: string; color: string; label: string }> = {
-    admin:   { bg: '#fef3c7', color: '#d97706', label: 'A' },
-    petugas: { bg: '#ede9fe', color: '#7c3aed', label: 'P' },
-    driver:  { bg: '#dbeafe', color: '#2563eb', label: 'S' },
+    super_admin: { bg: '#fce7f3', color: '#be185d', label: 'SA' },
+    admin:       { bg: '#fef3c7', color: '#d97706', label: 'A' },
+    petugas:     { bg: '#ede9fe', color: '#7c3aed', label: 'P' },
+    driver:      { bg: '#dbeafe', color: '#2563eb', label: 'S' },
   }
   const c = cfg[role] ?? cfg.driver
   return (
@@ -133,6 +140,9 @@ function StatusDot({ status }: { status: string }) {
 
 // ── Component ──────────────────────────────────────────────────────────
 export default function KelolaUser() {
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [armadaOptions, setArmadaOptions] = useState<ArmadaOption[]>([])
+
   const [users, setUsers]         = useState<UserData[]>([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
@@ -169,15 +179,32 @@ export default function KelolaUser() {
     }
   }
 
-  useEffect(() => { fetchUsers() }, [])
+  useEffect(() => {
+    // Detect caller role and fetch armada list
+    try {
+      const auth = JSON.parse(localStorage.getItem('auth') || '{}')
+      const role = auth?.user?.role
+      setIsSuperAdmin(role === 'super_admin')
+    } catch { /* ignore */ }
 
-  const filtered = users.filter(u => {
-    const matchSearch =
-      u.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchRole = roleFilter === 'All' || u.role === roleFilter.toLowerCase()
-    return matchSearch && matchRole
-  })
+    apiFetch('/api/armada')
+      .then((d: ArmadaOption[]) => setArmadaOptions(Array.isArray(d) ? d : []))
+      .catch(() => {})
+
+    fetchUsers()
+  }, [])
+
+  const ROLE_ORDER: Record<string, number> = { super_admin: 0, admin: 1, petugas: 2, driver: 3 }
+
+  const filtered = users
+    .filter(u => {
+      const matchSearch =
+        u.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchRole = roleFilter === 'All' || u.role === roleFilter
+      return matchSearch && matchRole
+    })
+    .sort((a, b) => (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9))
 
   const openEdit = async (user: UserData) => {
     setSelectedUser(user)
@@ -255,14 +282,18 @@ export default function KelolaUser() {
     const { role, nama, nomor_pegawai, username, email, armada_id, nama_kernet, bus_id } = addFormData
     if (!nama || !username || !email) { alert('Nama, username, dan email wajib diisi'); return }
     if (role !== 'driver' && !nomor_pegawai) { alert('Nomor pegawai wajib diisi'); return }
-    if (role !== 'admin' && !armada_id) { alert('Armada wajib diisi'); return }
+    if (role !== 'super_admin' && !armada_id) { alert('Armada wajib diisi'); return }
 
     setSaving(true)
     try {
       let body: Record<string, any>
       let endpoint: string
-      if (role === 'admin') {
-        body = { nama_admin: nama, nomor_pegawai, username, email }
+      if (role === 'super_admin' || role === 'admin') {
+        body = {
+          nama_admin: nama, nomor_pegawai, username, email,
+          role,
+          ...(role === 'admin' && armada_id ? { armada_id: parseInt(armada_id) } : {}),
+        }
         endpoint = '/api/users/admin'
       } else if (role === 'petugas') {
         body = { nama_petugas: nama, nomor_pegawai, username, email, armada_id: parseInt(armada_id) }
@@ -310,6 +341,7 @@ export default function KelolaUser() {
 
           <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="role-filter">
             <option value="All">Semua Role</option>
+            {isSuperAdmin && <option value="super_admin">Super Admin</option>}
             <option value="admin">Admin</option>
             <option value="petugas">Petugas</option>
             <option value="driver">Supir</option>
@@ -348,10 +380,14 @@ export default function KelolaUser() {
                     </td>
                     <td>{user.email}</td>
                     <td>
-                      <span className={`role-badge role-${user.role}`}>{ROLE_LABEL[user.role]}</span>
+                      <span className={`role-badge role-${user.role === 'super_admin' ? 'super-admin' : user.role}`}>
+                        {ROLE_LABEL[user.role]}
+                      </span>
                     </td>
                     <td>
-                      {user.role === 'driver' && user.status_aktif === 'nonaktif' ? (
+                      {user.role === 'super_admin' ? (
+                        <span style={{ color: '#94a3b8' }}>—</span>
+                      ) : user.role === 'driver' && user.status_aktif === 'nonaktif' ? (
                         <span style={{ color: '#94a3b8' }}>—</span>
                       ) : user.role === 'driver' && user.kode_bus ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -365,7 +401,7 @@ export default function KelolaUser() {
                           )}
                           <span style={{ fontSize: '0.82rem', color: '#64748b' }}>{user.nama_armada}</span>
                         </div>
-                      ) : user.role !== 'admin' && user.nama_armada ? (
+                      ) : user.nama_armada ? (
                         <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{user.nama_armada}</span>
                       ) : (
                         <span style={{ color: '#94a3b8' }}>—</span>
@@ -419,7 +455,7 @@ export default function KelolaUser() {
                       <option value="nonaktif">Nonaktif</option>
                     </select>
                   </div>
-                  {selectedUser.role !== 'admin' && (
+                  {selectedUser.role !== 'super_admin' && selectedUser.role !== 'admin' && (
                     <div className="form-group">
                       <label className="form-label">Armada</label>
                       <select
@@ -437,7 +473,9 @@ export default function KelolaUser() {
                         className="form-select"
                       >
                         <option value="">Pilih Armada</option>
-                        {ARMADA_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        {armadaOptions.map(a => (
+                          <option key={a.armada_id} value={String(a.armada_id)}>{a.nama_armada}</option>
+                        ))}
                       </select>
                     </div>
                   )}
@@ -508,7 +546,8 @@ export default function KelolaUser() {
                 <div className="form-group">
                   <label className="form-label">Role <span className="required">*</span></label>
                   <select value={addFormData.role} onChange={e => setAddFormData({ ...EMPTY_ADD_FORM, role: e.target.value as any })} className="form-select">
-                    <option value="admin">Admin</option>
+                    {isSuperAdmin && <option value="super_admin">Super Admin</option>}
+                    <option value="admin">Admin Vendor</option>
                     <option value="petugas">Petugas</option>
                     <option value="driver">Supir</option>
                   </select>
@@ -533,9 +572,11 @@ export default function KelolaUser() {
                     <input type="email" value={addFormData.email} onChange={e => setAddFormData({ ...addFormData, email: e.target.value })} placeholder="email@example.com" className="form-input" />
                   </div>
                 </div>
-                {addFormData.role !== 'admin' && (
+                {addFormData.role !== 'super_admin' && (
                   <div className="form-group">
-                    <label className="form-label">Armada <span className="required">*</span></label>
+                    <label className="form-label">
+                      Armada {addFormData.role !== 'super_admin' && <span className="required">*</span>}
+                    </label>
                     <select
                       value={addFormData.armada_id}
                       onChange={async e => {
@@ -551,7 +592,9 @@ export default function KelolaUser() {
                       className="form-select"
                     >
                       <option value="">Pilih Armada</option>
-                      {ARMADA_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      {armadaOptions.map(a => (
+                        <option key={a.armada_id} value={String(a.armada_id)}>{a.nama_armada}</option>
+                      ))}
                     </select>
                   </div>
                 )}

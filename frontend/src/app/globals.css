@@ -8467,3 +8467,15 @@ input, select, textarea, button {
   align-items: center !important;
 }
 
+
+.role-badge.role-super-admin {
+  background: #fce7f3 !important;
+  color: #9d174d !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px 14px !important;
+  line-height: 1.4 !important;
+  vertical-align: middle !important;
+}
