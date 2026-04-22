@@ -15,13 +15,14 @@ export const login = async (req, res) => {
     // 1. Cek tabel admin (login dengan nomor_pegawai atau username)
     const adminResult = await pool.query(
       `SELECT admin_id AS id, nama_admin AS nama, nomor_pegawai, status_aktif,
+              role, armada_id,
               (password = crypt($1, password)) AS password_valid
        FROM admin WHERE nomor_pegawai = $2 OR username = $2`,
       [password, identifier]
     )
     if (adminResult.rows.length > 0) {
       user = adminResult.rows[0]
-      role = 'admin'
+      role = user.role // 'super_admin' atau 'admin'
     }
 
     // 2. Cek tabel petugas (login dengan nomor_pegawai atau username)
@@ -71,7 +72,7 @@ export const login = async (req, res) => {
     const jwtPayload = {
       user_id: user.id,
       role,
-      ...(user.armada_id && { armada_id: user.armada_id })
+      armada_id: user.armada_id ?? null
     }
 
     const token = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '8h' })
@@ -80,7 +81,7 @@ export const login = async (req, res) => {
       id: user.id,
       nama: user.nama,
       role,
-      ...(user.armada_id && { armada_id: user.armada_id })
+      armada_id: user.armada_id ?? null
     }
 
     res.json({ token, user: responseUser })
