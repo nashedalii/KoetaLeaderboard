@@ -1,7 +1,46 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { apiFetch } from '@/utils/api'
+
+// ── Toast ──────────────────────────────────────────────────────────────
+type ToastType = 'error' | 'success' | 'warning'
+interface Toast { id: number; message: string; type: ToastType }
+
+function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: number) => void }) {
+  const colors: Record<ToastType, { bg: string; border: string; icon: string; iconColor: string }> = {
+    error:   { bg: '#fff1f2', border: '#fca5a5', icon: '✕', iconColor: '#ef4444' },
+    success: { bg: '#f0fdf4', border: '#86efac', icon: '✓', iconColor: '#22c55e' },
+    warning: { bg: '#fffbeb', border: '#fcd34d', icon: '!', iconColor: '#f59e0b' },
+  }
+  if (toasts.length === 0) return null
+  return (
+    <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 360 }}>
+      {toasts.map(t => {
+        const c = colors[t.type]
+        return (
+          <div key={t.id} style={{
+            background: c.bg, border: `1.5px solid ${c.border}`,
+            borderRadius: 12, padding: '14px 16px',
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            animation: 'slideIn 0.25s ease',
+          }}>
+            <span style={{
+              width: 24, height: 24, borderRadius: '50%',
+              background: c.iconColor, color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, fontWeight: 700, flexShrink: 0,
+            }}>{c.icon}</span>
+            <p style={{ margin: 0, fontSize: 14, color: '#1e293b', lineHeight: 1.5, flex: 1 }}>{t.message}</p>
+            <button onClick={() => onRemove(t.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+          </div>
+        )
+      })}
+      <style>{`@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}`}</style>
+    </div>
+  )
+}
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface UserData {
@@ -140,6 +179,13 @@ function StatusDot({ status }: { status: string }) {
 
 // ── Component ──────────────────────────────────────────────────────────
 export default function KelolaUser() {
+  const [toasts, setToasts] = useState<Toast[]>([])
+  const showToast = useCallback((message: string, type: ToastType = 'error') => {
+    const id = Date.now()
+    setToasts(prev => [...prev, { id, message, type }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
+  }, [])
+
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [armadaOptions, setArmadaOptions] = useState<ArmadaOption[]>([])
 
@@ -241,7 +287,7 @@ export default function KelolaUser() {
       await fetchUsers()
       setShowModal(false)
     } catch (err: any) {
-      alert(err.message ?? 'Gagal menyimpan perubahan')
+      showToast(err.message ?? 'Gagal menyimpan perubahan')
     } finally { setSaving(false) }
   }
 
@@ -255,7 +301,7 @@ export default function KelolaUser() {
       await fetchUsers()
       setShowDeleteModal(false)
     } catch (err: any) {
-      alert(err.message ?? 'Gagal menghapus user')
+      showToast(err.message ?? 'Gagal menghapus user')
     } finally { setSaving(false) }
   }
 
@@ -272,7 +318,7 @@ export default function KelolaUser() {
       setShowModal(false)
       setShowResetModal(true)
     } catch (err: any) {
-      alert(err.message ?? 'Gagal mereset password')
+      showToast(err.message ?? 'Gagal mereset password')
     } finally { setSaving(false) }
   }
 
@@ -280,9 +326,9 @@ export default function KelolaUser() {
 
   const handleAdd = async () => {
     const { role, nama, nomor_pegawai, username, no_hp, armada_id, nama_kernet, bus_id } = addFormData
-    if (!nama || !username || !no_hp) { alert('Nama, username, dan no HP wajib diisi'); return }
-    if (role !== 'driver' && !nomor_pegawai) { alert('Nomor pegawai wajib diisi'); return }
-    if (role !== 'super_admin' && !armada_id) { alert('Armada wajib diisi'); return }
+    if (!nama || !username || !no_hp) { showToast('Nama, username, dan no HP wajib diisi', 'warning'); return }
+    if (role !== 'driver' && !nomor_pegawai) { showToast('Nomor pegawai wajib diisi', 'warning'); return }
+    if (role !== 'super_admin' && !armada_id) { showToast('Armada wajib diisi', 'warning'); return }
 
     setSaving(true)
     try {
@@ -317,11 +363,13 @@ export default function KelolaUser() {
       setShowAddModal(false)
       setShowResetModal(true)
     } catch (err: any) {
-      alert(err.message ?? 'Gagal menambahkan user')
+      showToast(err.message ?? 'Gagal menambahkan user')
     } finally { setSaving(false) }
   }
 
   return (
+    <>
+    <ToastContainer toasts={toasts} onRemove={id => setToasts(prev => prev.filter(t => t.id !== id))} />
     <div className="dashboard-container">
       <div className="dashboard-content">
         <h1 className="page-title">Kelola User</h1>
@@ -693,5 +741,6 @@ export default function KelolaUser() {
         )}
       </div>
     </div>
+    </>
   )
 }
