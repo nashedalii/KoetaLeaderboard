@@ -11,9 +11,9 @@ const generatePassword = () => {
 
 // POST /api/users/admin  — hanya super_admin
 export const createAdmin = async (req, res) => {
-  const { nama_admin, nomor_pegawai, username, email, armada_id, role: newRole } = req.body
+  const { nama_admin, nomor_pegawai, username, no_hp, armada_id, role: newRole } = req.body
 
-  if (!nama_admin || !nomor_pegawai || !username || !email) {
+  if (!nama_admin || !nomor_pegawai || !username || !no_hp) {
     return res.status(400).json({ message: 'Semua field wajib diisi' })
   }
 
@@ -27,10 +27,10 @@ export const createAdmin = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO admin (nama_admin, nomor_pegawai, username, email, password, role, armada_id)
+      `INSERT INTO admin (nama_admin, nomor_pegawai, username, no_hp, password, role, armada_id)
        VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf')), $6, $7)
        RETURNING admin_id AS id, nama_admin AS nama, username, role`,
-      [nama_admin, nomor_pegawai, username, email, password, adminRole, armada_id || null]
+      [nama_admin, nomor_pegawai, username, no_hp, password, adminRole, armada_id || null]
     )
 
     res.status(201).json({
@@ -40,7 +40,7 @@ export const createAdmin = async (req, res) => {
     })
   } catch (err) {
     if (err.code === '23505') {
-      return res.status(409).json({ message: 'Nomor pegawai, username, atau email sudah digunakan' })
+      return res.status(409).json({ message: 'Nomor pegawai, username, atau no HP sudah digunakan' })
     }
     console.error('Create admin error:', err)
     res.status(500).json({ message: 'Terjadi kesalahan server' })
@@ -50,7 +50,7 @@ export const createAdmin = async (req, res) => {
 // POST /api/users/petugas
 export const createPetugas = async (req, res) => {
   const { role: callerRole, armada_id: callerArmadaId } = req.user
-  const { nama_petugas, nomor_pegawai, username, email } = req.body
+  const { nama_petugas, nomor_pegawai, username, no_hp } = req.body
   let { armada_id } = req.body
 
   // admin vendor wajib pakai armada_id dari JWT
@@ -58,7 +58,7 @@ export const createPetugas = async (req, res) => {
     armada_id = callerArmadaId
   }
 
-  if (!nama_petugas || !nomor_pegawai || !username || !email || !armada_id) {
+  if (!nama_petugas || !nomor_pegawai || !username || !no_hp || !armada_id) {
     return res.status(400).json({ message: 'Semua field wajib diisi' })
   }
 
@@ -66,10 +66,10 @@ export const createPetugas = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO petugas (nama_petugas, nomor_pegawai, username, email, password, armada_id)
+      `INSERT INTO petugas (nama_petugas, nomor_pegawai, username, no_hp, password, armada_id)
        VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf')), $6)
        RETURNING petugas_id AS id, nama_petugas AS nama, username`,
-      [nama_petugas, nomor_pegawai, username, email, password, armada_id]
+      [nama_petugas, nomor_pegawai, username, no_hp, password, armada_id]
     )
 
     res.status(201).json({
@@ -79,7 +79,7 @@ export const createPetugas = async (req, res) => {
     })
   } catch (err) {
     if (err.code === '23505') {
-      return res.status(409).json({ message: 'Nomor pegawai, username, atau email sudah digunakan' })
+      return res.status(409).json({ message: 'Nomor pegawai, username, atau no HP sudah digunakan' })
     }
     console.error('Create petugas error:', err)
     res.status(500).json({ message: 'Terjadi kesalahan server' })
@@ -205,7 +205,7 @@ export const getAllUsers = async (req, res) => {
       // Super admin melihat semua admin
       adminResult = await pool.query(
         `SELECT admin_id AS id, nama_admin AS nama, nomor_pegawai AS identifier,
-                email, status_aktif, role,
+                no_hp, status_aktif, role,
                 a.kode_armada, a.nama_armada
          FROM admin
          LEFT JOIN armada a ON admin.armada_id = a.armada_id`
@@ -213,7 +213,7 @@ export const getAllUsers = async (req, res) => {
 
       petugasResult = await pool.query(
         `SELECT p.petugas_id AS id, p.nama_petugas AS nama, p.nomor_pegawai AS identifier,
-                p.email, p.status_aktif, 'petugas' AS role,
+                p.no_hp, p.status_aktif, 'petugas' AS role,
                 a.kode_armada, a.nama_armada
          FROM petugas p
          LEFT JOIN armada a ON p.armada_id = a.armada_id`
@@ -221,7 +221,7 @@ export const getAllUsers = async (req, res) => {
 
       driverResult = await pool.query(
         `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
-                d.nama_kernet, d.email, d.status_aktif, 'driver' AS role,
+                d.nama_kernet, d.no_hp, d.status_aktif, 'driver' AS role,
                 a.armada_id, a.kode_armada, a.nama_armada,
                 b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
          FROM driver d
@@ -232,7 +232,7 @@ export const getAllUsers = async (req, res) => {
       // Admin vendor hanya melihat petugas & driver di armadanya
       petugasResult = await pool.query(
         `SELECT p.petugas_id AS id, p.nama_petugas AS nama, p.nomor_pegawai AS identifier,
-                p.email, p.status_aktif, 'petugas' AS role,
+                p.no_hp, p.status_aktif, 'petugas' AS role,
                 a.kode_armada, a.nama_armada
          FROM petugas p
          LEFT JOIN armada a ON p.armada_id = a.armada_id
@@ -242,7 +242,7 @@ export const getAllUsers = async (req, res) => {
 
       driverResult = await pool.query(
         `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
-                d.nama_kernet, d.email, d.status_aktif, 'driver' AS role,
+                d.nama_kernet, d.no_hp, d.status_aktif, 'driver' AS role,
                 a.armada_id, a.kode_armada, a.nama_armada,
                 b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
          FROM driver d
@@ -281,7 +281,7 @@ export const getAllDrivers = async (req, res) => {
   try {
     let query = `
       SELECT d.driver_id AS id, d.nama_driver AS nama, d.nama_kernet,
-             d.username, d.email, d.status_aktif,
+             d.username, d.no_hp, d.status_aktif,
              a.armada_id, a.kode_armada, a.nama_armada,
              b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
       FROM driver d
@@ -327,7 +327,7 @@ async function checkArmadaAccess(role, table, idCol, id, callerRole, callerArmad
 export const updateUser = async (req, res) => {
   const { role, id } = req.params
   const { role: callerRole, armada_id: callerArmadaId } = req.user
-  const { nama, identifier, email, status_aktif, armada_id, nama_kernet, bus_id } = req.body
+  const { nama, identifier, no_hp, status_aktif, armada_id, nama_kernet, bus_id } = req.body
 
   if (!VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: 'Role tidak valid. Gunakan: admin, petugas, driver' })
@@ -346,7 +346,7 @@ export const updateUser = async (req, res) => {
 
   if (nama !== undefined)        { fields.push(`${namaCol} = $${idx++}`);       values.push(nama) }
   if (identifier !== undefined)  { fields.push(`${identifierCol} = $${idx++}`); values.push(identifier) }
-  if (email !== undefined)       { fields.push(`email = $${idx++}`);            values.push(email) }
+  if (no_hp !== undefined)       { fields.push(`no_hp = $${idx++}`);            values.push(no_hp) }
   if (status_aktif !== undefined){ fields.push(`status_aktif = $${idx++}`);     values.push(status_aktif) }
   if (armada_id !== undefined && role !== 'admin') {
     fields.push(`armada_id = $${idx++}`)
@@ -404,7 +404,7 @@ export const updateUser = async (req, res) => {
     })
   } catch (err) {
     if (err.code === '23505') {
-      return res.status(409).json({ message: 'Identifier atau email sudah digunakan' })
+      return res.status(409).json({ message: 'Identifier atau no HP sudah digunakan' })
     }
     console.error('Update user error:', err)
     res.status(500).json({ message: 'Terjadi kesalahan server' })
@@ -453,7 +453,7 @@ export const deleteUser = async (req, res) => {
 // POST /api/users/driver
 export const createDriver = async (req, res) => {
   const { role: callerRole, armada_id: callerArmadaId } = req.user
-  const { nama_driver, nama_kernet, username, email } = req.body
+  const { nama_driver, nama_kernet, username, no_hp } = req.body
   let { armada_id } = req.body
 
   // admin vendor wajib pakai armada_id dari JWT
@@ -461,7 +461,7 @@ export const createDriver = async (req, res) => {
     armada_id = callerArmadaId
   }
 
-  if (!nama_driver || !username || !email || !armada_id) {
+  if (!nama_driver || !username || !no_hp || !armada_id) {
     return res.status(400).json({ message: 'Semua field wajib diisi' })
   }
 
@@ -469,10 +469,10 @@ export const createDriver = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO driver (nama_driver, nama_kernet, username, email, password, armada_id)
+      `INSERT INTO driver (nama_driver, nama_kernet, username, no_hp, password, armada_id)
        VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf')), $6)
        RETURNING driver_id AS id, nama_driver AS nama, username`,
-      [nama_driver, nama_kernet || null, username, email, password, armada_id]
+      [nama_driver, nama_kernet || null, username, no_hp, password, armada_id]
     )
 
     res.status(201).json({
@@ -482,7 +482,7 @@ export const createDriver = async (req, res) => {
     })
   } catch (err) {
     if (err.code === '23505') {
-      return res.status(409).json({ message: 'Username atau email sudah digunakan' })
+      return res.status(409).json({ message: 'Username atau no HP sudah digunakan' })
     }
     console.error('Create driver error:', err)
     res.status(500).json({ message: 'Terjadi kesalahan server' })

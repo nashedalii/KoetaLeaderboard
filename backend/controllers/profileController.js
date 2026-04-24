@@ -22,7 +22,7 @@ export const getMyProfile = async (req, res) => {
           p.nama_petugas AS nama,
           p.nomor_pegawai,
           p.username,
-          p.email,
+          p.no_hp,
           p.foto_profil,
           p.status_aktif,
           a.nama_armada,
@@ -39,7 +39,7 @@ export const getMyProfile = async (req, res) => {
           d.nama_driver  AS nama,
           d.nama_kernet,
           d.username,
-          d.email,
+          d.no_hp,
           d.foto_profil,
           d.status_aktif,
           a.nama_armada,
@@ -68,13 +68,13 @@ export const getMyProfile = async (req, res) => {
 }
 
 // ── PUT /api/profile/me ───────────────────────────────────────────────────────
-// Update username & email milik sendiri
+// Update username & no_hp milik sendiri
 export const updateMyProfile = async (req, res) => {
   const { role, user_id } = req.user
-  const { username, email } = req.body
+  const { username, no_hp } = req.body
 
-  if (!username && !email) {
-    return res.status(400).json({ message: 'Minimal satu field (username / email) harus diisi' })
+  if (!username && !no_hp) {
+    return res.status(400).json({ message: 'Minimal satu field (username / no HP) harus diisi' })
   }
 
   if (!TABLE_MAP[role]) {
@@ -87,14 +87,14 @@ export const updateMyProfile = async (req, res) => {
   let idx = 1
 
   if (username) { fields.push(`username = $${idx++}`); values.push(username) }
-  if (email)    { fields.push(`email = $${idx++}`);    values.push(email) }
+  if (no_hp)    { fields.push(`no_hp = $${idx++}`);    values.push(no_hp) }
 
   values.push(user_id)
 
   try {
     const result = await pool.query(
       `UPDATE ${table} SET ${fields.join(', ')} WHERE ${idCol} = $${idx}
-       RETURNING ${idCol} AS id, ${namaCol} AS nama, username, email`,
+       RETURNING ${idCol} AS id, ${namaCol} AS nama, username, no_hp`,
       values
     )
 
@@ -105,7 +105,7 @@ export const updateMyProfile = async (req, res) => {
     res.json({ message: 'Profil berhasil diupdate', user: { ...result.rows[0], role } })
   } catch (err) {
     if (err.code === '23505') {
-      return res.status(409).json({ message: 'Username atau email sudah digunakan' })
+      return res.status(409).json({ message: 'Username atau no HP sudah digunakan' })
     }
     console.error('Update profile error:', err)
     res.status(500).json({ message: 'Terjadi kesalahan server' })

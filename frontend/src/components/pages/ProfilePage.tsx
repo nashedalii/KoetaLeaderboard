@@ -18,7 +18,7 @@ interface Profile {
   nama: string
   nomor_pegawai?: string
   username: string
-  email: string
+  no_hp: string
   foto_profil: string | null
   status_aktif: string
   role: string
@@ -41,7 +41,7 @@ export default function ProfilePage() {
 
   const [editMode, setEditMode]   = useState(false)
   const [username, setUsername]   = useState('')
-  const [email, setEmail]         = useState('')
+  const [no_hp, setNoHp]          = useState('')
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveMsg, setSaveMsg]     = useState('')
 
@@ -66,7 +66,7 @@ export default function ProfilePage() {
       if (!res.ok) { setError(data.message); return }
       setProfile(data)
       setUsername(data.username)
-      setEmail(data.email)
+      setNoHp(data.no_hp)
     } catch {
       setError('Tidak dapat terhubung ke server')
     } finally {
@@ -82,7 +82,7 @@ export default function ProfilePage() {
       const res = await fetch(`${API}/api/profile/me`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ username, email }),
+        body: JSON.stringify({ username, no_hp }),
       })
       const data = await res.json()
       setSaveMsg(res.ok ? '✓ Profil berhasil diperbarui' : data.message)
@@ -278,7 +278,7 @@ export default function ProfilePage() {
           {/* Nama */}
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: '0 0 4px' }}>{profile.nama}</h2>
           <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 20px' }}>
-            {profile.email}
+            {profile.no_hp}
           </p>
 
           {/* Hidden file input */}
@@ -336,7 +336,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>Informasi Akun</h2>
-              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>Username dan email login</p>
+              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>Username dan no HP login</p>
             </div>
           </div>
           {!editMode && (
@@ -352,7 +352,7 @@ export default function ProfilePage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <FieldRow label="Username" value={username} editing={editMode} onChange={setUsername} type="text" />
-          <FieldRow label="Email" value={email} editing={editMode} onChange={setEmail} type="email" />
+          <FieldRow label="No HP" value={no_hp} editing={editMode} onChange={setNoHp} type="tel" />
         </div>
 
         {saveMsg && (
@@ -364,7 +364,7 @@ export default function ProfilePage() {
             <button onClick={handleSaveInfo} disabled={saveLoading} style={primaryBtnStyle}>
               {saveLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
             </button>
-            <button onClick={() => { setEditMode(false); setUsername(profile.username); setEmail(profile.email); setSaveMsg('') }} style={ghostBtnStyle}>
+            <button onClick={() => { setEditMode(false); setUsername(profile.username); setNoHp(profile.no_hp); setSaveMsg('') }} style={ghostBtnStyle}>
               Batal
             </button>
           </div>

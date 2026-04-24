@@ -11,7 +11,7 @@ export const getMyProfile = async (req, res) => {
         d.driver_id,
         d.nama_driver,
         d.nama_kernet,
-        d.email,
+        d.no_hp,
         d.status_aktif,
         a.nama_armada,
         b.kode_bus,

@@ -8,7 +8,7 @@ interface UserData {
   id: number
   nama: string
   identifier: string
-  email: string
+  no_hp: string
   status_aktif: 'aktif' | 'nonaktif'
   role: 'super_admin' | 'admin' | 'petugas' | 'driver'
   nama_kernet?: string
@@ -38,7 +38,7 @@ interface BusOption {
 interface FormData {
   nama: string
   identifier: string
-  email: string
+  no_hp: string
   status_aktif: 'aktif' | 'nonaktif'
   nama_kernet: string
   armada_id: string
@@ -50,7 +50,7 @@ interface AddFormData {
   nama: string
   nomor_pegawai: string
   username: string
-  email: string
+  no_hp: string
   armada_id: string
   nama_kernet: string
   bus_id: string
@@ -58,7 +58,7 @@ interface AddFormData {
 
 const EMPTY_ADD_FORM: AddFormData = {
   role: 'admin', nama: '', nomor_pegawai: '', username: '',
-  email: '', armada_id: '', nama_kernet: '', bus_id: '',
+  no_hp: '', armada_id: '', nama_kernet: '', bus_id: '',
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -163,7 +163,7 @@ export default function KelolaUser() {
   const [addBusOptions, setAddBusOptions] = useState<BusOption[]>([])
 
   const [formData, setFormData] = useState<FormData>({
-    nama: '', identifier: '', email: '', status_aktif: 'aktif',
+    nama: '', identifier: '', no_hp: '', status_aktif: 'aktif',
     nama_kernet: '', armada_id: '', bus_id: '',
   })
 
@@ -200,7 +200,7 @@ export default function KelolaUser() {
     .filter(u => {
       const matchSearch =
         u.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+        u.no_hp.toLowerCase().includes(searchTerm.toLowerCase())
       const matchRole = roleFilter === 'All' || u.role === roleFilter
       return matchSearch && matchRole
     })
@@ -209,7 +209,7 @@ export default function KelolaUser() {
   const openEdit = async (user: UserData) => {
     setSelectedUser(user)
     setFormData({
-      nama: user.nama, identifier: user.identifier, email: user.email,
+      nama: user.nama, identifier: user.identifier, no_hp: user.no_hp,
       status_aktif: user.status_aktif, nama_kernet: user.nama_kernet ?? '',
       armada_id: user.armada_id?.toString() ?? '', bus_id: user.bus_id?.toString() ?? '',
     })
@@ -228,7 +228,7 @@ export default function KelolaUser() {
     try {
       const body: Record<string, any> = {
         nama: formData.nama, identifier: formData.identifier,
-        email: formData.email, status_aktif: formData.status_aktif,
+        no_hp: formData.no_hp, status_aktif: formData.status_aktif,
       }
       if (selectedUser.role !== 'admin') body.armada_id = parseInt(formData.armada_id)
       if (selectedUser.role === 'driver') {
@@ -279,8 +279,8 @@ export default function KelolaUser() {
   const openAdd = () => { setAddFormData(EMPTY_ADD_FORM); setAddBusOptions([]); setShowAddModal(true) }
 
   const handleAdd = async () => {
-    const { role, nama, nomor_pegawai, username, email, armada_id, nama_kernet, bus_id } = addFormData
-    if (!nama || !username || !email) { alert('Nama, username, dan email wajib diisi'); return }
+    const { role, nama, nomor_pegawai, username, no_hp, armada_id, nama_kernet, bus_id } = addFormData
+    if (!nama || !username || !no_hp) { alert('Nama, username, dan no HP wajib diisi'); return }
     if (role !== 'driver' && !nomor_pegawai) { alert('Nomor pegawai wajib diisi'); return }
     if (role !== 'super_admin' && !armada_id) { alert('Armada wajib diisi'); return }
 
@@ -290,16 +290,16 @@ export default function KelolaUser() {
       let endpoint: string
       if (role === 'super_admin' || role === 'admin') {
         body = {
-          nama_admin: nama, nomor_pegawai, username, email,
+          nama_admin: nama, nomor_pegawai, username, no_hp,
           role,
           ...(role === 'admin' && armada_id ? { armada_id: parseInt(armada_id) } : {}),
         }
         endpoint = '/api/users/admin'
       } else if (role === 'petugas') {
-        body = { nama_petugas: nama, nomor_pegawai, username, email, armada_id: parseInt(armada_id) }
+        body = { nama_petugas: nama, nomor_pegawai, username, no_hp, armada_id: parseInt(armada_id) }
         endpoint = '/api/users/petugas'
       } else {
-        body = { nama_driver: nama, nama_kernet: nama_kernet || null, username, email, armada_id: parseInt(armada_id) }
+        body = { nama_driver: nama, nama_kernet: nama_kernet || null, username, no_hp, armada_id: parseInt(armada_id) }
         endpoint = '/api/users/driver'
       }
       const result = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) })
@@ -311,7 +311,7 @@ export default function KelolaUser() {
         } catch { /* bus assignment gagal, tidak kritis */ }
       }
       await fetchUsers()
-      setSelectedUser({ id: result.user.id, nama: result.user.nama ?? nama, identifier: '', email, status_aktif: 'aktif', role })
+      setSelectedUser({ id: result.user.id, nama: result.user.nama ?? nama, identifier: '', no_hp, status_aktif: 'aktif', role })
       setNewPassword(result.password_awal)
       setPasswordModalTitle('User Berhasil Dibuat')
       setShowAddModal(false)
@@ -332,7 +332,7 @@ export default function KelolaUser() {
             <span className="search-icon"><SearchIcon /></span>
             <input
               type="text"
-              placeholder="Cari nama atau email..."
+              placeholder="Cari nama atau no HP..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="search-input"
@@ -366,7 +366,7 @@ export default function KelolaUser() {
             <table className="user-table">
               <thead>
                 <tr>
-                  <th>#</th><th>Nama</th><th>Email</th><th>Role</th>
+                  <th>#</th><th>Nama</th><th>No HP</th><th>Role</th>
                   <th>Bus / Armada</th><th>Status</th><th>Aksi</th>
                 </tr>
               </thead>
@@ -378,7 +378,7 @@ export default function KelolaUser() {
                       <RoleInitial role={user.role} />
                       {user.nama}
                     </td>
-                    <td>{user.email}</td>
+                    <td>{user.no_hp}</td>
                     <td>
                       <span className={`role-badge role-${user.role === 'super_admin' ? 'super-admin' : user.role}`}>
                         {ROLE_LABEL[user.role]}
@@ -444,8 +444,8 @@ export default function KelolaUser() {
                   <input type="text" value={formData.identifier} onChange={e => setFormData({ ...formData, identifier: e.target.value })} className="form-input" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Email</label>
-                  <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="form-input" />
+                  <label className="form-label">No HP</label>
+                  <input type="tel" value={formData.no_hp} onChange={e => setFormData({ ...formData, no_hp: e.target.value })} className="form-input" />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
@@ -568,8 +568,8 @@ export default function KelolaUser() {
                     <input type="text" value={addFormData.username} onChange={e => setAddFormData({ ...addFormData, username: e.target.value })} placeholder="Username login" className="form-input" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Email <span className="required">*</span></label>
-                    <input type="email" value={addFormData.email} onChange={e => setAddFormData({ ...addFormData, email: e.target.value })} placeholder="email@example.com" className="form-input" />
+                    <label className="form-label">No HP <span className="required">*</span></label>
+                    <input type="tel" value={addFormData.no_hp} onChange={e => setAddFormData({ ...addFormData, no_hp: e.target.value })} placeholder="08xxxxxxxxxx" className="form-input" />
                   </div>
                 </div>
                 {addFormData.role !== 'super_admin' && (
@@ -649,7 +649,7 @@ export default function KelolaUser() {
               <p className="delete-message">Apakah Anda yakin ingin menghapus user ini?</p>
               <div className="delete-user-info">
                 <div className="delete-user-name">{selectedUser.nama}</div>
-                <div className="delete-user-role">{selectedUser.email} • {ROLE_LABEL[selectedUser.role]}</div>
+                <div className="delete-user-role">{selectedUser.no_hp} • {ROLE_LABEL[selectedUser.role]}</div>
               </div>
               <div className="form-actions">
                 <button onClick={() => setShowDeleteModal(false)} className="btn-cancel">Batal</button>

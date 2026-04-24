@@ -9,7 +9,7 @@ interface DriverData {
   nama: string
   nama_kernet: string | null
   username: string
-  email: string
+  no_hp: string
   status_aktif: 'aktif' | 'nonaktif'
   armada_id: number
   kode_armada: string
@@ -216,7 +216,7 @@ export default function MonitoringDriver() {
                     {[
                       { label: 'Nama Driver',  value: selectedDriver.nama },
                       { label: 'Username',     value: selectedDriver.username },
-                      { label: 'Email',        value: selectedDriver.email },
+                      { label: 'No HP',        value: selectedDriver.no_hp },
                       { label: 'Kode Bus',     value: selectedDriver.kode_bus ?? '-' },
                       { label: 'Nomor Polisi', value: selectedDriver.nopol ?? '-' },
                       { label: 'Armada',       value: selectedDriver.nama_armada },
