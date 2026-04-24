@@ -151,8 +151,14 @@ export default function AdminDashboard() {
   const [data, setData]         = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]       = useState<string | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
+    try {
+      const auth = JSON.parse(localStorage.getItem('auth') || '{}')
+      setIsSuperAdmin(auth?.user?.role === 'super_admin')
+    } catch { /* ignore */ }
+
     const fetchDashboard = async () => {
       try {
         const result = await apiFetch('/api/dashboard/admin')
@@ -260,7 +266,7 @@ export default function AdminDashboard() {
         <div className="page-header" style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h1 className="page-title" style={{ marginBottom: 6 }}>Dashboard Admin</h1>
+              <h1 className="page-title" style={{ marginBottom: 6 }}>{isSuperAdmin ? 'Dashboard Super Admin' : 'Dashboard Admin'}</h1>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, margin: 0 }}>
                 {data.periode_aktif
                   ? `Periode aktif: ${data.periode_aktif.nama_periode}`
