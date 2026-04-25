@@ -1,6 +1,6 @@
-# Sistem Penilaian Kinerja Driver — Dishub Aceh
+# KoetaLeaderboard
 
-Welcome to the **Sistem Penilaian Kinerja Driver** repository. This is a full-stack web application built with **Next.js 15** and **Express.js**, designed to manage and evaluate bus driver performance across multiple vendor fleets under **Dinas Perhubungan Aceh**. The system supports a structured multi-role workflow — from field data entry by officers, through administrative validation, to performance rankings visible to drivers themselves.
+Welcome to the **KoetaLeaderboard** repository. This is a full-stack web application built with **Next.js 15** and **Express.js**, designed to manage and evaluate the performance of **Transkoetaradja** bus drivers. The system is operated by **UPTD Transkoetaradja** under the authority of **Dinas Perhubungan Aceh**. It supports a structured multi-role workflow — from field data entry by officers, through administrative validation, to performance rankings visible to drivers themselves.
 
 ## 🚀 Tech Stack
 
@@ -174,4 +174,4 @@ my-project/
 
 ## 📄 License
 
-This project was developed as a final year thesis (*Tugas Akhir*). All rights reserved.
+This project was developed as a final year thesis (*Tugas Akhir*) for **UPTD Transkoetaradja — Dinas Perhubungan Aceh**. All rights reserved.
