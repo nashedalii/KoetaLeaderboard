@@ -181,9 +181,12 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
     }
   ]
 
-  // Admin vendor tidak bisa akses Konfigurasi Periode
+  // Admin vendor tidak bisa akses Konfigurasi Bobot dan Konfigurasi Periode
   const filteredAdminMenuItems = userRole === 'Admin' && !isSuperAdmin
-    ? adminMenuItems.filter(item => item.href !== '/admin/konfigurasi-periode')
+    ? adminMenuItems.filter(item =>
+        item.href !== '/admin/konfigurasi-periode' &&
+        item.href !== '/admin/konfigurasi'
+      )
     : adminMenuItems
 
   const menuItems =
