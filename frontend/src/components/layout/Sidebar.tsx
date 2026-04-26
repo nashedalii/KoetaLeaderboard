@@ -11,8 +11,20 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onLogout, userRole }: SidebarProps) {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const pathname = usePathname()
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768
+      setIsMobile(mobile)
+      setIsOpen(!mobile)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   const [userName, setUserName] = useState('')
   const [userFoto, setUserFoto] = useState<string | null>(null)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
@@ -196,12 +208,32 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
 
   return (
     <>
+      {/* ── Mobile Top Navbar ── */}
+      {isMobile && (
+        <header className="mobile-navbar">
+          <Image
+            src="/logopanjangdishub.png"
+            alt="Logo Dishub Aceh"
+            width={130}
+            height={44}
+            style={{ objectFit: 'contain', height: 36, width: 'auto' }}
+            priority
+          />
+          <button
+            className="mobile-hamburger"
+            onClick={() => setIsOpen(true)}
+            aria-label="Buka Menu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" width={24} height={24}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+        </header>
+      )}
+
       {/* Overlay untuk mobile */}
-      {isOpen && (
-        <div
-          className="sidebar-overlay"
-          onClick={() => setIsOpen(false)}
-        />
+      {isOpen && isMobile && (
+        <div className="sidebar-overlay" onClick={() => setIsOpen(false)} />
       )}
 
       {/* Sidebar */}
@@ -229,15 +261,20 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
               />
             )}
           </div>
-          <button
-            className="toggle-btn"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle Sidebar"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          </button>
+          {/* Desktop: toggle collapse | Mobile: tombol X tutup */}
+          {isMobile ? (
+            <button className="toggle-btn" onClick={() => setIsOpen(false)} aria-label="Tutup Menu">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          ) : (
+            <button className="toggle-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Sidebar">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Navigation Menu */}
@@ -248,6 +285,7 @@ export default function Sidebar({ onLogout, userRole }: SidebarProps) {
               href={item.href}
               className={`nav-item ${pathname === item.href ? 'active' : ''}`}
               title={!isOpen ? item.label : undefined}
+              onClick={() => isMobile && setIsOpen(false)}
             >
               <span className="nav-icon">{item.icon}</span>
               {isOpen && <span className="nav-label">{item.label}</span>}
