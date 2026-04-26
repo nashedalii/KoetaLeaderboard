@@ -1961,7 +1961,51 @@ body {
   }
 
   .drivers-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .driver-card {
+    padding: 14px 12px;
+  }
+
+  .driver-name {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .driver-kernet {
+    font-size: 12px;
+  }
+
+  .driver-card-header {
+    margin-bottom: 10px;
+  }
+
+  .score-section {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .score-value {
+    font-size: 16px;
+  }
+
+  .score-label {
+    font-size: 11px;
+  }
+
+  .trend-section {
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .driver-card-footer {
+    padding-top: 8px;
+  }
+
+  .view-details {
+    font-size: 12px;
   }
 
   .table-header,
@@ -1976,6 +2020,26 @@ body {
     max-height: calc(100vh - 20px);
   }
 }
+
+@media (max-width: 400px) {
+  .drivers-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .driver-card {
+    padding: 10px 8px;
+  }
+
+  .driver-name {
+    font-size: 13px;
+  }
+
+  .score-value {
+    font-size: 15px;
+  }
+}
+
   background: var(--primary-blue);
   color: white;
   border: none;
@@ -4666,6 +4730,38 @@ body {
   gap: 1rem;
 }
 
+@media (max-width: 768px) {
+  .drivers-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .driver-card {
+    padding: 0.55rem !important;
+  }
+  .driver-name {
+    font-size: 0.82rem !important;
+  }
+  .driver-kernet {
+    font-size: 0.72rem !important;
+  }
+  .score-label {
+    font-size: 0.68rem !important;
+  }
+  .score-value {
+    font-size: 0.85rem !important;
+  }
+  .score-section {
+    gap: 0.5rem !important;
+  }
+  .status-badge {
+    font-size: 0.68rem !important;
+    padding: 0.15rem 0.35rem !important;
+  }
+  .view-details {
+    font-size: 0.75rem !important;
+  }
+}
+
 .driver-card {
   background: #fff;
   border: 1px solid #e6edf3;
@@ -5214,12 +5310,46 @@ body {
   }
 
   .driver-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .driver-card.input-card {
+    padding: 0.65rem;
   }
 
   .driver-card-header {
-    flex-direction: column;
-    gap: 1rem;
+    flex-direction: row;
+    gap: 0.4rem;
+    align-items: flex-start;
+  }
+
+  .driver-name {
+    font-size: 0.82rem;
+  }
+
+  .muted.small {
+    font-size: 0.7rem;
+  }
+
+  .armada-badge {
+    font-size: 0.72rem;
+    padding: 0.15rem 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .status-badge {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.35rem;
+  }
+
+  .skor-preview {
+    font-size: 0.72rem;
+  }
+
+  .card-actions .btn {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.5rem;
   }
 
   .driver-right {
@@ -5789,7 +5919,26 @@ body {
 /* Responsive for Input & Validasi */
 @media (max-width: 768px) {
   .input-summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+
+  .summary-item {
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+  }
+
+  .summary-icon {
+    font-size: 1.6rem;
+  }
+
+  .summary-label {
+    font-size: 0.72rem;
+    margin-bottom: 0.1rem;
+  }
+
+  .summary-value {
+    font-size: 1.6rem;
   }
 
   .input-filters {
@@ -6193,7 +6342,8 @@ body {
   }
 
   .input-summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
   }
 }
 
