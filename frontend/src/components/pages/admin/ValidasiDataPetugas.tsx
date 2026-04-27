@@ -287,7 +287,7 @@ export default function ValidasiDataPetugas() {
         )}
 
         {/* ── Summary Cards ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 24 }}>
+        <div className="validasi-summary-grid" style={{ marginBottom: 24 }}>
           {(['total', 'pending', 'approved', 'rejected'] as const).map(key => {
             const s = SUMMARY_STYLE[key]
             const labels = { total: 'Total Penilaian', pending: 'Menunggu Validasi', approved: 'Disetujui', rejected: 'Ditolak' }
@@ -364,80 +364,72 @@ export default function ValidasiDataPetugas() {
 
         ) : viewMode === 'grid' ? (
           /* ── GRID VIEW ── */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+          <div className="validasi-penilaian-grid">
             {filtered.map(p => {
               const cfg = STATUS_CFG[p.status_validasi]
+              const score = Number(p.skor_total)
+              const scoreColor = score >= 90 ? '#059669' : score >= 75 ? '#2563eb' : score >= 60 ? '#d97706' : '#dc2626'
+              const scoreBg   = score >= 90 ? '#d1fae5' : score >= 75 ? '#dbeafe' : score >= 60 ? '#fef3c7' : '#fee2e2'
               return (
-                <div key={p.penilaian_id} style={{
-                  background: '#fff', borderRadius: 16,
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-                  borderTop: `3px solid ${cfg.color}`,
-                  overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                  transition: 'box-shadow 0.2s, transform 0.2s',
-                }}
+                <div key={p.penilaian_id} className="validasi-penilaian-card"
+                  style={{ borderTop: `3px solid ${cfg.color}` }}
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.13)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLDivElement).style.transform = 'none' }}
                 >
-                  <div style={{ padding: '16px 18px', flex: 1 }}>
-                    {/* Header row */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
-                      <div>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>{p.nama_driver}</p>
-                        <p style={{ fontSize: 12, color: '#9ca3af', margin: '3px 0 0' }}>{p.nama_periode}</p>
-                      </div>
+                  {/* Card Body */}
+                  <div className="vpc-body">
+                    {/* Status badge + periode */}
+                    <div className="vpc-top">
                       <StatusBadge status={p.status_validasi} />
+                      <span className="vpc-periode">{p.nama_periode}</span>
+                    </div>
+
+                    {/* Driver name */}
+                    <p className="vpc-name">{p.nama_driver}</p>
+
+                    {/* Score prominent */}
+                    <div className="vpc-score" style={{ color: scoreColor, background: scoreBg }}>
+                      <span className="vpc-score-label">Skor</span>
+                      <span className="vpc-score-value">{score.toFixed(2)}</span>
                     </div>
 
                     {/* Info rows */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#9ca3af' }}>Armada</span>
-                        <span style={{ fontWeight: 600, color: '#374151' }}>{p.nama_armada}</span>
+                    <div className="vpc-info">
+                      <div className="vpc-info-row">
+                        <span className="vpc-info-label">Armada</span>
+                        <span className="vpc-info-value">{p.nama_armada}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#9ca3af' }}>Bus</span>
-                        <span style={{ fontWeight: 600, color: '#374151' }}>{p.kode_bus} / {p.nopol}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#9ca3af' }}>Skor</span>
-                        <span style={{ fontWeight: 800, fontSize: 14, color: cfg.color }}>{Number(p.skor_total).toFixed(2)}</span>
+                      <div className="vpc-info-row">
+                        <span className="vpc-info-label">Bus</span>
+                        <span className="vpc-info-value">{p.kode_bus} / {p.nopol}</span>
                       </div>
                     </div>
 
-                    <div style={{ height: 1, background: '#f3f4f6', margin: '12px 0' }} />
-
-                    {/* Input info */}
-                    <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                      <span>Input: </span>
+                    {/* Meta */}
+                    <div className="vpc-meta">
                       <span style={{ fontWeight: 600, color: '#d97706' }}>{p.nama_petugas_input}</span>
                       <span> · {fmtDate(p.created_at)}</span>
                     </div>
                     {p.nama_admin_validasi && (
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>
+                      <div className="vpc-meta" style={{ marginTop: 2 }}>
                         <span>Validasi: </span>
                         <span style={{ fontWeight: 600, color: '#2563eb' }}>{p.nama_admin_validasi}</span>
                       </div>
                     )}
                     {p.status_validasi === 'rejected' && p.note_validasi && (
-                      <div style={{ marginTop: 8, padding: '6px 10px', background: '#fef2f2', borderRadius: 6, fontSize: 11, color: '#dc2626', borderLeft: '3px solid #fca5a5' }}>
-                        Alasan: {p.note_validasi}
+                      <div className="vpc-reject-note">
+                        {p.note_validasi}
                       </div>
                     )}
                   </div>
 
-                  <div style={{ padding: '10px 18px', borderTop: '1px solid #f3f4f6', background: '#fafafa' }}>
-                    <button onClick={() => openDetail(p.penilaian_id)}
-                      style={{
-                        width: '100%', padding: '8px', borderRadius: 8,
-                        border: '1.5px solid #e5e7eb', background: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
+                  {/* Footer */}
+                  <div className="vpc-footer">
+                    <button className="vpc-btn" onClick={() => openDetail(p.penilaian_id)}
                       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff' }}
                     >
-                      <EyeIcon /> Lihat Detail
+                      <EyeIcon /> <span className="vpc-btn-text">Lihat Detail</span>
                     </button>
                   </div>
                 </div>
