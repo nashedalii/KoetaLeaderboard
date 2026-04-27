@@ -141,6 +141,14 @@ export default function ValidasiDataPetugas() {
   const [isRejectUlang, setIsRejectUlang] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionMsg, setActionMsg]       = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+
+  useEffect(() => {
+    try {
+      const auth = JSON.parse(localStorage.getItem('auth') || '{}')
+      setIsSuperAdmin(auth?.user?.role === 'super_admin')
+    } catch {}
+  }, [])
 
   const fetchList = useCallback(async () => {
     setIsLoading(true); setError(null)
@@ -325,15 +333,19 @@ export default function ValidasiDataPetugas() {
               onChange={e => setSearchQuery(e.target.value)}
               style={{ border: 'none', outline: 'none', fontSize: 14, color: '#1e293b', width: '100%', background: 'transparent' }} />
           </div>
-          <div style={{ width: 1, height: 24, background: '#e5e7eb' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Armada:</span>
-            <select value={filterArmada} onChange={e => setFilterArmada(e.target.value)}
-              style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 13, color: '#1e293b', background: '#f9fafb', outline: 'none', cursor: 'pointer' }}>
-              <option value="all">Semua Armada</option>
-              {armadaList.map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
+          {isSuperAdmin && (
+            <>
+              <div style={{ width: 1, height: 24, background: '#e5e7eb' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Armada:</span>
+                <select value={filterArmada} onChange={e => setFilterArmada(e.target.value)}
+                  style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 13, color: '#1e293b', background: '#f9fafb', outline: 'none', cursor: 'pointer' }}>
+                  <option value="all">Semua Armada</option>
+                  {armadaList.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+            </>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Status:</span>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
@@ -693,7 +705,7 @@ export default function ValidasiDataPetugas() {
               </div>
 
               {/* Footer actions */}
-              {detailData && (
+              {detailData && !isSuperAdmin && (
                 <div className="modal-footer">
                   {detailData.penilaian.status_validasi === 'pending' && (
                     <>
