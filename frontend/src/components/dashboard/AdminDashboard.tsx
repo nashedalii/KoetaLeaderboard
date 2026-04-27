@@ -198,7 +198,9 @@ export default function AdminDashboard() {
     {
       title: 'Driver Aktif',
       value: data.total_driver_aktif,
-      sub: `${data.total_armada} armada · ${data.total_petugas_aktif} petugas aktif`,
+      sub: data.total_armada != null
+        ? `${data.total_armada} armada · ${data.total_petugas_aktif} petugas aktif`
+        : `${data.total_petugas_aktif} petugas aktif`,
       subClass: 'neutral',
       accent: CARD_ACCENTS[0],
       iconBg: 'linear-gradient(135deg,#dbeafe,#bfdbfe)',
@@ -313,7 +315,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="stat-number" style={{ fontSize: card.valueLg ? '1.4rem' : 48, fontWeight: 800, color: '#111827' }}>
+              <div className={`stat-number${card.valueLg ? ' stat-number-lg' : ''}`} style={{ fontWeight: 800, color: '#111827' }}>
                 {card.value !== null ? card.value : card.valueLg}
               </div>
 

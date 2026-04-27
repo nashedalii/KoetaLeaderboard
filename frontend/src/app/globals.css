@@ -665,6 +665,10 @@ body {
   gap: 8px;
 }
 
+.stat-number-lg {
+  font-size: 1.4rem;
+}
+
 .main-number {
   font-size: 48px;
 }
@@ -954,12 +958,49 @@ body {
   }
   
   .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
-  
+
   .stat-card {
-    padding: 20px;
+    padding: 12px 12px !important;
+    border-radius: 14px;
+  }
+
+  .stat-header {
+    margin-bottom: 8px;
+  }
+
+  .stat-header h3 {
+    font-size: 10px !important;
+    letter-spacing: 0.04em;
+  }
+
+  .stat-icon {
+    padding: 7px !important;
+    border-radius: 8px !important;
+  }
+
+  .stat-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .stat-number {
+    font-size: 28px !important;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .stat-number-lg {
+    font-size: 1.1rem !important;
+  }
+
+  .stat-trend {
+    font-size: 10px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .dashboard-title {
