@@ -14,6 +14,11 @@ interface Top5Item {
   nama_periode?: string
 }
 
+interface ArmadaOption {
+  armada_id: number
+  nama_armada: string
+}
+
 interface PeriodeAktif {
   periode_id: number
   nama_periode: string
@@ -148,21 +153,34 @@ function SkeletonCard() {
 }
 
 export default function AdminDashboard() {
-  const [data, setData]         = useState<DashboardData | null>(null)
+  const [data, setData]           = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError]       = useState<string | null>(null)
+  const [error, setError]         = useState<string | null>(null)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [armadaOptions, setArmadaOptions] = useState<ArmadaOption[]>([])
+  const [armadaFilter, setArmadaFilter]   = useState<string>('all')
+  const [top5List, setTop5List]           = useState<Top5Item[]>([])
+  const [top5Loading, setTop5Loading]     = useState(false)
+  const [top5Periode, setTop5Periode]     = useState<string>('')
 
   useEffect(() => {
+    let superAdmin = false
     try {
       const auth = JSON.parse(localStorage.getItem('auth') || '{}')
-      setIsSuperAdmin(auth?.user?.role === 'super_admin')
+      superAdmin = auth?.user?.role === 'super_admin'
+      setIsSuperAdmin(superAdmin)
     } catch { /* ignore */ }
 
     const fetchDashboard = async () => {
       try {
         const result = await apiFetch('/api/dashboard/admin')
         setData(result)
+        setTop5List(result.top5_ranking ?? [])
+        setTop5Periode(
+          result.top5_ranking?.[0]?.nama_periode
+            ?? result.periode_aktif?.nama_periode
+            ?? 'Periode terakhir'
+        )
       } catch {
         setError('Gagal memuat data dashboard')
       } finally {
@@ -170,7 +188,26 @@ export default function AdminDashboard() {
       }
     }
     fetchDashboard()
+
+    if (superAdmin) {
+      apiFetch('/api/armada')
+        .then((d: ArmadaOption[]) => setArmadaOptions(Array.isArray(d) ? d : []))
+        .catch(() => {})
+    }
   }, [])
+
+  const handleArmadaFilter = async (val: string) => {
+    setArmadaFilter(val)
+    setTop5Loading(true)
+    try {
+      const url = val === 'all' ? '/api/dashboard/top5' : `/api/dashboard/top5?armada_id=${val}`
+      const result = await apiFetch(url)
+      setTop5List(result.top5 ?? [])
+      setTop5Periode(result.nama_periode ?? 'Periode terakhir')
+    } catch { /* keep existing */ } finally {
+      setTop5Loading(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -256,9 +293,11 @@ export default function AdminDashboard() {
     },
   ]
 
-  const periodLabel = data.top5_ranking[0]?.nama_periode
-    ?? data.periode_aktif?.nama_periode
-    ?? 'Periode terakhir'
+  const periodLabel = top5Periode || (
+    data.top5_ranking[0]?.nama_periode
+      ?? data.periode_aktif?.nama_periode
+      ?? 'Periode terakhir'
+  )
 
   return (
     <div className="dashboard-container">
@@ -347,7 +386,7 @@ export default function AdminDashboard() {
           }}
         >
           {/* Section Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div
                 style={{
@@ -367,34 +406,53 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Top 5 Driver</h2>
-                <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>Berdasarkan skor tertinggi</p>
+                <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>Berdasarkan skor tertinggi · Periode: {periodLabel}</p>
               </div>
             </div>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: '#6b7280',
-                background: '#f3f4f6',
-                borderRadius: 999,
-                padding: '4px 12px',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              Periode: {periodLabel}
-            </span>
+
+            {/* Armada filter — super admin only */}
+            {isSuperAdmin && armadaOptions.length > 0 && (
+              <select
+                value={armadaFilter}
+                onChange={e => handleArmadaFilter(e.target.value)}
+                disabled={top5Loading}
+                style={{
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  padding: '7px 30px 7px 12px',
+                  background: `#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center`,
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: 10,
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: '#334155',
+                  cursor: top5Loading ? 'wait' : 'pointer',
+                  outline: 'none',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                  minWidth: 140,
+                  opacity: top5Loading ? 0.7 : 1,
+                }}
+              >
+                <option value="all">Semua Vendor</option>
+                {armadaOptions.map(a => (
+                  <option key={a.armada_id} value={String(a.armada_id)}>{a.nama_armada}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Divider */}
           <div style={{ height: 1, background: '#f3f4f6', marginBottom: 16 }} />
 
-          {data.top5_ranking.length === 0 ? (
+          {top5Loading ? (
+            <div style={{ padding: '32px 0', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>Memuat ranking...</div>
+          ) : top5List.length === 0 ? (
             <div className="empty-state">
-              <p>Belum ada penilaian yang disetujui.</p>
+              <p>Belum ada penilaian yang disetujui{armadaFilter !== 'all' ? ' untuk vendor ini' : ''}.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {data.top5_ranking.map((item, index) => {
+              {top5List.map((item, index) => {
                 const score = parseFloat(String(item.skor_total))
                 return (
                   <div

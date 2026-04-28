@@ -141,6 +141,74 @@ export const getAdminDashboard = async (req, res) => {
   }
 }
 
+// ── GET /api/dashboard/top5?armada_id=X ──────────────────────────────────
+export const getTop5 = async (req, res) => {
+  const { role, armada_id: userArmadaId } = req.user
+  const isSuperAdmin = role === 'super_admin'
+
+  // super_admin boleh filter by armada via query param; admin vendor selalu pakai armada sendiri
+  const filterArmadaId = isSuperAdmin
+    ? (req.query.armada_id ? parseInt(req.query.armada_id) : null)
+    : userArmadaId
+
+  const armadaClause  = filterArmadaId ? `AND d.armada_id = $2` : ''
+
+  try {
+    // Cari periode aktif terlebih dahulu
+    const periodeResult = await pool.query(`
+      SELECT periode_id, nama_periode FROM periode
+      WHERE tanggal_mulai <= CURRENT_DATE AND tanggal_selesai >= CURRENT_DATE
+      LIMIT 1
+    `)
+    let periodeAktif = periodeResult.rows[0] || null
+
+    // Fallback ke periode terakhir yang ada data approved
+    if (!periodeAktif) {
+      const lastPeriode = await pool.query(`
+        SELECT pr.periode_id, pr.nama_periode
+        FROM penilaian p
+        JOIN periode pr ON p.periode_id = pr.periode_id
+        JOIN driver  d  ON p.driver_id  = d.driver_id
+        WHERE p.status_validasi = 'approved'
+          ${filterArmadaId ? 'AND d.armada_id = $1' : ''}
+        ORDER BY pr.tanggal_mulai DESC
+        LIMIT 1
+      `, filterArmadaId ? [filterArmadaId] : [])
+      periodeAktif = lastPeriode.rows[0] || null
+    }
+
+    if (!periodeAktif) return res.json({ top5: [], nama_periode: null })
+
+    const params = filterArmadaId
+      ? [periodeAktif.periode_id, filterArmadaId]
+      : [periodeAktif.periode_id]
+
+    const result = await pool.query(`
+      SELECT
+        DENSE_RANK() OVER (ORDER BY p.skor_total DESC) AS rank,
+        d.nama_driver,
+        d.foto_profil,
+        a.nama_armada,
+        b.kode_bus,
+        p.skor_total
+      FROM penilaian p
+      JOIN driver d ON p.driver_id = d.driver_id
+      JOIN armada a ON d.armada_id = a.armada_id
+      JOIN bus    b ON p.bus_id    = b.bus_id
+      WHERE p.status_validasi = 'approved'
+        AND p.periode_id = $1
+        ${armadaClause}
+      ORDER BY rank, d.nama_driver
+      LIMIT 5
+    `, params)
+
+    res.json({ top5: result.rows, nama_periode: periodeAktif.nama_periode })
+  } catch (err) {
+    console.error('top5 error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+}
+
 // ── GET /api/dashboard/petugas ────────────────────────────────────────────
 export const getPetugasDashboard = async (req, res) => {
   const petugas_id = req.user.user_id
