@@ -313,22 +313,9 @@ export default function Analytics() {
         </div>
 
         {/* ── Controls Bar ────────────────────────────────────── */}
-        <div
-          style={{
-            background: 'rgba(255,255,255,0.97)',
-            borderRadius: 16,
-            padding: '14px 20px',
-            marginBottom: 20,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 12,
-            boxShadow: '0 2px 16px rgba(0,0,0,0.1)',
-          }}
-        >
+        <div className="analytics-controls">
           {/* Tab switcher */}
-          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 10, padding: 3, gap: 2 }}>
+          <div className="analytics-tabs" style={{ display: 'flex', background: '#f1f5f9', borderRadius: 10, padding: 3, gap: 2 }}>
             {([
               { key: 'monthly-top20', label: 'Ranking Driver', icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z' },
               { key: 'driver-progress', label: 'Progress Driver', icon: 'M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941' },
@@ -362,7 +349,7 @@ export default function Analytics() {
           </div>
 
           {/* Right controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="analytics-filters" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Siklus selector */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', whiteSpace: 'nowrap' }}>Siklus:</span>

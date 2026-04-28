@@ -9016,3 +9016,61 @@ input, select, textarea, button {
     gap: 10px;
   }
 }
+
+/* ── Analytics Controls Responsive ── */
+.analytics-controls {
+  background: rgba(255,255,255,0.97);
+  border-radius: 16px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+}
+
+.analytics-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .analytics-controls {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .analytics-tabs {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .analytics-tabs button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .analytics-filters {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .analytics-filters > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .analytics-filters select {
+    flex: 1;
+    min-width: 0 !important;
+    width: 100%;
+  }
+}
