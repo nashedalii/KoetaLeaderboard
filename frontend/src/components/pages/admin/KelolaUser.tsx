@@ -146,6 +146,17 @@ const CloseIcon = () => (
     <path d="M18 6 6 18M6 6l12 12"/>
   </svg>
 )
+const CopyIcon = () => (
+  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>
+)
+const CheckIcon = () => (
+  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+)
 const WarningIcon = ({ size = 28, color = '#f59e0b' }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -216,6 +227,7 @@ export default function KelolaUser() {
   const [newPassword, setNewPassword]     = useState('')
   const [passwordModalTitle, setPasswordModalTitle] = useState('Password Berhasil Direset')
   const [saving, setSaving]                   = useState(false)
+  const [copied, setCopied]                   = useState(false)
   const [busOptions, setBusOptions]           = useState<BusOption[]>([])
   const [koridorOptions, setKoridorOptions]   = useState<KoridorOption[]>([])
   const [addFormData, setAddFormData]         = useState<AddFormData>(EMPTY_ADD_FORM)
@@ -333,6 +345,7 @@ export default function KelolaUser() {
       )
       setNewPassword(data.password_baru)
       setPasswordModalTitle('Password Berhasil Direset')
+      setCopied(false)
       setShowModal(false)
       setShowResetModal(true)
     } catch (err: any) {
@@ -382,6 +395,7 @@ export default function KelolaUser() {
       setSelectedUser({ id: result.user.id, nama: result.user.nama ?? nama, identifier: '', no_hp, status_aktif: 'aktif', role })
       setNewPassword(result.password_awal)
       setPasswordModalTitle('User Berhasil Dibuat')
+      setCopied(false)
       setShowAddModal(false)
       setShowResetModal(true)
     } catch (err: any) {
@@ -786,10 +800,31 @@ export default function KelolaUser() {
                 </p>
                 <div style={{
                   background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 8,
-                  padding: '1rem', textAlign: 'center', fontSize: '1.5rem',
-                  fontWeight: 700, letterSpacing: '0.2em', color: '#1e293b',
+                  padding: '1rem 1rem 1rem 1.25rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                 }}>
-                  {newPassword}
+                  <span style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '0.2em', color: '#1e293b' }}>
+                    {newPassword}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(newPassword).then(() => {
+                        setCopied(true)
+                        setTimeout(() => setCopied(false), 2000)
+                      })
+                    }}
+                    title="Salin password"
+                    style={{
+                      flexShrink: 0, background: copied ? '#f0fdf4' : 'white',
+                      border: `1.5px solid ${copied ? '#86efac' : '#cbd5e1'}`,
+                      borderRadius: 6, padding: '6px 8px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      color: copied ? '#16a34a' : '#64748b', fontSize: '0.8rem',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {copied ? <><CheckIcon /> Tersalin</> : <><CopyIcon /> Salin</>}
+                  </button>
                 </div>
                 <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <WarningIcon size={14} color="#ef4444" />
