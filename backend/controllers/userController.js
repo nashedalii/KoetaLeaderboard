@@ -223,10 +223,12 @@ export const getAllUsers = async (req, res) => {
         `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
                 d.nama_kernet, d.no_hp, d.status_aktif, 'driver' AS role,
                 a.armada_id, a.kode_armada, a.nama_armada,
-                b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
+                b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status,
+                k.koridor_id, k.nama_koridor, k.tipe AS tipe_koridor
          FROM driver d
          LEFT JOIN armada a ON d.armada_id = a.armada_id
-         LEFT JOIN bus b ON b.driver_id = d.driver_id`
+         LEFT JOIN bus b ON b.driver_id = d.driver_id
+         LEFT JOIN koridor k ON d.koridor_id = k.koridor_id`
       )
     } else {
       // Admin vendor hanya melihat petugas & driver di armadanya
@@ -244,10 +246,12 @@ export const getAllUsers = async (req, res) => {
         `SELECT d.driver_id AS id, d.nama_driver AS nama, d.username AS identifier,
                 d.nama_kernet, d.no_hp, d.status_aktif, 'driver' AS role,
                 a.armada_id, a.kode_armada, a.nama_armada,
-                b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
+                b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status,
+                k.koridor_id, k.nama_koridor, k.tipe AS tipe_koridor
          FROM driver d
          LEFT JOIN armada a ON d.armada_id = a.armada_id
          LEFT JOIN bus b ON b.driver_id = d.driver_id
+         LEFT JOIN koridor k ON d.koridor_id = k.koridor_id
          WHERE d.armada_id = $1`,
         [callerArmadaId]
       )
@@ -283,10 +287,12 @@ export const getAllDrivers = async (req, res) => {
       SELECT d.driver_id AS id, d.nama_driver AS nama, d.nama_kernet,
              d.username, d.no_hp, d.status_aktif,
              a.armada_id, a.kode_armada, a.nama_armada,
-             b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status
+             b.bus_id, b.kode_bus, b.nopol, b.status_aktif AS bus_status,
+             k.koridor_id, k.nama_koridor, k.tipe AS tipe_koridor
       FROM driver d
       LEFT JOIN armada a ON d.armada_id = a.armada_id
       LEFT JOIN bus b ON b.driver_id = d.driver_id
+      LEFT JOIN koridor k ON d.koridor_id = k.koridor_id
     `
     const params = []
 
@@ -355,6 +361,10 @@ export const updateUser = async (req, res) => {
   if (nama_kernet !== undefined && role === 'driver') {
     fields.push(`nama_kernet = $${idx++}`)
     values.push(nama_kernet)
+  }
+  if (req.body.koridor_id !== undefined && role === 'driver') {
+    fields.push(`koridor_id = $${idx++}`)
+    values.push(req.body.koridor_id || null)
   }
 
   if (fields.length === 0 && bus_id === undefined) {
@@ -453,7 +463,7 @@ export const deleteUser = async (req, res) => {
 // POST /api/users/driver
 export const createDriver = async (req, res) => {
   const { role: callerRole, armada_id: callerArmadaId } = req.user
-  const { nama_driver, nama_kernet, username, no_hp } = req.body
+  const { nama_driver, nama_kernet, username, no_hp, koridor_id } = req.body
   let { armada_id } = req.body
 
   // admin vendor wajib pakai armada_id dari JWT
@@ -469,10 +479,10 @@ export const createDriver = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO driver (nama_driver, nama_kernet, username, no_hp, password, armada_id)
-       VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf')), $6)
+      `INSERT INTO driver (nama_driver, nama_kernet, username, no_hp, password, armada_id, koridor_id)
+       VALUES ($1, $2, $3, $4, crypt($5, gen_salt('bf')), $6, $7)
        RETURNING driver_id AS id, nama_driver AS nama, username`,
-      [nama_driver, nama_kernet || null, username, no_hp, password, armada_id]
+      [nama_driver, nama_kernet || null, username, no_hp, password, armada_id, koridor_id || null]
     )
 
     res.status(201).json({

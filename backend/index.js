@@ -47,6 +47,24 @@ app.get('/api/armada', authenticate, authorize('super_admin', 'admin', 'petugas'
   }
 })
 
+// GET /api/koridor?armada_id=X — daftar koridor/feeder per armada
+app.get('/api/koridor', authenticate, authorize('super_admin', 'admin', 'petugas', 'driver'), async (req, res) => {
+  try {
+    const { armada_id } = req.query
+    let query = 'SELECT koridor_id, nama_koridor, tipe, armada_id FROM koridor'
+    const params = []
+    if (armada_id) {
+      query += ' WHERE armada_id = $1'
+      params.push(armada_id)
+    }
+    query += ' ORDER BY nama_koridor'
+    const result = await pool.query(query, params)
+    res.json(result.rows)
+  } catch (err) {
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+})
+
 // Test protected route
 app.get('/api/test-auth', authenticate, (req, res) => {
   res.json({ message: 'Token valid', user: req.user })

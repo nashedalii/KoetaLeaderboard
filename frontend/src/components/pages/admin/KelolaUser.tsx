@@ -58,12 +58,22 @@ interface UserData {
   kode_bus?: string
   nopol?: string
   bus_status?: 'aktif' | 'nonaktif'
+  koridor_id?: number
+  nama_koridor?: string
+  tipe_koridor?: string
 }
 
 interface ArmadaOption {
   armada_id: number
   kode_armada: string
   nama_armada: string
+}
+
+interface KoridorOption {
+  koridor_id: number
+  nama_koridor: string
+  tipe: string
+  armada_id: number
 }
 
 interface BusOption {
@@ -82,6 +92,7 @@ interface FormData {
   nama_kernet: string
   armada_id: string
   bus_id: string
+  koridor_id: string
 }
 
 interface AddFormData {
@@ -93,11 +104,12 @@ interface AddFormData {
   armada_id: string
   nama_kernet: string
   bus_id: string
+  koridor_id: string
 }
 
 const EMPTY_ADD_FORM: AddFormData = {
   role: 'admin', nama: '', nomor_pegawai: '', username: '',
-  no_hp: '', armada_id: '', nama_kernet: '', bus_id: '',
+  no_hp: '', armada_id: '', nama_kernet: '', bus_id: '', koridor_id: '',
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -203,14 +215,16 @@ export default function KelolaUser() {
   const [selectedUser, setSelectedUser]   = useState<UserData | null>(null)
   const [newPassword, setNewPassword]     = useState('')
   const [passwordModalTitle, setPasswordModalTitle] = useState('Password Berhasil Direset')
-  const [saving, setSaving]               = useState(false)
-  const [busOptions, setBusOptions]       = useState<BusOption[]>([])
-  const [addFormData, setAddFormData]     = useState<AddFormData>(EMPTY_ADD_FORM)
-  const [addBusOptions, setAddBusOptions] = useState<BusOption[]>([])
+  const [saving, setSaving]                   = useState(false)
+  const [busOptions, setBusOptions]           = useState<BusOption[]>([])
+  const [koridorOptions, setKoridorOptions]   = useState<KoridorOption[]>([])
+  const [addFormData, setAddFormData]         = useState<AddFormData>(EMPTY_ADD_FORM)
+  const [addBusOptions, setAddBusOptions]     = useState<BusOption[]>([])
+  const [addKoridorOptions, setAddKoridorOptions] = useState<KoridorOption[]>([])
 
   const [formData, setFormData] = useState<FormData>({
     nama: '', identifier: '', no_hp: '', status_aktif: 'aktif',
-    nama_kernet: '', armada_id: '', bus_id: '',
+    nama_kernet: '', armada_id: '', bus_id: '', koridor_id: '',
   })
 
   const fetchUsers = async () => {
@@ -258,12 +272,15 @@ export default function KelolaUser() {
       nama: user.nama, identifier: user.identifier, no_hp: user.no_hp,
       status_aktif: user.status_aktif, nama_kernet: user.nama_kernet ?? '',
       armada_id: user.armada_id?.toString() ?? '', bus_id: user.bus_id?.toString() ?? '',
+      koridor_id: user.koridor_id?.toString() ?? '',
     })
     if (user.role === 'driver' && user.armada_id) {
-      try {
-        const buses = await apiFetch(`/api/bus?armada_id=${user.armada_id}`)
-        setBusOptions(buses ?? [])
-      } catch { setBusOptions([]) }
+      apiFetch(`/api/bus?armada_id=${user.armada_id}`)
+        .then(buses => setBusOptions(buses ?? []))
+        .catch(() => setBusOptions([]))
+      apiFetch(`/api/koridor?armada_id=${user.armada_id}`)
+        .then(koridor => setKoridorOptions(koridor ?? []))
+        .catch(() => setKoridorOptions([]))
     }
     setShowModal(true)
   }
@@ -280,6 +297,7 @@ export default function KelolaUser() {
       if (selectedUser.role === 'driver') {
         body.nama_kernet = formData.nama_kernet
         body.bus_id = formData.bus_id ? parseInt(formData.bus_id) : null
+        body.koridor_id = formData.koridor_id ? parseInt(formData.koridor_id) : null
       }
       await apiFetch(`/api/users/${selectedUser.role}/${selectedUser.id}`, {
         method: 'PUT', body: JSON.stringify(body),
@@ -345,7 +363,11 @@ export default function KelolaUser() {
         body = { nama_petugas: nama, nomor_pegawai, username, no_hp, armada_id: parseInt(armada_id) }
         endpoint = '/api/users/petugas'
       } else {
-        body = { nama_driver: nama, nama_kernet: nama_kernet || null, username, no_hp, armada_id: parseInt(armada_id) }
+        body = {
+          nama_driver: nama, nama_kernet: nama_kernet || null, username, no_hp,
+          armada_id: parseInt(armada_id),
+          koridor_id: addFormData.koridor_id ? parseInt(addFormData.koridor_id) : null,
+        }
         endpoint = '/api/users/driver'
       }
       const result = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) })
@@ -510,12 +532,14 @@ export default function KelolaUser() {
                         value={formData.armada_id}
                         onChange={async e => {
                           const newArmadaId = e.target.value
-                          setFormData({ ...formData, armada_id: newArmadaId, bus_id: '' })
+                          setFormData({ ...formData, armada_id: newArmadaId, bus_id: '', koridor_id: '' })
                           if (selectedUser.role === 'driver' && newArmadaId) {
-                            try {
-                              const buses = await apiFetch(`/api/bus?armada_id=${newArmadaId}`)
-                              setBusOptions(buses ?? [])
-                            } catch { setBusOptions([]) }
+                            apiFetch(`/api/bus?armada_id=${newArmadaId}`)
+                              .then(buses => setBusOptions(buses ?? []))
+                              .catch(() => setBusOptions([]))
+                            apiFetch(`/api/koridor?armada_id=${newArmadaId}`)
+                              .then(koridor => setKoridorOptions(koridor ?? []))
+                              .catch(() => setKoridorOptions([]))
                           }
                         }}
                         className="form-select"
@@ -536,6 +560,25 @@ export default function KelolaUser() {
                       <input type="text" value={formData.nama_kernet} onChange={e => setFormData({ ...formData, nama_kernet: e.target.value })} placeholder="Kosongkan jika tidak ada kernet" className="form-input" />
                     </div>
                     <div className="form-group">
+                      <label className="form-label">Koridor / Feeder</label>
+                      <select
+                        value={formData.koridor_id}
+                        onChange={e => setFormData({ ...formData, koridor_id: e.target.value })}
+                        className="form-select"
+                        disabled={!formData.armada_id}
+                      >
+                        <option value="">— Tanpa Koridor —</option>
+                        {koridorOptions.map(k => (
+                          <option key={k.koridor_id} value={String(k.koridor_id)}>
+                            {k.nama_koridor}
+                          </option>
+                        ))}
+                      </select>
+                      {!formData.armada_id && (
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem' }}>Pilih armada terlebih dahulu</p>
+                      )}
+                    </div>
+                    <div className="form-group">
                       <label className="form-label">Bus</label>
                       {formData.status_aktif === 'nonaktif' ? (
                         <div className="form-input" style={{ color: '#94a3b8', background: '#f8fafc', cursor: 'not-allowed' }}>— (driver nonaktif)</div>
@@ -548,10 +591,9 @@ export default function KelolaUser() {
                             const isNonaktif = bus.status_aktif === 'nonaktif'
                             const isDisabled = isTaken || isNonaktif
                             let suffix = ''
-                            if (isOwn && isNonaktif) suffix = ' (Bus Anda - Nonaktif)'
+                            if (isOwn && isNonaktif) suffix = ' (Nonaktif)'
                             else if (isTaken)   suffix = ' (Terpakai)'
                             else if (isNonaktif) suffix = ' (Nonaktif)'
-                            else if (isOwn)     suffix = ' (Bus Anda)'
                             return (
                               <option key={bus.bus_id} value={bus.bus_id.toString()} disabled={isDisabled}
                                 style={{ color: isOwn ? '#16a34a' : isDisabled ? '#ef4444' : '#1e293b', fontWeight: isOwn ? 600 : 400 }}>
@@ -623,18 +665,20 @@ export default function KelolaUser() {
                 {addFormData.role !== 'super_admin' && (
                   <div className="form-group">
                     <label className="form-label">
-                      Armada {addFormData.role !== 'super_admin' && <span className="required">*</span>}
+                      Armada <span className="required">*</span>
                     </label>
                     <select
                       value={addFormData.armada_id}
                       onChange={async e => {
                         const newArmadaId = e.target.value
-                        setAddFormData({ ...addFormData, armada_id: newArmadaId, bus_id: '' })
+                        setAddFormData({ ...addFormData, armada_id: newArmadaId, bus_id: '', koridor_id: '' })
                         if (addFormData.role === 'driver' && newArmadaId) {
-                          try {
-                            const buses = await apiFetch(`/api/bus?armada_id=${newArmadaId}`)
-                            setAddBusOptions(buses ?? [])
-                          } catch { setAddBusOptions([]) }
+                          apiFetch(`/api/bus?armada_id=${newArmadaId}`)
+                            .then(buses => setAddBusOptions(buses ?? []))
+                            .catch(() => setAddBusOptions([]))
+                          apiFetch(`/api/koridor?armada_id=${newArmadaId}`)
+                            .then(koridor => setAddKoridorOptions(koridor ?? []))
+                            .catch(() => setAddKoridorOptions([]))
                         }
                       }}
                       className="form-select"
@@ -651,6 +695,25 @@ export default function KelolaUser() {
                     <div className="form-group">
                       <label className="form-label">Nama Kernet (Opsional)</label>
                       <input type="text" value={addFormData.nama_kernet} onChange={e => setAddFormData({ ...addFormData, nama_kernet: e.target.value })} placeholder="Kosongkan jika tidak ada kernet" className="form-input" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Koridor / Feeder</label>
+                      <select
+                        value={addFormData.koridor_id}
+                        onChange={e => setAddFormData({ ...addFormData, koridor_id: e.target.value })}
+                        className="form-select"
+                        disabled={!addFormData.armada_id}
+                      >
+                        <option value="">— Tanpa Koridor —</option>
+                        {addKoridorOptions.map(k => (
+                          <option key={k.koridor_id} value={String(k.koridor_id)}>
+                            {k.nama_koridor}
+                          </option>
+                        ))}
+                      </select>
+                      {!addFormData.armada_id && (
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem' }}>Pilih armada terlebih dahulu</p>
+                      )}
                     </div>
                     <div className="form-group">
                       <label className="form-label">Bus</label>
