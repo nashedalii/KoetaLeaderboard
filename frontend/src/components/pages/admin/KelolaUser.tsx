@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { apiFetch } from '@/utils/api'
 
 // ── Toast ──────────────────────────────────────────────────────────────
@@ -199,6 +199,86 @@ function RoleInitial({ role }: { role: string }) {
     }}>
       {c.label}
     </span>
+  )
+}
+
+interface SelectOption {
+  value: string
+  label: string
+  disabled?: boolean
+  color?: string
+  weight?: number
+}
+
+function CustomSelect({
+  value, onChange, options, disabled = false, placeholder = 'Pilih...',
+}: {
+  value: string
+  onChange: (val: string) => void
+  options: SelectOption[]
+  disabled?: boolean
+  placeholder?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleOpen = () => {
+    if (disabled || !btnRef.current) return
+    const rect = btnRef.current.getBoundingClientRect()
+    setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+    setOpen(o => !o)
+  }
+
+  const selected = options.find(o => o.value === value)
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        ref={btnRef}
+        type="button"
+        disabled={disabled}
+        onClick={handleOpen}
+        className="custom-select-btn"
+        style={{ opacity: disabled ? 0.55 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
+      >
+        <span style={{ color: selected?.color ?? '#334155', fontWeight: selected?.weight ?? 400, flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected ? selected.label : <span style={{ color: '#94a3b8' }}>{placeholder}</span>}
+        </span>
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.18s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="custom-select-dropdown"
+          style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}
+        >
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { if (!opt.disabled) { onChange(opt.value); setOpen(false) } }}
+              className={`custom-select-option${opt.value === value ? ' selected' : ''}${opt.disabled ? ' disabled' : ''}`}
+              style={{ color: opt.disabled ? '#94a3b8' : (opt.color ?? '#1e293b'), fontWeight: opt.value === value ? 600 : (opt.weight ?? 400) }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -459,6 +539,7 @@ export default function KelolaUser() {
           </div>
         ) : (
           <div className="table-container">
+            {/* Desktop Table */}
             <table className="user-table">
               <thead>
                 <tr>
@@ -516,6 +597,58 @@ export default function KelolaUser() {
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile Card List */}
+            <div className="user-card-list">
+              {filtered.map((user, idx) => (
+                <div key={`card-${user.role}-${user.id}`} className="user-card">
+                  <div className="user-card-left">
+                    <div className="user-card-avatar">
+                      <RoleInitial role={user.role} />
+                    </div>
+                    <div className="user-card-info">
+                      <div className="user-card-name">{user.nama}</div>
+                      <div className="user-card-meta">
+                        <span className={`role-badge role-${user.role === 'super_admin' ? 'super-admin' : user.role}`} style={{ fontSize: '0.65rem', padding: '2px 7px' }}>
+                          {ROLE_LABEL[user.role]}
+                        </span>
+                        <span className="user-card-hp">{user.no_hp}</span>
+                      </div>
+                      {user.role === 'driver' && user.kode_bus && user.status_aktif === 'aktif' && (
+                        <div className="user-card-bus">
+                          {user.bus_status === 'nonaktif' ? (
+                            <span style={{ color: '#ef4444', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <WarningIcon size={11} color="#ef4444" /> Bus dinonaktifkan
+                            </span>
+                          ) : (
+                            <span style={{ color: '#667eea', fontSize: '0.75rem', fontWeight: 600 }}>
+                              {user.kode_bus} · {user.nama_armada}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {(user.role === 'admin' || user.role === 'petugas') && user.nama_armada && (
+                        <div className="user-card-bus">
+                          <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{user.nama_armada}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="user-card-right">
+                    <StatusDot status={user.status_aktif} />
+                    <div className="user-card-actions">
+                      <button onClick={() => openEdit(user)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
+                        <EditIcon /> Edit
+                      </button>
+                      <button onClick={() => openDelete(user)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
+                        <TrashIcon /> Hapus
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {filtered.length === 0 && (
               <div className="no-data"><p>Tidak ada data user yang ditemukan</p></div>
             )}
@@ -546,35 +679,27 @@ export default function KelolaUser() {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Status</label>
-                    <select value={formData.status_aktif} onChange={e => setFormData({ ...formData, status_aktif: e.target.value as any })} className="form-select">
-                      <option value="aktif">Aktif</option>
-                      <option value="nonaktif">Nonaktif</option>
-                    </select>
+                    <CustomSelect
+                      value={formData.status_aktif}
+                      onChange={val => setFormData({ ...formData, status_aktif: val as any })}
+                      options={[{ value: 'aktif', label: 'Aktif' }, { value: 'nonaktif', label: 'Nonaktif' }]}
+                    />
                   </div>
                   {selectedUser.role !== 'super_admin' && selectedUser.role !== 'admin' && (
                     <div className="form-group">
                       <label className="form-label">Armada</label>
-                      <select
+                      <CustomSelect
                         value={formData.armada_id}
-                        onChange={async e => {
-                          const newArmadaId = e.target.value
-                          setFormData({ ...formData, armada_id: newArmadaId, bus_id: '', koridor_id: '' })
-                          if (selectedUser.role === 'driver' && newArmadaId) {
-                            apiFetch(`/api/bus?armada_id=${newArmadaId}`)
-                              .then(buses => setBusOptions(buses ?? []))
-                              .catch(() => setBusOptions([]))
-                            apiFetch(`/api/koridor?armada_id=${newArmadaId}`)
-                              .then(koridor => setKoridorOptions(koridor ?? []))
-                              .catch(() => setKoridorOptions([]))
+                        placeholder="Pilih Armada"
+                        onChange={async val => {
+                          setFormData({ ...formData, armada_id: val, bus_id: '', koridor_id: '' })
+                          if (selectedUser.role === 'driver' && val) {
+                            apiFetch(`/api/bus?armada_id=${val}`).then(b => setBusOptions(b ?? [])).catch(() => setBusOptions([]))
+                            apiFetch(`/api/koridor?armada_id=${val}`).then(k => setKoridorOptions(k ?? [])).catch(() => setKoridorOptions([]))
                           }
                         }}
-                        className="form-select"
-                      >
-                        <option value="">Pilih Armada</option>
-                        {armadaOptions.map(a => (
-                          <option key={a.armada_id} value={String(a.armada_id)}>{a.nama_armada}</option>
-                        ))}
-                      </select>
+                        options={armadaOptions.map(a => ({ value: String(a.armada_id), label: a.nama_armada }))}
+                      />
                     </div>
                   )}
                 </div>
@@ -587,19 +712,16 @@ export default function KelolaUser() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Koridor / Feeder</label>
-                      <select
+                      <CustomSelect
                         value={formData.koridor_id}
-                        onChange={e => setFormData({ ...formData, koridor_id: e.target.value })}
-                        className="form-select"
+                        onChange={val => setFormData({ ...formData, koridor_id: val })}
                         disabled={!formData.armada_id}
-                      >
-                        <option value="">— Tanpa Koridor —</option>
-                        {koridorOptions.map(k => (
-                          <option key={k.koridor_id} value={String(k.koridor_id)}>
-                            {k.nama_koridor}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="— Tanpa Koridor —"
+                        options={[
+                          { value: '', label: '— Tanpa Koridor —' },
+                          ...koridorOptions.map(k => ({ value: String(k.koridor_id), label: k.nama_koridor })),
+                        ]}
+                      />
                       {!formData.armada_id && (
                         <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem' }}>Pilih armada terlebih dahulu</p>
                       )}
@@ -609,25 +731,31 @@ export default function KelolaUser() {
                       {formData.status_aktif === 'nonaktif' ? (
                         <div className="form-input" style={{ color: '#94a3b8', background: '#f8fafc', cursor: 'not-allowed' }}>— (driver nonaktif)</div>
                       ) : (
-                        <select value={formData.bus_id} onChange={e => setFormData({ ...formData, bus_id: e.target.value })} className="form-select">
-                          <option value="">— Tanpa Bus —</option>
-                          {busOptions.map(bus => {
-                            const isOwn     = bus.bus_id === selectedUser.bus_id
-                            const isTaken   = bus.driver_id !== null && bus.driver_id !== selectedUser.id
-                            const isNonaktif = bus.status_aktif === 'nonaktif'
-                            const isDisabled = isTaken || isNonaktif
-                            let suffix = ''
-                            if (isOwn && isNonaktif) suffix = ' (Nonaktif)'
-                            else if (isTaken)   suffix = ' (Terpakai)'
-                            else if (isNonaktif) suffix = ' (Nonaktif)'
-                            return (
-                              <option key={bus.bus_id} value={bus.bus_id.toString()} disabled={isDisabled}
-                                style={{ color: isOwn ? '#16a34a' : isDisabled ? '#ef4444' : '#1e293b', fontWeight: isOwn ? 600 : 400 }}>
-                                {bus.kode_bus} - {bus.nopol}{suffix}
-                              </option>
-                            )
-                          })}
-                        </select>
+                        <CustomSelect
+                          value={formData.bus_id}
+                          onChange={val => setFormData({ ...formData, bus_id: val })}
+                          placeholder="— Tanpa Bus —"
+                          options={[
+                            { value: '', label: '— Tanpa Bus —' },
+                            ...busOptions.map(bus => {
+                              const isOwn      = bus.bus_id === selectedUser.bus_id
+                              const isTaken    = bus.driver_id !== null && bus.driver_id !== selectedUser.id
+                              const isNonaktif = bus.status_aktif === 'nonaktif'
+                              const isDisabled = isTaken || isNonaktif
+                              let suffix = ''
+                              if (isOwn && isNonaktif) suffix = ' (Nonaktif)'
+                              else if (isTaken)        suffix = ' (Terpakai)'
+                              else if (isNonaktif)     suffix = ' (Nonaktif)'
+                              return {
+                                value: String(bus.bus_id),
+                                label: `${bus.kode_bus} - ${bus.nopol}${suffix}`,
+                                disabled: isDisabled,
+                                color: isOwn ? '#16a34a' : isDisabled ? '#ef4444' : undefined,
+                                weight: isOwn ? 600 : undefined,
+                              }
+                            }),
+                          ]}
+                        />
                       )}
                     </div>
                   </>
@@ -661,12 +789,16 @@ export default function KelolaUser() {
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Role <span className="required">*</span></label>
-                  <select value={addFormData.role} onChange={e => setAddFormData({ ...EMPTY_ADD_FORM, role: e.target.value as any })} className="form-select">
-                    {isSuperAdmin && <option value="super_admin">Super Admin</option>}
-                    <option value="admin">Admin Vendor</option>
-                    <option value="petugas">Petugas</option>
-                    <option value="driver">Supir</option>
-                  </select>
+                  <CustomSelect
+                    value={addFormData.role}
+                    onChange={val => setAddFormData({ ...EMPTY_ADD_FORM, role: val as any })}
+                    options={[
+                      ...(isSuperAdmin ? [{ value: 'super_admin', label: 'Super Admin' }] : []),
+                      { value: 'admin', label: 'Admin Vendor' },
+                      { value: 'petugas', label: 'Petugas' },
+                      { value: 'driver', label: 'Supir' },
+                    ]}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Nama Lengkap <span className="required">*</span></label>
@@ -690,30 +822,19 @@ export default function KelolaUser() {
                 </div>
                 {addFormData.role !== 'super_admin' && (
                   <div className="form-group">
-                    <label className="form-label">
-                      Armada <span className="required">*</span>
-                    </label>
-                    <select
+                    <label className="form-label">Armada <span className="required">*</span></label>
+                    <CustomSelect
                       value={addFormData.armada_id}
-                      onChange={async e => {
-                        const newArmadaId = e.target.value
-                        setAddFormData({ ...addFormData, armada_id: newArmadaId, bus_id: '', koridor_id: '' })
-                        if (addFormData.role === 'driver' && newArmadaId) {
-                          apiFetch(`/api/bus?armada_id=${newArmadaId}`)
-                            .then(buses => setAddBusOptions(buses ?? []))
-                            .catch(() => setAddBusOptions([]))
-                          apiFetch(`/api/koridor?armada_id=${newArmadaId}`)
-                            .then(koridor => setAddKoridorOptions(koridor ?? []))
-                            .catch(() => setAddKoridorOptions([]))
+                      placeholder="Pilih Armada"
+                      onChange={async val => {
+                        setAddFormData({ ...addFormData, armada_id: val, bus_id: '', koridor_id: '' })
+                        if (addFormData.role === 'driver' && val) {
+                          apiFetch(`/api/bus?armada_id=${val}`).then(b => setAddBusOptions(b ?? [])).catch(() => setAddBusOptions([]))
+                          apiFetch(`/api/koridor?armada_id=${val}`).then(k => setAddKoridorOptions(k ?? [])).catch(() => setAddKoridorOptions([]))
                         }
                       }}
-                      className="form-select"
-                    >
-                      <option value="">Pilih Armada</option>
-                      {armadaOptions.map(a => (
-                        <option key={a.armada_id} value={String(a.armada_id)}>{a.nama_armada}</option>
-                      ))}
-                    </select>
+                      options={armadaOptions.map(a => ({ value: String(a.armada_id), label: a.nama_armada }))}
+                    />
                   </div>
                 )}
                 {addFormData.role === 'driver' && (
@@ -724,42 +845,45 @@ export default function KelolaUser() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Koridor / Feeder</label>
-                      <select
+                      <CustomSelect
                         value={addFormData.koridor_id}
-                        onChange={e => setAddFormData({ ...addFormData, koridor_id: e.target.value })}
-                        className="form-select"
+                        onChange={val => setAddFormData({ ...addFormData, koridor_id: val })}
                         disabled={!addFormData.armada_id}
-                      >
-                        <option value="">— Tanpa Koridor —</option>
-                        {addKoridorOptions.map(k => (
-                          <option key={k.koridor_id} value={String(k.koridor_id)}>
-                            {k.nama_koridor}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="— Tanpa Koridor —"
+                        options={[
+                          { value: '', label: '— Tanpa Koridor —' },
+                          ...addKoridorOptions.map(k => ({ value: String(k.koridor_id), label: k.nama_koridor })),
+                        ]}
+                      />
                       {!addFormData.armada_id && (
                         <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem' }}>Pilih armada terlebih dahulu</p>
                       )}
                     </div>
                     <div className="form-group">
                       <label className="form-label">Bus</label>
-                      <select value={addFormData.bus_id} onChange={e => setAddFormData({ ...addFormData, bus_id: e.target.value })} className="form-select" disabled={!addFormData.armada_id}>
-                        <option value="">— Tanpa Bus —</option>
-                        {addBusOptions.map(bus => {
-                          const isTaken    = bus.driver_id !== null
-                          const isNonaktif = bus.status_aktif === 'nonaktif'
-                          const isDisabled = isTaken || isNonaktif
-                          let suffix = ''
-                          if (isTaken)    suffix = ' (Terpakai)'
-                          else if (isNonaktif) suffix = ' (Nonaktif)'
-                          return (
-                            <option key={bus.bus_id} value={bus.bus_id.toString()} disabled={isDisabled}
-                              style={{ color: isDisabled ? '#ef4444' : '#1e293b' }}>
-                              {bus.kode_bus} - {bus.nopol}{suffix}
-                            </option>
-                          )
-                        })}
-                      </select>
+                      <CustomSelect
+                        value={addFormData.bus_id}
+                        onChange={val => setAddFormData({ ...addFormData, bus_id: val })}
+                        disabled={!addFormData.armada_id}
+                        placeholder="— Tanpa Bus —"
+                        options={[
+                          { value: '', label: '— Tanpa Bus —' },
+                          ...addBusOptions.map(bus => {
+                            const isTaken    = bus.driver_id !== null
+                            const isNonaktif = bus.status_aktif === 'nonaktif'
+                            const isDisabled = isTaken || isNonaktif
+                            let suffix = ''
+                            if (isTaken)         suffix = ' (Terpakai)'
+                            else if (isNonaktif) suffix = ' (Nonaktif)'
+                            return {
+                              value: String(bus.bus_id),
+                              label: `${bus.kode_bus} - ${bus.nopol}${suffix}`,
+                              disabled: isDisabled,
+                              color: isDisabled ? '#ef4444' : undefined,
+                            }
+                          }),
+                        ]}
+                      />
                       {!addFormData.armada_id && (
                         <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem' }}>Pilih armada terlebih dahulu</p>
                       )}
