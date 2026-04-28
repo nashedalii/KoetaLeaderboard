@@ -2472,6 +2472,13 @@ body {
   justify-content: center;
 }
 
+.delete-modal .form-actions .btn-cancel,
+.delete-modal .form-actions .btn-confirm-delete {
+  flex: 1;
+  text-align: center;
+  justify-content: center;
+}
+
 .btn-confirm-delete {
   background: #dc2626;
   color: white;
