@@ -22,11 +22,11 @@ interface FormData {
   status_aktif: 'aktif' | 'nonaktif'
 }
 
-const ARMADA_OPTIONS = [
-  { value: '1', label: 'Armada A' },
-  { value: '2', label: 'Armada B' },
-  { value: '3', label: 'Armada C' },
-]
+interface ArmadaOption {
+  armada_id: number
+  kode_armada: string
+  nama_armada: string
+}
 
 const EMPTY_FORM: FormData = { kode_bus: '', nopol: '', armada_id: '', status_aktif: 'aktif' }
 
@@ -86,6 +86,8 @@ export default function KelolaBus() {
   const [error, setError]         = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [armadaFilter, setArmadaFilter] = useState('All')
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [armadaOptions, setArmadaOptions] = useState<ArmadaOption[]>([])
 
   const [showModal, setShowModal]           = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -104,14 +106,23 @@ export default function KelolaBus() {
     } finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchBuses() }, [])
+  useEffect(() => {
+    try {
+      const auth = JSON.parse(localStorage.getItem('auth') || '{}')
+      setIsSuperAdmin(auth?.user?.role === 'super_admin')
+    } catch { /* ignore */ }
+    apiFetch('/api/armada')
+      .then((d: ArmadaOption[]) => setArmadaOptions(Array.isArray(d) ? d : []))
+      .catch(() => {})
+    fetchBuses()
+  }, [])
 
   const filtered = buses.filter(b => {
     const matchSearch =
       b.kode_bus.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.nopol.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (b.nama_driver ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-    const matchArmada = armadaFilter === 'All' || b.kode_armada === armadaFilter
+    const matchArmada = armadaFilter === 'All' || String(b.armada_id) === armadaFilter
     return matchSearch && matchArmada
   })
 
@@ -124,12 +135,13 @@ export default function KelolaBus() {
   }
 
   const handleSave = async () => {
-    if (!formData.kode_bus || !formData.nopol || !formData.armada_id) {
+    if (!formData.kode_bus || !formData.nopol || (isSuperAdmin && !formData.armada_id)) {
       alert('Kode bus, nopol, dan armada wajib diisi'); return
     }
     setSaving(true)
     try {
-      const body = { kode_bus: formData.kode_bus, nopol: formData.nopol, armada_id: parseInt(formData.armada_id), status_aktif: formData.status_aktif }
+      const body: Record<string, any> = { kode_bus: formData.kode_bus, nopol: formData.nopol, status_aktif: formData.status_aktif }
+      if (isSuperAdmin && formData.armada_id) body.armada_id = parseInt(formData.armada_id)
       if (modalMode === 'add') {
         await apiFetch('/api/bus', { method: 'POST', body: JSON.stringify(body) })
       } else if (selectedBus) {
@@ -174,12 +186,14 @@ export default function KelolaBus() {
             />
           </div>
 
-          <select value={armadaFilter} onChange={e => setArmadaFilter(e.target.value)} className="role-filter">
-            <option value="All">Semua Armada</option>
-            <option value="A">Armada A</option>
-            <option value="B">Armada B</option>
-            <option value="C">Armada C</option>
-          </select>
+          {isSuperAdmin && (
+            <select value={armadaFilter} onChange={e => setArmadaFilter(e.target.value)} className="role-filter">
+              <option value="All">Semua Armada</option>
+              {armadaOptions.map(a => (
+                <option key={a.armada_id} value={String(a.armada_id)}>{a.nama_armada}</option>
+              ))}
+            </select>
+          )}
 
           <button onClick={openAdd} className="btn-add-user">
             <PlusIcon />
@@ -264,13 +278,17 @@ export default function KelolaBus() {
                   <input type="text" value={formData.nopol} onChange={e => setFormData({ ...formData, nopol: e.target.value })} placeholder="Contoh: BL 1234 AB" className="form-input" />
                 </div>
                 <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Armada <span className="required">*</span></label>
-                    <select value={formData.armada_id} onChange={e => setFormData({ ...formData, armada_id: e.target.value })} className="form-select">
-                      <option value="">Pilih Armada</option>
-                      {ARMADA_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-                  </div>
+                  {isSuperAdmin && (
+                    <div className="form-group">
+                      <label className="form-label">Armada <span className="required">*</span></label>
+                      <select value={formData.armada_id} onChange={e => setFormData({ ...formData, armada_id: e.target.value })} className="form-select">
+                        <option value="">Pilih Armada</option>
+                        {armadaOptions.map(a => (
+                          <option key={a.armada_id} value={String(a.armada_id)}>{a.nama_armada}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label className="form-label">Status</label>
                     <select value={formData.status_aktif} onChange={e => setFormData({ ...formData, status_aktif: e.target.value as any })} className="form-select">
