@@ -422,29 +422,63 @@ export default function ProfilePage() {
 
 /* ── Helpers ────────────────────────────────────────────── */
 
+function EyeIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+    </svg>
+  ) : (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  )
+}
+
 function FieldRow({ label, value, editing, onChange, type, placeholder }: {
   label: string; value: string; editing: boolean
   onChange: (v: string) => void; type: string; placeholder?: string
 }) {
+  const [showPwd, setShowPwd] = useState(false)
+  const isPassword = type === 'password'
+  const inputType = isPassword ? (showPwd ? 'text' : 'password') : type
+
   return (
     <div>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>
       {editing ? (
-        <input
-          type={type}
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            padding: '10px 14px', fontSize: 14,
-            border: '2px solid #e5e7eb', borderRadius: 10,
-            outline: 'none', color: '#111827',
-            transition: 'border-color 0.2s',
-          }}
-          onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
-          onBlur={(e) => (e.target.style.borderColor = '#e5e7eb')}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type={inputType}
+            value={value}
+            placeholder={placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              padding: isPassword ? '10px 42px 10px 14px' : '10px 14px', fontSize: 14,
+              border: '2px solid #e5e7eb', borderRadius: 10,
+              outline: 'none', color: '#111827',
+              transition: 'border-color 0.2s',
+            }}
+            onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+            onBlur={(e) => (e.target.style.borderColor = '#e5e7eb')}
+          />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setShowPwd(v => !v)}
+              style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#9ca3af', display: 'flex', alignItems: 'center', padding: 0,
+              }}
+              tabIndex={-1}
+            >
+              <EyeIcon open={showPwd} />
+            </button>
+          )}
+        </div>
       ) : (
         <div style={{ padding: '10px 14px', background: '#f9fafb', borderRadius: 10, fontSize: 14, color: '#111827', border: '1px solid #f3f4f6' }}>
           {value}
