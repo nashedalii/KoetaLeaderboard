@@ -424,13 +424,19 @@ export const updateUser = async (req, res) => {
 // DELETE /api/users/:role/:id
 export const deleteUser = async (req, res) => {
   const { role, id } = req.params
-  const { role: callerRole, armada_id: callerArmadaId } = req.user
+  const { role: callerRole, armada_id: callerArmadaId, user_id: callerId } = req.user
 
   if (!VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: 'Role tidak valid. Gunakan: admin, petugas, driver' })
   }
 
   const { table, idCol, namaCol } = TABLE_MAP[role]
+
+  // Cegah self-deletion: tabel admin mencakup super_admin dan admin
+  const callerTable = ['super_admin', 'admin'].includes(callerRole) ? 'admin' : callerRole
+  if (callerTable === table && callerId === parseInt(id)) {
+    return res.status(403).json({ message: 'Tidak dapat menghapus akun sendiri' })
+  }
 
   // Cek akses armada
   const access = await checkArmadaAccess(role, table, idCol, id, callerRole, callerArmadaId)

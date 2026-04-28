@@ -302,6 +302,7 @@ export default function KelolaUser() {
   }, [])
 
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [callerId, setCallerId]         = useState<number | null>(null)
   const [armadaOptions, setArmadaOptions] = useState<ArmadaOption[]>([])
 
   const [users, setUsers]         = useState<UserData[]>([])
@@ -349,6 +350,7 @@ export default function KelolaUser() {
       const auth = JSON.parse(localStorage.getItem('auth') || '{}')
       const role = auth?.user?.role
       setIsSuperAdmin(role === 'super_admin')
+      setCallerId(auth?.user?.id ?? null)
     } catch { /* ignore */ }
 
     apiFetch('/api/armada')
@@ -548,12 +550,16 @@ export default function KelolaUser() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((user, idx) => (
+                {filtered.map((user, idx) => {
+                  const isSelf = user.id === callerId && (user.role === 'admin' || user.role === 'super_admin')
+                  const canDelete = !isSelf && (isSuperAdmin || (user.role !== 'admin' && user.role !== 'super_admin'))
+                  return (
                   <tr key={`${user.role}-${user.id}`}>
                     <td>{idx + 1}</td>
                     <td className="user-name" style={{ display: 'flex', alignItems: 'center' }}>
                       <RoleInitial role={user.role} />
                       {user.nama}
+                      {isSelf && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: '#94a3b8', fontWeight: 500 }}>(Anda)</span>}
                     </td>
                     <td>{user.no_hp}</td>
                     <td>
@@ -589,18 +595,24 @@ export default function KelolaUser() {
                       <button onClick={() => openEdit(user)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         <EditIcon /> Edit
                       </button>
-                      <button onClick={() => openDelete(user)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <TrashIcon /> Hapus
-                      </button>
+                      {canDelete && (
+                        <button onClick={() => openDelete(user)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <TrashIcon /> Hapus
+                        </button>
+                      )}
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
 
             {/* Mobile Card List */}
             <div className="user-card-list">
-              {filtered.map((user, idx) => (
+              {filtered.map((user, idx) => {
+                const isSelf = user.id === callerId && (user.role === 'admin' || user.role === 'super_admin')
+                const canDelete = !isSelf && (isSuperAdmin || (user.role !== 'admin' && user.role !== 'super_admin'))
+                return (
                 <div key={`card-${user.role}-${user.id}`} className="user-card">
                   <div className="user-card-left">
                     <div className="user-card-avatar">
@@ -640,13 +652,16 @@ export default function KelolaUser() {
                       <button onClick={() => openEdit(user)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
                         <EditIcon /> Edit
                       </button>
-                      <button onClick={() => openDelete(user)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
-                        <TrashIcon /> Hapus
-                      </button>
+                      {canDelete && (
+                        <button onClick={() => openDelete(user)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
+                          <TrashIcon /> Hapus
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
 
             {filtered.length === 0 && (
