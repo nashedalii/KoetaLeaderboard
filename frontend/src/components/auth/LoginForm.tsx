@@ -19,6 +19,40 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
+  const [showLupaModal, setShowLupaModal] = useState(false)
+  const [lupaForm, setLupaForm] = useState({ username: '', role: 'petugas', nomor_hp: '' })
+  const [lupaSending, setLupaSending] = useState(false)
+  const [lupaSuccess, setLupaSuccess] = useState('')
+  const [lupaError, setLupaError] = useState('')
+
+  const handleLupaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLupaSending(true)
+    setLupaError('')
+    setLupaSuccess('')
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reset-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lupaForm),
+      })
+      const data = await res.json()
+      if (!res.ok) { setLupaError(data.message || 'Gagal mengirim permintaan'); return }
+      setLupaSuccess(data.message)
+    } catch {
+      setLupaError('Tidak dapat terhubung ke server')
+    } finally {
+      setLupaSending(false)
+    }
+  }
+
+  const closeLupaModal = () => {
+    setShowLupaModal(false)
+    setLupaForm({ username: '', role: 'petugas', nomor_hp: '' })
+    setLupaSuccess('')
+    setLupaError('')
+  }
+
   useEffect(() => {
     const raw = localStorage.getItem('auth')
     if (!raw) return
@@ -77,6 +111,7 @@ export default function LoginForm() {
   }
 
   return (
+    <>
     <main style={{ minHeight: '100vh', display: 'flex', width: '100%' }}>
 
       {/* ── LEFT PANEL: Branding ── */}
@@ -412,6 +447,21 @@ export default function LoginForm() {
                   </>
                 )}
               </button>
+              {/* Lupa Password */}
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowLupaModal(true)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#0369A1', fontSize: '13px', fontWeight: 500,
+                    textDecoration: 'underline', padding: 0,
+                  }}
+                >
+                  Lupa Password?
+                </button>
+              </div>
+
             </form>
           </div>
 
@@ -423,5 +473,162 @@ export default function LoginForm() {
       </div>
 
     </main>
+
+    {/* Modal Lupa Password */}
+
+    {showLupaModal && (
+      <div
+        onClick={closeLupaModal}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            background: '#fff', borderRadius: 20, width: '100%', maxWidth: 420,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Modal Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '20px 24px', borderBottom: '1px solid #f1f5f9',
+          }}>
+            <div>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', margin: 0 }}>Lupa Password</h2>
+              <p style={{ fontSize: 12, color: '#94a3b8', margin: '3px 0 0' }}>
+                Permintaan akan dikirim ke admin untuk diproses
+              </p>
+            </div>
+            <button
+              onClick={closeLupaModal}
+              style={{
+                background: '#f1f5f9', border: 'none', borderRadius: 8,
+                width: 32, height: 32, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, color: '#64748b', fontWeight: 700,
+              }}
+            >×</button>
+          </div>
+
+          {/* Modal Body */}
+          <div style={{ padding: '24px' }}>
+            {lupaSuccess ? (
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: '50%', background: '#f0fdf4',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}>
+                  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+                <p style={{ fontSize: 14, color: '#15803d', fontWeight: 500, marginBottom: 20 }}>{lupaSuccess}</p>
+                <button
+                  onClick={closeLupaModal}
+                  style={{
+                    background: '#031E65', color: '#fff', border: 'none',
+                    borderRadius: 10, padding: '11px 28px',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >Tutup</button>
+              </div>
+            ) : (
+              <form onSubmit={handleLupaSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                    Anda adalah
+                  </label>
+                  <select
+                    value={lupaForm.role}
+                    onChange={e => setLupaForm(f => ({ ...f, role: e.target.value }))}
+                    style={{
+                      width: '100%', padding: '11px 14px', fontSize: 14,
+                      border: '2px solid #e2e8f0', borderRadius: 10,
+                      background: '#f8fafc', color: '#0f172a', outline: 'none',
+                    }}
+                  >
+                    <option value="petugas">Petugas</option>
+                    <option value="driver">Supir / Driver</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                    Username / Nomor Pegawai
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Masukkan username Anda"
+                    value={lupaForm.username}
+                    onChange={e => setLupaForm(f => ({ ...f, username: e.target.value }))}
+                    required
+                    style={{
+                      width: '100%', padding: '11px 14px', fontSize: 14,
+                      border: '2px solid #e2e8f0', borderRadius: 10,
+                      background: '#f8fafc', color: '#0f172a', outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+                    Nomor HP (WhatsApp)
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="08xxxxxxxxxx"
+                    value={lupaForm.nomor_hp}
+                    onChange={e => setLupaForm(f => ({ ...f, nomor_hp: e.target.value }))}
+                    required
+                    style={{
+                      width: '100%', padding: '11px 14px', fontSize: 14,
+                      border: '2px solid #e2e8f0', borderRadius: 10,
+                      background: '#f8fafc', color: '#0f172a', outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>
+                    Admin akan mengirim password baru ke nomor ini via WhatsApp
+                  </p>
+                </div>
+
+                {lupaError && (
+                  <div style={{
+                    background: '#fef2f2', border: '1px solid #fecaca',
+                    borderLeft: '4px solid #ef4444', borderRadius: 8,
+                    padding: '10px 14px', fontSize: 13, color: '#b91c1c',
+                  }}>
+                    {lupaError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={lupaSending}
+                  style={{
+                    background: lupaSending ? '#94a3b8' : 'linear-gradient(135deg, #031E65 0%, #0369A1 100%)',
+                    color: '#fff', border: 'none', borderRadius: 10,
+                    padding: '12px', fontSize: 13, fontWeight: 700,
+                    cursor: lupaSending ? 'not-allowed' : 'pointer',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  {lupaSending ? 'Mengirim...' : 'Kirim Permintaan'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

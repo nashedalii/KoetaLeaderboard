@@ -14,6 +14,7 @@ import rankingRoutes from './routes/ranking.js'
 import driverRoutes from './routes/driver.js'
 import dashboardRoutes from './routes/dashboard.js'
 import profileRoutes from './routes/profile.js'
+import resetRequestRoutes from './routes/resetRequest.js'
 import { authenticate, authorize } from './middleware/authMiddleware.js'
 
 dotenv.config()
@@ -36,6 +37,7 @@ app.use('/api/ranking', rankingRoutes)
 app.use('/api/driver',    driverRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/profile',  profileRoutes)
+app.use('/api/reset-request', resetRequestRoutes)
 
 // GET /api/armada — daftar armada untuk filter (super_admin)
 app.get('/api/armada', authenticate, authorize('super_admin', 'admin', 'petugas', 'driver'), async (req, res) => {
