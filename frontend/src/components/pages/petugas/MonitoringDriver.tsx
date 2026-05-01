@@ -150,12 +150,25 @@ export default function MonitoringDriver() {
                   className="driver-card"
                   onClick={() => setSelectedDriver(driver)}
                 >
+                  {/* Accent strip */}
+                  <div className={`driver-card-accent${driver.status_aktif !== 'aktif' ? ' inactive' : ''}`} />
+
                   <div className="driver-card-header">
-                    <div>
-                      <h3 className="driver-name">{driver.nama}</h3>
+                    <div className="driver-header-left">
+                      <div className={`driver-avatar${driver.status_aktif !== 'aktif' ? ' inactive' : ''}`}>
+                        {driver.nama.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()}
+                      </div>
+                      <div className="driver-name-group">
+                        <h3 className="driver-name">{driver.nama}</h3>
+                        <span className="driver-armada-text">
+                          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                          </svg>
+                          {driver.nama_armada ?? '-'}
+                        </span>
+                      </div>
                     </div>
                     <div className="driver-right">
-                      <span className="armada-badge">{driver.nama_armada}</span>
                       <span className={`status-pill ${driver.status_aktif === 'aktif' ? 'active' : 'inactive'}`}>
                         {driver.status_aktif === 'aktif' ? 'Aktif' : 'Non-aktif'}
                       </span>
@@ -163,26 +176,36 @@ export default function MonitoringDriver() {
                   </div>
 
                   <div className="driver-card-body">
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                      <p className="muted" style={{ flex: '1 1 45%' }}>
-                        Bus: <strong style={{ color: '#667eea' }}>{driver.kode_bus ?? '-'}</strong>
-                      </p>
-                      <p className="muted" style={{ flex: '1 1 45%' }}>
-                        Plat: <strong>{driver.nopol ?? '-'}</strong>
-                      </p>
+                    <div className="driver-info-grid">
+                      <div className="driver-info-item">
+                        <span className="driver-info-label">Bus</span>
+                        <span className={`driver-info-value${!driver.kode_bus ? ' empty' : ''}`}>
+                          {driver.kode_bus ?? '—'}
+                        </span>
+                      </div>
+                      <div className="driver-info-item">
+                        <span className="driver-info-label">Plat</span>
+                        <span className={`driver-info-value${!driver.nopol ? ' empty' : ''}`}>
+                          {driver.nopol ?? '—'}
+                        </span>
+                      </div>
+                      <div className="driver-info-item" style={{ gridColumn: '1 / -1' }}>
+                        <span className="driver-info-label">Kernet</span>
+                        <span className={`driver-info-value${!driver.nama_kernet ? ' empty' : ''}`}>
+                          {driver.nama_kernet ?? '—'}
+                        </span>
+                      </div>
                     </div>
-                    <p className="muted" style={{ marginBottom: '0.75rem' }}>
-                      Kernet: <strong>{driver.nama_kernet ?? '-'}</strong>
-                    </p>
 
                     <div className="metric">
                       <div>
-                        <p className="muted">Rata-rata</p>
-                        <p className="large">{driver.averageScore} poin</p>
+                        <span className="muted">Rata-rata</span>
+                        <span className="large">{driver.averageScore}<small style={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748b', marginLeft: 2 }}>poin</small></span>
                       </div>
+                      <div className="metric-divider" />
                       <div>
-                        <p className="muted">Bulan Ini</p>
-                        <p className="large">{driver.latestMonthScore}</p>
+                        <span className="muted">Bulan Ini</span>
+                        <span className="large">{driver.latestMonthScore}</span>
                       </div>
                     </div>
                   </div>
