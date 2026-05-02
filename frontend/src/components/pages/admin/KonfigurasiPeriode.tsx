@@ -189,7 +189,7 @@ export default function KonfigurasiPenilaian() {
           {loadingDetail ? (
             <div className="loading-state">Memuat periode...</div>
           ) : isMobile ? (
-            <div className="user-card-list">
+            <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
               {periodes.map(p => {
                 const isFuture = p.tanggal_mulai > today
                 const isAktif  = p.is_aktif
@@ -325,7 +325,7 @@ export default function KonfigurasiPenilaian() {
             <button onClick={fetchSikluses} className="btn-edit">Coba Lagi</button>
           </div>
         ) : isMobile ? (
-          <div className="user-card-list">
+          <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
             {sikluses.length === 0 ? (
               <div className="no-data" style={{ background: 'white', borderRadius: 12, padding: 24, textAlign: 'center', color: '#94a3b8' }}>
                 <p>Belum ada siklus penilaian</p>

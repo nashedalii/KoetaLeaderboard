@@ -219,7 +219,7 @@ export default function KelolaBus() {
           </div>
         ) : isMobile ? (
           /* ── Mobile Cards ── */
-          <div className="user-card-list">
+          <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
               {filtered.length === 0 ? (
                 <div className="no-data" style={{ background: 'white', borderRadius: 12, padding: 24, textAlign: 'center', color: '#94a3b8' }}>
                   <p>Tidak ada data bus</p>
