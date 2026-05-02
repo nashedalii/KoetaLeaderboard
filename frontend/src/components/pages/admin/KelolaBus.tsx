@@ -88,6 +88,7 @@ export default function KelolaBus() {
   const [armadaFilter, setArmadaFilter] = useState('All')
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [armadaOptions, setArmadaOptions] = useState<ArmadaOption[]>([])
+  const [isMobile, setIsMobile]   = useState(false)
 
   const [showModal, setShowModal]           = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -105,6 +106,13 @@ export default function KelolaBus() {
       setError(err.message ?? 'Gagal memuat data bus')
     } finally { setLoading(false) }
   }
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     try {
@@ -209,7 +217,45 @@ export default function KelolaBus() {
             <p>{error}</p>
             <button onClick={fetchBuses} className="btn-edit">Coba Lagi</button>
           </div>
+        ) : isMobile ? (
+          /* ── Mobile Cards ── */
+          <div className="user-card-list">
+              {filtered.length === 0 ? (
+                <div className="no-data" style={{ background: 'white', borderRadius: 12, padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+                  <p>Tidak ada data bus</p>
+                </div>
+              ) : filtered.map(bus => (
+                <div key={bus.bus_id} className="user-card">
+                  <div className="user-card-left">
+                    <div className="user-card-avatar">
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, fontSize: '0.7rem', fontWeight: 700, background: '#e0e7ff', color: '#031e65', marginRight: 8, flexShrink: 0 }}>
+                        {bus.kode_bus}
+                      </span>
+                    </div>
+                    <div className="user-card-info">
+                      <div className="user-card-name">{bus.nopol}</div>
+                      <div className="user-card-meta">
+                        {bus.nama_armada && <span className="role-badge role-petugas" style={{ fontSize: '0.65rem', padding: '2px 7px' }}>{bus.nama_armada}</span>}
+                        {bus.nama_driver && <span className="user-card-hp">{bus.nama_driver}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="user-card-right">
+                    <StatusDot status={bus.status_aktif} />
+                    <div className="user-card-actions">
+                      <button onClick={() => openEdit(bus)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
+                        <EditIcon /> Edit
+                      </button>
+                      <button onClick={() => openDelete(bus)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
+                        <TrashIcon /> Hapus
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
         ) : (
+          /* ── Desktop Table ── */
           <div className="table-container">
             <table className="user-table">
               <thead>
@@ -222,41 +268,24 @@ export default function KelolaBus() {
                 {filtered.map((bus, idx) => (
                   <tr key={bus.bus_id}>
                     <td>{idx + 1}</td>
-                    <td><strong style={{ color: '#667eea' }}>{bus.kode_bus}</strong></td>
+                    <td><strong style={{ color: '#031e65' }}>{bus.kode_bus}</strong></td>
                     <td>{bus.nopol}</td>
+                    <td>{bus.nama_armada ? <span className="role-badge role-petugas">{bus.nama_armada}</span> : <span style={{ color: '#94a3b8' }}>-</span>}</td>
                     <td>
-                      {bus.nama_armada
-                        ? <span className="role-badge role-petugas">{bus.nama_armada}</span>
-                        : <span style={{ color: '#94a3b8' }}>-</span>}
-                    </td>
-                    <td>
-                      {bus.status_aktif === 'nonaktif' ? (
-                        <span style={{ color: '#94a3b8' }}>—</span>
-                      ) : bus.nama_driver ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <DriverIcon />
-                          {bus.nama_driver}
-                        </span>
-                      ) : (
-                        <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Belum ada driver</span>
-                      )}
+                      {bus.nama_driver
+                        ? <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><DriverIcon />{bus.nama_driver}</span>
+                        : <span style={{ color: '#94a3b8' }}>—</span>}
                     </td>
                     <td><StatusDot status={bus.status_aktif} /></td>
                     <td className="action-buttons">
-                      <button onClick={() => openEdit(bus)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <EditIcon /> Edit
-                      </button>
-                      <button onClick={() => openDelete(bus)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <TrashIcon /> Hapus
-                      </button>
+                      <button onClick={() => openEdit(bus)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><EditIcon /> Edit</button>
+                      <button onClick={() => openDelete(bus)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><TrashIcon /> Hapus</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && (
-              <div className="no-data"><p>Tidak ada data bus yang ditemukan</p></div>
-            )}
+            {filtered.length === 0 && <div className="no-data"><p>Tidak ada data bus</p></div>}
           </div>
         )}
 

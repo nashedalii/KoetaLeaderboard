@@ -72,6 +72,15 @@ export default function KonfigurasiPenilaian() {
   const [confirmDelete, setConfirmDelete] = useState<Siklus | null>(null)
   const [deleting, setDeleting]           = useState(false)
 
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   // ── Fetch siklus ──────────────────────────────────────────────────────────
   const fetchSikluses = async () => {
     try {
@@ -179,6 +188,54 @@ export default function KonfigurasiPenilaian() {
 
           {loadingDetail ? (
             <div className="loading-state">Memuat periode...</div>
+          ) : isMobile ? (
+            <div className="user-card-list">
+              {periodes.map(p => {
+                const isFuture = p.tanggal_mulai > today
+                const isAktif  = p.is_aktif
+                return (
+                  <div key={p.periode_id} className="user-card" style={{ background: isAktif ? '#f0fdf4' : undefined }}>
+                    <div className="user-card-left">
+                      <div className="user-card-info">
+                        <div className="user-card-name" style={{ color: isAktif ? '#16a34a' : isFuture ? '#94a3b8' : '#1e293b' }}>
+                          {p.nama_periode}
+                          {p.is_override && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: '#f59e0b' }}>(override)</span>}
+                        </div>
+                        <div className="user-card-meta">
+                          {isFuture ? (
+                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Belum dimulai</span>
+                          ) : isAktif ? (
+                            <span className="status-badge status-aktif" style={{ fontSize: '0.7rem' }}>🟢 Aktif</span>
+                          ) : (
+                            <span className="status-badge status-nonaktif" style={{ fontSize: '0.7rem' }}>⚫ Tidak Aktif</span>
+                          )}
+                        </div>
+                        <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 2 }}>
+                          {formatTanggal(p.tanggal_mulai)} – {formatTanggal(p.tanggal_selesai)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="user-card-right">
+                      <div className="user-card-actions">
+                        {isFuture ? (
+                          <button className="btn-edit" disabled style={{ opacity: 0.4, cursor: 'not-allowed', padding: '5px 10px', fontSize: '0.78rem' }}>
+                            Aktifkan
+                          </button>
+                        ) : isAktif ? (
+                          <button onClick={() => handleToggleOverride(p)} className="btn-delete" style={{ padding: '5px 10px', fontSize: '0.78rem' }}>
+                            Nonaktifkan
+                          </button>
+                        ) : (
+                          <button onClick={() => handleToggleOverride(p)} className="btn-edit" style={{ padding: '5px 10px', fontSize: '0.78rem' }}>
+                            Aktifkan
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           ) : (
             <div className="table-container">
               <table className="user-table">
@@ -267,18 +324,51 @@ export default function KonfigurasiPenilaian() {
             <p>{error}</p>
             <button onClick={fetchSikluses} className="btn-edit">Coba Lagi</button>
           </div>
+        ) : isMobile ? (
+          <div className="user-card-list">
+            {sikluses.length === 0 ? (
+              <div className="no-data" style={{ background: 'white', borderRadius: 12, padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+                <p>Belum ada siklus penilaian</p>
+              </div>
+            ) : sikluses.map(s => {
+              const cfg = STATUS_CONFIG[s.status_display] ?? STATUS_CONFIG.nonaktif
+              return (
+                <div key={s.siklus_id} className="user-card">
+                  <div className="user-card-left">
+                    <div className="user-card-info">
+                      <div className="user-card-name">{s.nama_siklus}</div>
+                      <div className="user-card-meta">
+                        <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: '0.65rem', fontWeight: 600, color: cfg.color, background: cfg.bg }}>{cfg.label}</span>
+                        <span className="user-card-hp">{s.jumlah_periode} bulan</span>
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 2 }}>
+                        {formatTanggal(s.tanggal_mulai)} – {formatTanggal(s.tanggal_selesai)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="user-card-right">
+                    <div className="user-card-actions">
+                      <button onClick={() => openDetail(s)} className="btn-edit" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
+                        📋 Detail
+                      </button>
+                      {s.status_display === 'belum_dimulai' && (
+                        <button onClick={() => setConfirmDelete(s)} className="btn-delete" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: '0.78rem' }}>
+                          🗑️ Hapus
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         ) : (
           <div className="table-container">
             <table className="user-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Nama Siklus</th>
-                  <th>Tanggal Mulai</th>
-                  <th>Tanggal Selesai</th>
-                  <th>Jumlah Periode</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
+                  <th>#</th><th>Nama Siklus</th><th>Mulai</th>
+                  <th>Selesai</th><th>Periode</th><th>Status</th><th>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,30 +377,19 @@ export default function KonfigurasiPenilaian() {
                   return (
                     <tr key={s.siklus_id}>
                       <td>{idx + 1}</td>
-                      <td><strong style={{ color: '#667eea' }}>{s.nama_siklus}</strong></td>
+                      <td><strong style={{ color: '#031e65' }}>{s.nama_siklus}</strong></td>
                       <td>{formatTanggal(s.tanggal_mulai)}</td>
                       <td>{formatTanggal(s.tanggal_selesai)}</td>
                       <td style={{ textAlign: 'center' }}>{s.jumlah_periode} bulan</td>
                       <td>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '999px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          color: cfg.color,
-                          background: cfg.bg
-                        }}>
+                        <span style={{ padding: '0.25rem 0.75rem', borderRadius: 999, fontSize: '0.8rem', fontWeight: 600, color: cfg.color, background: cfg.bg }}>
                           {cfg.label}
                         </span>
                       </td>
                       <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button onClick={() => openDetail(s)} className="btn-edit">
-                          📋 Detail
-                        </button>
+                        <button onClick={() => openDetail(s)} className="btn-edit">📋 Detail</button>
                         {s.status_display === 'belum_dimulai' && (
-                          <button onClick={() => setConfirmDelete(s)} className="btn-delete">
-                            🗑️ Hapus
-                          </button>
+                          <button onClick={() => setConfirmDelete(s)} className="btn-delete">🗑️ Hapus</button>
                         )}
                       </td>
                     </tr>
@@ -318,9 +397,7 @@ export default function KonfigurasiPenilaian() {
                 })}
               </tbody>
             </table>
-            {sikluses.length === 0 && (
-              <div className="no-data"><p>Belum ada siklus penilaian</p></div>
-            )}
+            {sikluses.length === 0 && <div className="no-data"><p>Belum ada siklus penilaian</p></div>}
           </div>
         )}
 
