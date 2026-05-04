@@ -153,7 +153,12 @@ export default function InputValidasiData() {
       }
     }
 
-    if (armada_id) fetchAll()
+    if (armada_id) {
+      fetchAll()
+    } else {
+      setIsLoading(false)
+      setError('Akun Anda belum terdaftar ke armada manapun. Hubungi admin.')
+    }
   }, [armada_id, fetchPenilaian])
 
   // ── Helpers ───────────────────────────────────────────────────────────
