@@ -215,18 +215,6 @@ export default function LoginForm() {
             ))}
           </div>
 
-          {/* Status pill */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '7px',
-            background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)',
-            borderRadius: '100px', padding: '6px 16px',
-          }}>
-            <span style={{
-              width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e',
-              display: 'inline-block', boxShadow: '0 0 0 3px rgba(34,197,94,0.25)',
-            }} />
-            <span style={{ color: '#86efac', fontSize: '12px', fontWeight: '500' }}>Sistem Aktif</span>
-          </div>
         </div>
 
         {/* Footer */}
