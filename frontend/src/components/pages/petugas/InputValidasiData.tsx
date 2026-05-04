@@ -96,6 +96,7 @@ export default function InputValidasiData() {
   const [detailData, setDetailData] = useState<any>(null)
   const [confirmDelete, setConfirmDelete] = useState<Driver | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [noBusWarning, setNoBusWarning] = useState<string | null>(null)
 
   const user = getUser()
   const armada_id = user.armada_id
@@ -198,7 +199,8 @@ export default function InputValidasiData() {
   const handleOpenInput = (driver: Driver) => {
     if (!periodeAktif) return
     if (!driver.bus_id) {
-      alert(`Driver ${driver.nama} belum memiliki bus aktif. Hubungi admin.`)
+      setNoBusWarning(`Driver ${driver.nama} belum memiliki bus aktif. Hubungi admin untuk mengatur bus.`)
+      setTimeout(() => setNoBusWarning(null), 4000)
       return
     }
     setSelectedDriver(driver)
@@ -366,15 +368,22 @@ export default function InputValidasiData() {
     }
   }
 
-  // ── Filter drivers ────────────────────────────────────────────────────
-  const filteredDrivers = drivers.filter(driver => {
-    const matchSearch =
-      driver.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (driver.nama_kernet || '').toLowerCase().includes(searchQuery.toLowerCase())
-    const status = getDriverStatus(driver.id)
-    const matchStatus = statusFilter === 'all' || status === statusFilter
-    return matchSearch && matchStatus
-  })
+  // ── Filter & sort drivers ─────────────────────────────────────────────
+  const filteredDrivers = drivers
+    .filter(driver => {
+      const matchSearch =
+        driver.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (driver.nama_kernet || '').toLowerCase().includes(searchQuery.toLowerCase())
+      const status = getDriverStatus(driver.id)
+      const matchStatus = statusFilter === 'all' || status === statusFilter
+      return matchSearch && matchStatus
+    })
+    .sort((a, b) => {
+      const aHasBus = !!a.bus_id
+      const bHasBus = !!b.bus_id
+      if (aHasBus !== bHasBus) return aHasBus ? -1 : 1
+      return a.nama.localeCompare(b.nama, 'id')
+    })
 
   // ── Status badge ──────────────────────────────────────────────────────
   const getStatusBadge = (status: string) => {
@@ -491,6 +500,23 @@ export default function InputValidasiData() {
             </select>
           </div>
         </div>
+
+        {/* No-bus warning toast — fixed top-center */}
+        {noBusWarning && (
+          <div style={{
+            position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 99999, maxWidth: 480, width: 'calc(100% - 32px)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: '#fff7ed', border: '1px solid #fed7aa',
+            borderRadius: 10, padding: '12px 16px',
+            color: '#9a3412', fontSize: '0.875rem', fontWeight: 500,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+          }}>
+            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
+            <span style={{ flex: 1 }}>{noBusWarning}</span>
+            <button onClick={() => setNoBusWarning(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9a3412', fontSize: '1rem', lineHeight: 1, flexShrink: 0 }}>✕</button>
+          </div>
+        )}
 
         {/* Driver Cards */}
         <div className="driver-grid">
