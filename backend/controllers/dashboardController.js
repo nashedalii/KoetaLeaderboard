@@ -1,5 +1,24 @@
 import pool from '../config/db.js'
 
+const QUERY_PERIODE_AKTIF = `
+  SELECT p.periode_id, p.nama_periode, p.bulan, p.tahun, p.tanggal_mulai, p.tanggal_selesai
+  FROM periode p
+  JOIN siklus_penilaian s ON p.siklus_id = s.siklus_id
+  WHERE s.status_siklus = 'aktif'
+    AND (
+      p.is_override = true
+      OR (
+        NOT EXISTS (
+          SELECT 1 FROM periode p2
+          WHERE p2.siklus_id = p.siklus_id AND p2.is_override = true
+        )
+        AND CURRENT_DATE BETWEEN p.tanggal_mulai AND p.tanggal_selesai
+      )
+    )
+  ORDER BY p.tanggal_mulai DESC
+  LIMIT 1
+`
+
 // ── GET /api/dashboard/admin ──────────────────────────────────────────────
 export const getAdminDashboard = async (req, res) => {
   const { role, armada_id } = req.user
@@ -40,12 +59,7 @@ export const getAdminDashboard = async (req, res) => {
          ${isSuperAdmin ? '' : 'AND d.armada_id = $1'}`,
         armadaDriverParam
       ),
-      pool.query(`
-        SELECT periode_id, nama_periode, bulan, tahun
-        FROM periode
-        WHERE tanggal_mulai <= CURRENT_DATE AND tanggal_selesai >= CURRENT_DATE
-        LIMIT 1
-      `),
+      pool.query(QUERY_PERIODE_AKTIF),
     ])
 
     // Total armada hanya relevan untuk super_admin
@@ -154,12 +168,8 @@ export const getTop5 = async (req, res) => {
   const armadaClause  = filterArmadaId ? `AND d.armada_id = $2` : ''
 
   try {
-    // Cari periode aktif terlebih dahulu
-    const periodeResult = await pool.query(`
-      SELECT periode_id, nama_periode FROM periode
-      WHERE tanggal_mulai <= CURRENT_DATE AND tanggal_selesai >= CURRENT_DATE
-      LIMIT 1
-    `)
+    // Cari periode aktif (hybrid: override → CURRENT_DATE)
+    const periodeResult = await pool.query(QUERY_PERIODE_AKTIF)
     let periodeAktif = periodeResult.rows[0] || null
 
     // Fallback ke periode terakhir yang ada data approved
@@ -228,12 +238,7 @@ export const getPetugasDashboard = async (req, res) => {
     const petugas = petugasResult.rows[0]
     const armada_id = petugas.armada_id
 
-    const periodeAktifResult = await pool.query(`
-      SELECT periode_id, nama_periode, bulan, tahun, tanggal_mulai, tanggal_selesai
-      FROM periode
-      WHERE tanggal_mulai <= CURRENT_DATE AND tanggal_selesai >= CURRENT_DATE
-      LIMIT 1
-    `)
+    const periodeAktifResult = await pool.query(QUERY_PERIODE_AKTIF)
     const periodeAktif = periodeAktifResult.rows[0] || null
 
     const totalDriverResult = await pool.query(`
