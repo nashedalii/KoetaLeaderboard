@@ -53,6 +53,26 @@ export const setOverridePeriode = async (req, res) => {
   }
 }
 
+// ── GET /api/periode/semua ────────────────────────────────────────────────
+// Semua periode dari siklus aktif, diurutkan terbaru dulu
+export const getAllPeriode = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT p.periode_id, p.nama_periode, p.tanggal_mulai, p.tanggal_selesai,
+        p.is_aktif, p.is_override, p.siklus_id
+      FROM periode p
+      JOIN siklus_penilaian s ON p.siklus_id = s.siklus_id
+      WHERE s.status_siklus = 'aktif'
+        AND p.tanggal_mulai <= CURRENT_DATE
+      ORDER BY p.tanggal_mulai DESC
+    `)
+    res.json({ periodes: result.rows })
+  } catch (err) {
+    console.error('Get all periode error:', err)
+    res.status(500).json({ message: 'Terjadi kesalahan server' })
+  }
+}
+
 // ── GET /api/periode/aktif?siklus_id= ────────────────────────────────────
 // Hybrid: override dulu, fallback ke CURRENT_DATE
 // siklus_id opsional — jika tidak diisi, cari di semua siklus aktif

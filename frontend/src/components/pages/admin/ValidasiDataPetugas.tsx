@@ -21,6 +21,12 @@ interface PenilaianItem {
   nama_admin_validasi: string | null
 }
 
+interface PeriodeOption {
+  periode_id: number
+  nama_periode: string
+  is_aktif: boolean
+}
+
 interface DetailItem {
   penilaian_detail_id: number
   nilai: number
@@ -128,9 +134,11 @@ export default function ValidasiDataPetugas() {
   const [error, setError]           = useState<string | null>(null)
   const [viewMode, setViewMode]     = useState<ViewMode>('grid')
 
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterArmada, setFilterArmada] = useState<string>('all')
-  const [searchQuery, setSearchQuery]   = useState('')
+  const [filterStatus, setFilterStatus]   = useState<string>('all')
+  const [filterArmada, setFilterArmada]   = useState<string>('all')
+  const [searchQuery, setSearchQuery]     = useState('')
+  const [periodeList, setPeriodeList]     = useState<PeriodeOption[]>([])
+  const [filterPeriode, setFilterPeriode] = useState<string>('')
 
   const [detailData, setDetailData]           = useState<DetailData | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
@@ -150,11 +158,27 @@ export default function ValidasiDataPetugas() {
     } catch {}
   }, [])
 
+  useEffect(() => {
+    const fetchPeriodes = async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/periode/semua`, { headers: authHeader() })
+        const data = await res.json()
+        const list: PeriodeOption[] = data.periodes || []
+        setPeriodeList(list)
+        const aktif = list.find(p => p.is_aktif)
+        if (aktif) setFilterPeriode(String(aktif.periode_id))
+      } catch {}
+    }
+    fetchPeriodes()
+  }, [])
+
   const fetchList = useCallback(async () => {
+    if (!filterPeriode) return
     setIsLoading(true); setError(null)
     try {
       const params = new URLSearchParams()
       if (filterStatus !== 'all') params.set('status_validasi', filterStatus)
+      if (filterPeriode !== 'all') params.set('periode_id', filterPeriode)
       const res = await fetch(`${apiBase}/api/validasi?${params}`, { headers: authHeader() })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Gagal memuat data')
@@ -164,7 +188,7 @@ export default function ValidasiDataPetugas() {
     } finally {
       setIsLoading(false)
     }
-  }, [filterStatus, filterArmada])
+  }, [filterStatus, filterArmada, filterPeriode])
 
   useEffect(() => { fetchList() }, [fetchList])
 
@@ -346,6 +370,19 @@ export default function ValidasiDataPetugas() {
               </div>
             </>
           )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Periode:</span>
+            <select value={filterPeriode} onChange={e => setFilterPeriode(e.target.value)}
+              style={{ border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '5px 10px', fontSize: 13, color: '#1e293b', background: '#f9fafb', outline: 'none', cursor: 'pointer' }}>
+              <option value="all">Semua Periode</option>
+              {periodeList.map(p => (
+                <option key={p.periode_id} value={String(p.periode_id)}>
+                  {p.nama_periode}{p.is_aktif ? ' (Aktif)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ width: 1, height: 24, background: '#e5e7eb' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Status:</span>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
