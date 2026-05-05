@@ -392,58 +392,48 @@ export default function RankingPenilaianPetugas() {
 
         ) : (
           /* ── Ranking Table ───────────────────────────────────────────────── */
-          <div className="ranking-container">
-            <div className="ranking-controls">
-              <div className="filter-group">
-                <label className="filter-label">Siklus:</label>
-                <select
-                  className="filter-select"
-                  value={selectedSiklus}
-                  onChange={e => setSelectedSiklus(e.target.value ? Number(e.target.value) : '')}
-                >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* Controls */}
+            <div style={{
+              background: '#fff', borderRadius: 12, padding: '16px 20px',
+              border: '1px solid #e2e8f0',
+              display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 160px', minWidth: 160 }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Siklus:</label>
+                <select className="filter-select" style={{ flex: 1 }} value={selectedSiklus}
+                  onChange={e => setSelectedSiklus(e.target.value ? Number(e.target.value) : '')}>
                   <option value="">-- Pilih Siklus --</option>
-                  {siklusList.map(s => (
-                    <option key={s.siklus_id} value={s.siklus_id}>{s.nama_siklus}</option>
-                  ))}
+                  {siklusList.map(s => <option key={s.siklus_id} value={s.siklus_id}>{s.nama_siklus}</option>)}
                 </select>
               </div>
-
-              <div className="filter-group">
-                <label className="filter-label">Periode:</label>
-                <select
-                  className="filter-select"
-                  value={selectedPeriode}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 160px', minWidth: 160 }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Periode:</label>
+                <select className="filter-select" style={{ flex: 1 }} value={selectedPeriode}
                   onChange={e => setSelectedPeriode(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                  disabled={!selectedSiklus}
-                >
+                  disabled={!selectedSiklus}>
                   <option value="all">Semua Periode (Rata-rata)</option>
-                  {periodeList.map(p => (
-                    <option key={p.periode_id} value={p.periode_id}>{p.nama_periode}</option>
-                  ))}
+                  {periodeList.map(p => <option key={p.periode_id} value={p.periode_id}>{p.nama_periode}</option>)}
                 </select>
               </div>
-
-              <div className="filter-group">
-                <label className="filter-label">Armada:</label>
-                <select
-                  className="filter-select"
-                  value={filterArmada}
-                  onChange={e => setFilterArmada(e.target.value)}
-                  disabled={!rankingData}
-                >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 160px', minWidth: 160 }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Armada:</label>
+                <select className="filter-select" style={{ flex: 1 }} value={filterArmada}
+                  onChange={e => setFilterArmada(e.target.value)} disabled={!rankingData}>
                   <option value="all">Semua Armada</option>
-                  {armadaList.map(a => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
+                  {armadaList.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
             </div>
 
-            {error && <div className="error-banner" style={{ marginBottom: '1rem' }}>{error}</div>}
+            {error && <div className="error-banner">{error}</div>}
 
             {!selectedSiklus && (
               <div className="empty-state">
-                <div className="empty-icon">📊</div>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="#94a3b8" style={{ width: 52, height: 52, marginBottom: 12 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
                 <h3>Pilih Siklus</h3>
                 <p>Pilih siklus terlebih dahulu untuk melihat ranking</p>
               </div>
@@ -456,69 +446,83 @@ export default function RankingPenilaianPetugas() {
             {selectedSiklus && !isLoading && rankingData && (
               displayRows.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">📋</div>
                   <h3>Belum ada data ranking</h3>
                   <p>Belum ada penilaian yang disetujui untuk periode ini</p>
                 </div>
               ) : (
-                <div className="table-container">
-                  <table className="ranking-table">
-                    <thead>
-                      <tr>
-                        <th style={{ width: 70 }}>
-                          <button className="sort-button" onClick={() => handleSort('rank')}>
-                            Rank <SortIcon field="rank" />
-                          </button>
-                        </th>
-                        <th>Nama Driver</th>
-                        <th style={{ width: 130 }}>Armada</th>
-                        {rankingData.bobot.map(b => (
-                          <th key={b.bobot_id} style={{ width: 100 }}>
-                            <button className="sort-button" onClick={() => handleSort(String(b.bobot_id))}>
-                              {b.nama_bobot} ({b.persentase_bobot}%) <SortIcon field={String(b.bobot_id)} />
+                <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#0369a1" style={{ width: 18, height: 18 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#0f172a' }}>
+                      Daftar Peringkat — {displayRows.length} Driver
+                    </span>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="ranking-table" style={{ margin: 0 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: 70 }}>
+                            <button className="sort-button" onClick={() => handleSort('rank')}>
+                              Rank <SortIcon field="rank" />
                             </button>
                           </th>
-                        ))}
-                        <th style={{ width: 110 }}>
-                          <button className="sort-button" onClick={() => handleSort('total')}>
-                            Total <SortIcon field="total" />
-                          </button>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayRows.map(driver => (
-                        <tr
-                          key={driver.driver_id}
-                          className="clickable-row"
-                          onClick={() => openDetail(driver)}
-                        >
-                          <td className="text-center rank-cell">
-                            <span className={`rank-badge rank-${driver.rank}`}>{driver.rank}</span>
-                          </td>
-                          <td className="driver-name">
-                            {driver.nama_driver}
-                            {driver.nama_kernet && (
-                              <span style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af' }}>
-                                Kernet: {driver.nama_kernet}
-                              </span>
-                            )}
-                          </td>
-                          <td className="text-center">
-                            <span className="armada-badge">{driver.nama_armada}</span>
-                          </td>
+                          <th>Nama Driver</th>
+                          <th style={{ width: 150 }}>Armada</th>
                           {rankingData.bobot.map(b => (
-                            <td key={b.bobot_id} className="text-center weighted-score">
-                              {driver.indicators.find(i => i.bobot_id === b.bobot_id)?.weighted_score ?? '-'}
-                            </td>
+                            <th key={b.bobot_id} style={{ width: 110 }}>
+                              <button className="sort-button" onClick={() => handleSort(String(b.bobot_id))}>
+                                {b.nama_bobot}<br />
+                                <span style={{ fontWeight: 400, fontSize: '0.7rem' }}>({b.persentase_bobot}%)</span>
+                                {' '}<SortIcon field={String(b.bobot_id)} />
+                              </button>
+                            </th>
                           ))}
-                          <td className="text-center total-score">
-                            {Number(driver.skor_total).toFixed(2)}
-                          </td>
+                          <th style={{ width: 100 }}>
+                            <button className="sort-button" onClick={() => handleSort('total')}>
+                              Total <SortIcon field="total" />
+                            </button>
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {displayRows.map(driver => (
+                          <tr key={driver.driver_id} className="clickable-row" onClick={() => openDetail(driver)}>
+                            <td className="text-center rank-cell">
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                width: 36, height: 36, borderRadius: '50%', fontSize: '0.875rem',
+                                ...(driver.rank === 1 ? { background: '#f59e0b', color: '#fff', fontWeight: 700 }
+                                  : driver.rank === 2 ? { background: '#94a3b8', color: '#fff', fontWeight: 700 }
+                                  : driver.rank === 3 ? { background: '#cd7c3a', color: '#fff', fontWeight: 700 }
+                                  : { background: '#f1f5f9', color: '#475569', fontWeight: 600 }),
+                              }}>
+                                {driver.rank}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 600, color: '#0f172a', display: 'block' }}>{driver.nama_driver}</span>
+                              {driver.nama_kernet && (
+                                <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Kernet: {driver.nama_kernet}</span>
+                              )}
+                            </td>
+                            <td className="text-center">
+                              <span className="armada-badge">{driver.nama_armada}</span>
+                            </td>
+                            {rankingData.bobot.map(b => (
+                              <td key={b.bobot_id} className="text-center weighted-score">
+                                {driver.indicators.find(i => i.bobot_id === b.bobot_id)?.weighted_score ?? '-'}
+                              </td>
+                            ))}
+                            <td className="text-center" style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a' }}>
+                              {Number(driver.skor_total).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )
             )}
