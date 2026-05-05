@@ -286,7 +286,7 @@ export default function RankingPenilaian() {
 
             {/* Driver Hero Card */}
             <div style={{
-              background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)',
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #0ea5e9 100%)',
               borderRadius: 16, padding: '28px 32px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               gap: 20, flexWrap: 'wrap',
