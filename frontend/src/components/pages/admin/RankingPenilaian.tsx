@@ -255,40 +255,115 @@ export default function RankingPenilaian() {
 
         {/* ── Detail View ──────────────────────────────────────────────────── */}
         {detailDriver ? (
-          <div className="driver-detail-container">
-            <button className="back-button" onClick={() => { setDetailDriver(null); setDetailData(null) }}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-              </svg>
-              Kembali ke Ranking
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            <div className="driver-detail-card">
-              <div className="driver-detail-header">
-                <div className="driver-detail-identity">
-                  <h2 className="driver-detail-name">{detailDriver.nama_driver}</h2>
+            {/* Back button — compact inline */}
+            <div>
+              <button
+                onClick={() => { setDetailDriver(null); setDetailData(null) }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: 'none', border: '1px solid #e2e8f0',
+                  borderRadius: 8, padding: '6px 14px',
+                  fontSize: '0.875rem', fontWeight: 500, color: '#475569',
+                  cursor: 'pointer', transition: 'all 150ms ease',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = '#0f172a'
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'none'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = '#475569'
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 16, height: 16 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Kembali ke Ranking
+              </button>
+            </div>
+
+            {/* Driver Hero Card */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)',
+              borderRadius: 16, padding: '28px 32px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 20, flexWrap: 'wrap',
+              boxShadow: '0 4px 24px rgba(15,23,42,0.18)',
+            }}>
+              {/* Left: identity */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                {/* Avatar circle */}
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.12)',
+                  border: '2px solid rgba(255,255,255,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="rgba(255,255,255,0.8)" style={{ width: 32, height: 32 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, color: '#fff', fontSize: '1.375rem', fontWeight: 700, lineHeight: 1.3 }}>
+                    {detailDriver.nama_driver}
+                  </h2>
                   {detailDriver.nama_kernet && (
-                    <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Kernet: {detailDriver.nama_kernet}</p>
+                    <p style={{ margin: '3px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: '0.8125rem' }}>
+                      Kernet: {detailDriver.nama_kernet}
+                    </p>
                   )}
-                  <div className="driver-detail-meta">
-                    <span className="armada-badge">{detailDriver.nama_armada}</span>
-                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>{detailDriver.kode_bus} / {detailDriver.nopol}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                    <span style={{
+                      background: 'rgba(255,255,255,0.15)', color: '#fff',
+                      borderRadius: 6, padding: '3px 10px',
+                      fontSize: '0.8125rem', fontWeight: 500, border: '1px solid rgba(255,255,255,0.2)',
+                    }}>{detailDriver.nama_armada}</span>
+                    {detailDriver.kode_bus && (
+                      <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8125rem' }}>
+                        {detailDriver.kode_bus} / {detailDriver.nopol}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="driver-rank-display">
-                  <span className="rank-label">Peringkat</span>
-                  <span className={`rank-number rank-${detailDriver.rank}`}>#{detailDriver.rank}</span>
+              </div>
+
+              {/* Right: rank badge */}
+              <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                <div style={{
+                  background: detailDriver.rank === 1 ? 'linear-gradient(135deg,#f59e0b,#d97706)'
+                            : detailDriver.rank === 2 ? 'linear-gradient(135deg,#94a3b8,#64748b)'
+                            : detailDriver.rank === 3 ? 'linear-gradient(135deg,#cd7c3a,#a85f25)'
+                            : 'rgba(255,255,255,0.1)',
+                  borderRadius: 12, padding: '10px 22px',
+                  border: detailDriver.rank <= 3 ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                }}>
+                  <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Peringkat</div>
+                  <div style={{ color: '#fff', fontSize: '2rem', fontWeight: 800, lineHeight: 1.1, marginTop: 2 }}>
+                    #{detailDriver.rank}
+                  </div>
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginTop: 6 }}>
+                  Skor: <strong style={{ color: '#fff' }}>{Number(detailDriver.skor_total).toFixed(2)}</strong>
                 </div>
               </div>
             </div>
 
+            {/* Score Table */}
             {isLoadingDetail ? (
               <div className="loading-state"><div className="loading-spinner" /><p>Memuat detail...</p></div>
             ) : detailData ? (
-              <div className="monthly-scores-container">
-                <h3 className="section-title">Skor Per Periode</h3>
-                <div className="table-container">
-                  <table className="monthly-table">
+              <div style={{ background: '#fff', borderRadius: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#0369a1" style={{ width: 20, height: 20, flexShrink: 0 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+                  </svg>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>Skor Per Periode</h3>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="monthly-table" style={{ margin: 0 }}>
                     <thead>
                       <tr>
                         <th>Periode</th>
@@ -301,7 +376,7 @@ export default function RankingPenilaian() {
                     </thead>
                     <tbody>
                       {detailData.periodes.length === 0 ? (
-                        <tr><td colSpan={3 + detailData.bobot.length} className="text-center">Belum ada data</td></tr>
+                        <tr><td colSpan={3 + detailData.bobot.length} className="text-center" style={{ padding: '32px 0', color: '#94a3b8' }}>Belum ada data penilaian</td></tr>
                       ) : detailData.periodes.map(p => (
                         <tr key={p.penilaian_id}>
                           <td className="month-cell">{p.nama_periode}</td>
