@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { apiFetch } from '@/utils/api'
+import PageHeader from '@/components/ui/PageHeader'
 
 interface RubricItem {
   range: string
@@ -92,12 +93,15 @@ export default function KategoriPenilaian() {
       <div className="dashboard-content">
 
         {/* ── Page Header ─────────────────────────────────────── */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 className="page-title" style={{ marginBottom: 4 }}>Kategori Penilaian Driver</h1>
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, margin: 0 }}>
-            Indikator dan rubric penilaian performa driver
-          </p>
-        </div>
+        <PageHeader
+          title="Kategori Penilaian Driver"
+          subtitle="Indikator dan rubric penilaian performa driver"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff" style={{ width: 28, height: 28 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            </svg>
+          }
+        />
 
         {/* ── Controls Bar ────────────────────────────────────── */}
         <div

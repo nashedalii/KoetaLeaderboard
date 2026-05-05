@@ -166,14 +166,14 @@ export default function DriverDashboard() {
         {/* ── Welcome Banner ───────────────────────────────────── */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: 20,
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #2563eb 100%)',
+            borderRadius: 16,
             padding: '28px 32px',
             marginBottom: 24,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 8px 32px rgba(102,126,234,0.35)',
+            boxShadow: '0 4px 24px rgba(15,23,42,0.25)',
             position: 'relative',
             overflow: 'hidden',
           }}

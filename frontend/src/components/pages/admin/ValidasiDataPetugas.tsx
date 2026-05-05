@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import PageHeader from '@/components/ui/PageHeader'
 
 interface PenilaianItem {
   penilaian_id: number
@@ -274,43 +275,45 @@ export default function ValidasiDataPetugas() {
       <div className="dashboard-content">
 
         {/* ── Page Header ── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 className="page-title" style={{ marginBottom: 4 }}>Validasi Data Petugas</h1>
-            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, margin: 0 }}>
-              Review dan validasi penilaian driver yang disubmit petugas
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {/* View toggle */}
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: 3, gap: 2 }}>
-              {(['grid', 'list'] as ViewMode[]).map(mode => (
-                <button key={mode} onClick={() => setViewMode(mode)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                    fontSize: 13, fontWeight: 500,
-                    background: viewMode === mode ? '#fff' : 'transparent',
-                    color: viewMode === mode ? '#1e293b' : 'rgba(255,255,255,0.7)',
-                    transition: 'all 0.2s',
-                  }}>
-                  {mode === 'grid' ? <GridIcon /> : <ListIcon />}
-                  {mode === 'grid' ? 'Grid' : 'Tabel'}
-                </button>
-              ))}
+        <PageHeader
+          title="Validasi Data Petugas"
+          subtitle="Review dan validasi penilaian driver yang disubmit petugas"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff" style={{ width: 28, height: 28 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          actions={
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 3, gap: 2 }}>
+                {(['grid', 'list'] as ViewMode[]).map(mode => (
+                  <button key={mode} onClick={() => setViewMode(mode)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                      fontSize: 13, fontWeight: 500,
+                      background: viewMode === mode ? '#fff' : 'transparent',
+                      color: viewMode === mode ? '#1e293b' : 'rgba(255,255,255,0.7)',
+                      transition: 'all 0.2s',
+                    }}>
+                    {mode === 'grid' ? <GridIcon /> : <ListIcon />}
+                    {mode === 'grid' ? 'Grid' : 'Tabel'}
+                  </button>
+                ))}
+              </div>
+              <button onClick={fetchList} disabled={isLoading}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.25)',
+                  background: 'rgba(255,255,255,0.1)', color: 'white',
+                  fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                }}>
+                <RefreshIcon />
+                {isLoading ? 'Memuat...' : 'Refresh'}
+              </button>
             </div>
-            <button onClick={fetchList} disabled={isLoading}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.25)',
-                background: 'rgba(255,255,255,0.1)', color: 'white',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              }}>
-              <RefreshIcon />
-              {isLoading ? 'Memuat...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {error && (
           <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>

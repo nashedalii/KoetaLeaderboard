@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { apiFetch } from '@/utils/api'
+import PageHeader from '@/components/ui/PageHeader'
 
 interface Top5Item {
   rank: number
@@ -304,18 +305,21 @@ export default function AdminDashboard() {
       <div className="dashboard-content">
 
         {/* ── Header ───────────────────────────────────────────── */}
-        <div className="page-header" style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <h1 className="page-title" style={{ marginBottom: 6 }}>{isSuperAdmin ? 'Dashboard Super Admin' : 'Dashboard Admin'}</h1>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, margin: 0 }}>
-                {data.periode_aktif
-                  ? `Periode aktif: ${data.periode_aktif.nama_periode}`
-                  : 'Tidak ada periode aktif saat ini'}
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title={isSuperAdmin ? 'Dashboard Super Admin' : 'Dashboard Admin'}
+          subtitle={data.periode_aktif ? `Periode aktif: ${data.periode_aktif.nama_periode}` : 'Tidak ada periode aktif saat ini'}
+          icon={
+            isSuperAdmin ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff" style={{ width: 28, height: 28 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff" style={{ width: 28, height: 28 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              </svg>
+            )
+          }
+        />
 
         {/* ── Stat Cards ───────────────────────────────────────── */}
         <div className="stats-grid">

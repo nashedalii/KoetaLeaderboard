@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import PageHeader from '@/components/ui/PageHeader'
 import { Chart, ChartConfiguration, registerables } from 'chart.js'
 import { apiFetch } from '@/utils/api'
 
@@ -246,33 +247,44 @@ export default function DriverVisualisasi() {
 
   return (
     <div className="driver-visualisasi">
-      <div className="page-header">
-        <div className="header-with-controls">
-          <div>
-            <h1 className="page-title">Visualisasi Progress</h1>
-            <p className="page-subtitle">Perkembangan performa Anda dari waktu ke waktu</p>
-          </div>
-          <div className="chart-controls">
+      <PageHeader
+        title="Visualisasi Progress"
+        subtitle="Perkembangan performa Anda dari waktu ke waktu"
+        icon={
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff" style={{ width: 28, height: 28 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+          </svg>
+        }
+        actions={
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <select
               value={selectedSiklusId ?? ''}
               onChange={e => setSelectedSiklusId(Number(e.target.value))}
-              className="chart-type-selector"
+              style={{
+                padding: '7px 12px', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 500,
+                background: 'rgba(255,255,255,0.15)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer',
+              }}
             >
               {siklusList.map(s => (
-                <option key={s.siklus_id} value={s.siklus_id}>{s.nama_siklus}</option>
+                <option key={s.siklus_id} value={s.siklus_id} style={{ color: '#0f172a' }}>{s.nama_siklus}</option>
               ))}
             </select>
             <select
               value={chartType}
               onChange={e => setChartType(e.target.value as ChartType)}
-              className="chart-type-selector"
+              style={{
+                padding: '7px 12px', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 500,
+                background: 'rgba(255,255,255,0.15)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer',
+              }}
             >
-              <option value="total">Grafik Total</option>
-              <option value="components">Grafik per Komponen</option>
+              <option value="total" style={{ color: '#0f172a' }}>Grafik Total</option>
+              <option value="components" style={{ color: '#0f172a' }}>Grafik per Komponen</option>
             </select>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {error && <div className="alert-error">{error}</div>}
 

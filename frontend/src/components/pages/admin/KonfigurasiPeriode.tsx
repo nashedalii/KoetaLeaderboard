@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/utils/api'
+import PageHeader from '@/components/ui/PageHeader'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Siklus {
@@ -309,13 +310,21 @@ export default function KonfigurasiPenilaian() {
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h1 className="page-title" style={{ margin: 0 }}>Konfigurasi Penilaian</h1>
-          <button onClick={() => setShowCreateModal(true)} className="btn-add-user">
-            <span>➕</span>
-            <span>Buat Siklus</span>
-          </button>
-        </div>
+        <PageHeader
+          title="Konfigurasi Penilaian"
+          subtitle="Kelola siklus dan periode penilaian driver"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff" style={{ width: 28, height: 28 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            </svg>
+          }
+          actions={
+            <button onClick={() => setShowCreateModal(true)} className="btn-add-user">
+              <span>+</span>
+              <span>Buat Siklus</span>
+            </button>
+          }
+        />
 
         {loading ? (
           <div className="loading-state">Memuat data siklus...</div>
