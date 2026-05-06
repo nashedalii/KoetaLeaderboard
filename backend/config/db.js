@@ -3,7 +3,10 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-const { Pool } = pkg
+const { Pool, types } = pkg
+
+// Kembalikan DATE (OID 1082) sebagai string "YYYY-MM-DD" agar tidak kena timezone shift
+types.setTypeParser(1082, (val) => val)
 
 const pool = new Pool({
   host: process.env.DB_HOST,
