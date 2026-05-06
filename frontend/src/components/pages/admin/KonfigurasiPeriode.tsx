@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '@/utils/api'
 import PageHeader from '@/components/ui/PageHeader'
 
@@ -46,7 +46,7 @@ function autoNamaSiklus(mulai: string, selesai: string) {
   if (!mulai || !selesai) return ''
   const [mulaiY, mulaiM] = mulai.split('-')
   const [selesaiY, selesaiM] = selesai.split('-')
-  return `${BULAN_ID[parseInt(mulaiM) - 1]} ${mulaiY} – ${BULAN_ID[parseInt(selesaiM) - 1]} ${selesaiY}`
+  return `${BULAN_ID[parseInt(mulaiM) - 1]} ${mulaiY} - ${BULAN_ID[parseInt(selesaiM) - 1]} ${selesaiY}`
 }
 
 const STATUS_CONFIG = {
@@ -72,6 +72,14 @@ export default function KonfigurasiPenilaian() {
 
   const [confirmDelete, setConfirmDelete] = useState<Siklus | null>(null)
   const [deleting, setDeleting]           = useState(false)
+
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showToast = (type: 'success' | 'error', text: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToast({ type, text })
+    toastTimer.current = setTimeout(() => setToast(null), 4000)
+  }
 
   const [isMobile, setIsMobile] = useState(false)
 
@@ -106,7 +114,7 @@ export default function KonfigurasiPenilaian() {
       const data = await apiFetch(`/api/siklus/${siklus.siklus_id}`)
       setPeriodes(data.periodes ?? [])
     } catch (err: any) {
-      alert(err.message ?? 'Gagal memuat detail siklus')
+      showToast('error', err.message ?? 'Gagal memuat detail siklus')
     } finally {
       setLoadingDetail(false)
     }
@@ -115,38 +123,39 @@ export default function KonfigurasiPenilaian() {
   // ── Toggle override periode ───────────────────────────────────────────────
   const handleToggleOverride = async (periode: Periode) => {
     try {
-      await apiFetch(`/api/periode/${periode.periode_id}/override`, { method: 'PUT' })
-      // Refresh periodes
+      const res = await apiFetch(`/api/periode/${periode.periode_id}/override`, { method: 'PUT' })
+      showToast('success', res.message ?? 'Periode aktif berhasil diubah')
       const data = await apiFetch(`/api/siklus/${selectedSiklus!.siklus_id}`)
       setPeriodes(data.periodes ?? [])
     } catch (err: any) {
-      alert(err.message ?? 'Gagal mengubah periode aktif')
+      showToast('error', err.message ?? 'Gagal mengubah periode aktif')
     }
   }
 
   // ── Create siklus ─────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!form.tanggal_mulai || !form.tanggal_selesai) {
-      alert('Tanggal mulai dan selesai wajib diisi')
+      showToast('error', 'Tanggal mulai dan selesai wajib diisi')
       return
     }
     if (form.tanggal_selesai <= form.tanggal_mulai) {
-      alert('Tanggal selesai harus setelah tanggal mulai')
+      showToast('error', 'Tanggal selesai harus setelah tanggal mulai')
       return
     }
     const nama = form.nama_siklus.trim() || autoNamaSiklus(form.tanggal_mulai, form.tanggal_selesai)
 
     setSaving(true)
     try {
-      await apiFetch('/api/siklus', {
+      const res = await apiFetch('/api/siklus', {
         method: 'POST',
         body: JSON.stringify({ nama_siklus: nama, tanggal_mulai: form.tanggal_mulai, tanggal_selesai: form.tanggal_selesai })
       })
       await fetchSikluses()
       setShowCreateModal(false)
       setForm({ nama_siklus: '', tanggal_mulai: '', tanggal_selesai: '' })
+      showToast('success', res.message ?? 'Siklus berhasil dibuat')
     } catch (err: any) {
-      alert(err.message ?? 'Gagal membuat siklus')
+      showToast('error', err.message ?? 'Gagal membuat siklus')
     } finally {
       setSaving(false)
     }
@@ -160,8 +169,9 @@ export default function KonfigurasiPenilaian() {
       await apiFetch(`/api/siklus/${confirmDelete.siklus_id}`, { method: 'DELETE' })
       setConfirmDelete(null)
       await fetchSikluses()
+      showToast('success', 'Siklus berhasil dihapus')
     } catch (err: any) {
-      alert(err.message ?? 'Gagal menghapus siklus')
+      showToast('error', err.message ?? 'Gagal menghapus siklus')
     } finally {
       setDeleting(false)
     }
@@ -468,7 +478,7 @@ export default function KonfigurasiPenilaian() {
                     type="text"
                     value={form.nama_siklus}
                     onChange={e => setForm({ ...form, nama_siklus: e.target.value })}
-                    placeholder={autoNamaSiklus(form.tanggal_mulai, form.tanggal_selesai) || 'Otomatis dari tanggal'}
+                    placeholder={autoNamaSiklus(form.tanggal_mulai, form.tanggal_selesai) || 'Otomatis dari bulan mulai - bulan selesai'}
                     className="form-input"
                   />
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem' }}>
@@ -490,6 +500,33 @@ export default function KonfigurasiPenilaian() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Toast Notification ── */}
+        {toast && (
+          <div style={{
+            position: 'fixed', top: 24, right: 24, zIndex: 99999,
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '14px 20px', borderRadius: 14,
+            background: toast.type === 'success' ? '#064e3b' : '#7f1d1d',
+            color: '#fff', fontSize: 14, fontWeight: 500,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+            maxWidth: 380, lineHeight: 1.4,
+            animation: 'fadeSlideIn 0.25s ease',
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+              background: toast.type === 'success' ? '#065f46' : '#991b1b',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+            }}>
+              {toast.type === 'success' ? '✓' : '✕'}
+            </div>
+            <span style={{ flex: 1 }}>{toast.text}</span>
+            <button onClick={() => setToast(null)} style={{
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)',
+              cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1, flexShrink: 0,
+            }}>✕</button>
           </div>
         )}
       </div>
