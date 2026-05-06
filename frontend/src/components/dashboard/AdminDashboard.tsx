@@ -387,7 +387,7 @@ export default function AdminDashboard() {
                   : `Siklus aktif "${data.warning_bobot.nama_siklus}" belum memiliki bobot penilaian.`}
               </span>
             </div>
-            <a href="/admin/konfigurasi-periode" style={{
+            <a href="/admin/konfigurasi" style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '7px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
               background: '#9a3412', color: '#fff', textDecoration: 'none',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import PageHeader from '@/components/ui/PageHeader'
 
 interface Siklus {
@@ -47,6 +47,14 @@ export default function KonfigurasiPenilaian() {
   const [isLocked, setIsLocked] = useState(false)
   const [hasBobot, setHasBobot] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = (type: 'success' | 'error', text: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToast({ type, text })
+    toastTimer.current = setTimeout(() => setToast(null), 4000)
+  }
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || ''
 
@@ -139,6 +147,7 @@ export default function KonfigurasiPenilaian() {
   const hasEmptyNames = indikators.some(ind => !ind.nama.trim())
 
   const getStatusMessage = () => {
+    if (indikators.length < 3) return '⚠️ Indikator minimal 3'
     if (hasEmptyNames) return '⚠️ Ada nama indikator yang kosong'
     if (hasLowBobot) return '⚠️ Ada bobot kurang dari 5%'
     if (totalBobot === 100) return '✅ Siap disimpan'
@@ -147,7 +156,7 @@ export default function KonfigurasiPenilaian() {
   }
 
   const getStatusClass = () => {
-    if (hasEmptyNames || hasLowBobot || totalBobot !== 100) return 'invalid'
+    if (indikators.length < 3 || hasEmptyNames || hasLowBobot || totalBobot !== 100) return 'invalid'
     return 'valid'
   }
 
@@ -175,8 +184,10 @@ export default function KonfigurasiPenilaian() {
   }
 
   const handleDeleteIndicator = (id: number) => {
-    if (indikators.length > 1) {
+    if (indikators.length > 3) {
       setIndikators(prev => prev.filter(ind => ind.id !== id))
+    } else {
+      showToast('error', '⚠️ Jumlah indikator minimal 3')
     }
   }
 
@@ -194,16 +205,20 @@ export default function KonfigurasiPenilaian() {
 
   const handleSave = async () => {
     if (!selectedSiklusId) return
-    if (totalBobot !== 100) {
-      alert('Total bobot harus 100% untuk menyimpan konfigurasi!')
+    if (indikators.length < 3) {
+      showToast('error', '⚠️ Jumlah indikator minimal 3')
       return
     }
     if (hasEmptyNames) {
-      alert('Semua indikator harus memiliki nama!')
+      showToast('error', '⚠️ Semua indikator harus memiliki nama!')
       return
     }
     if (hasLowBobot) {
-      alert('Setiap indikator harus memiliki bobot minimal 5%!')
+      showToast('error', '⚠️ Setiap indikator harus memiliki bobot minimal 5%!')
+      return
+    }
+    if (totalBobot !== 100) {
+      showToast('error', '⚠️ Total bobot harus 100% untuk menyimpan konfigurasi!')
       return
     }
 
@@ -236,7 +251,7 @@ export default function KonfigurasiPenilaian() {
       setIsEditMode(false)
       fetchBobot(selectedSiklusId)
     } catch (err: any) {
-      alert(err.message || 'Gagal menyimpan konfigurasi')
+      showToast('error', err.message || 'Gagal menyimpan konfigurasi')
     } finally {
       setIsSaving(false)
     }
@@ -482,6 +497,33 @@ export default function KonfigurasiPenilaian() {
                 {isSaving ? 'Menyimpan...' : '💾 Simpan Konfigurasi'}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── Toast Notification ── */}
+        {toast && (
+          <div style={{
+            position: 'fixed', top: 24, right: 24, zIndex: 99999,
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '14px 20px', borderRadius: 14,
+            background: toast.type === 'success' ? '#064e3b' : '#7f1d1d',
+            color: '#fff', fontSize: 14, fontWeight: 500,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+            maxWidth: 380, lineHeight: 1.4,
+            animation: 'fadeSlideIn 0.25s ease',
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+              background: toast.type === 'success' ? '#065f46' : '#991b1b',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+            }}>
+              {toast.type === 'success' ? '✓' : '✕'}
+            </div>
+            <span style={{ flex: 1 }}>{toast.text}</span>
+            <button onClick={() => setToast(null)} style={{
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)',
+              cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1, flexShrink: 0,
+            }}>✕</button>
           </div>
         )}
       </div>
