@@ -29,12 +29,24 @@ export const getAdminDashboard = async (req, res) => {
   const armadaDriverParam  = isSuperAdmin ? [] : [armada_id]
 
   try {
+    // Fetch periode aktif terlebih dahulu agar bisa dipakai sebagai filter
+    const periodeAktifResult = await pool.query(QUERY_PERIODE_AKTIF)
+    const periodeAktif = periodeAktifResult.rows[0] || null
+    const periodeId = periodeAktif?.periode_id || null
+
+    // approved periode ini: filter by periode_id aktif (bukan bulan kalender)
+    const approvedParams = isSuperAdmin
+      ? (periodeId ? [periodeId] : [])
+      : (periodeId ? [armada_id, periodeId] : [armada_id])
+    const approvedPeriodeClause = periodeId
+      ? `AND p.periode_id = $${isSuperAdmin ? 1 : 2}`
+      : 'AND 1=0'
+
     const [
       driverResult,
       petugasResult,
       pendingResult,
-      approvedBulanIniResult,
-      periodeAktifResult,
+      approvedPeriodeIniResult,
     ] = await Promise.all([
       pool.query(
         `SELECT COUNT(*) AS total FROM driver d WHERE d.status_aktif = 'aktif' ${armadaDriverClause}`,
@@ -55,11 +67,10 @@ export const getAdminDashboard = async (req, res) => {
         `SELECT COUNT(*) AS total FROM penilaian p
          ${isSuperAdmin ? '' : 'JOIN driver d ON p.driver_id = d.driver_id'}
          WHERE p.status_validasi = 'approved'
-           AND DATE_TRUNC('month', p.updated_at) = DATE_TRUNC('month', CURRENT_DATE)
-         ${isSuperAdmin ? '' : 'AND d.armada_id = $1'}`,
-        armadaDriverParam
+           ${approvedPeriodeClause}
+         ${isSuperAdmin ? '' : `AND d.armada_id = $1`}`,
+        approvedParams
       ),
-      pool.query(QUERY_PERIODE_AKTIF),
     ])
 
     // Total armada hanya relevan untuk super_admin
@@ -68,8 +79,6 @@ export const getAdminDashboard = async (req, res) => {
       const armadaResult = await pool.query(`SELECT COUNT(*) AS total FROM armada`)
       totalArmada = parseInt(armadaResult.rows[0].total)
     }
-
-    const periodeAktif = periodeAktifResult.rows[0] || null
 
     // Top 5 ranking — dari periode aktif, difilter by armada jika admin vendor
     const top5Params = isSuperAdmin
@@ -145,7 +154,7 @@ export const getAdminDashboard = async (req, res) => {
       total_armada:             totalArmada,
       total_petugas_aktif:      parseInt(petugasResult.rows[0].total),
       total_pending_validasi:   parseInt(pendingResult.rows[0].total),
-      total_approved_bulan_ini: parseInt(approvedBulanIniResult.rows[0].total),
+      total_approved_bulan_ini: parseInt(approvedPeriodeIniResult.rows[0].total),
       periode_aktif:            periodeAktif,
       top5_ranking:             top5,
     })
@@ -246,16 +255,18 @@ export const getPetugasDashboard = async (req, res) => {
       WHERE armada_id = $1 AND status_aktif = 'aktif'
     `, [armada_id])
 
-    const statusPenilaianResult = await pool.query(`
-      SELECT
-        COUNT(*) FILTER (WHERE TRUE)                              AS total,
-        COUNT(*) FILTER (WHERE status_validasi = 'pending')       AS pending,
-        COUNT(*) FILTER (WHERE status_validasi = 'approved')      AS approved,
-        COUNT(*) FILTER (WHERE status_validasi = 'rejected')      AS rejected
-      FROM penilaian
-      WHERE created_by = $1
-        AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
-    `, [petugas_id])
+    const statusPenilaianResult = periodeAktif
+      ? await pool.query(`
+          SELECT
+            COUNT(*) FILTER (WHERE TRUE)                              AS total,
+            COUNT(*) FILTER (WHERE status_validasi = 'pending')       AS pending,
+            COUNT(*) FILTER (WHERE status_validasi = 'approved')      AS approved,
+            COUNT(*) FILTER (WHERE status_validasi = 'rejected')      AS rejected
+          FROM penilaian
+          WHERE created_by = $1
+            AND periode_id = $2
+        `, [petugas_id, periodeAktif.periode_id])
+      : { rows: [{ total: 0, pending: 0, approved: 0, rejected: 0 }] }
 
     let rataSkorArmada = null
     if (periodeAktif) {
@@ -270,19 +281,28 @@ export const getPetugasDashboard = async (req, res) => {
       rataSkorArmada = rataResult.rows[0]?.rata_rata ?? null
     }
 
-    const belumDinilaiResult = await pool.query(`
-      SELECT d.driver_id, d.nama_driver, d.nama_kernet, b.kode_bus, b.nopol
-      FROM driver d
-      LEFT JOIN bus b ON b.driver_id = d.driver_id AND b.status_aktif = 'aktif'
-      WHERE d.armada_id = $1
-        AND d.status_aktif = 'aktif'
-        AND d.driver_id NOT IN (
-          SELECT p.driver_id FROM penilaian p
-          WHERE p.created_by = $2
-            AND DATE_TRUNC('month', p.created_at) = DATE_TRUNC('month', CURRENT_DATE)
-        )
-      ORDER BY d.nama_driver
-    `, [armada_id, petugas_id])
+    const belumDinilaiResult = periodeAktif
+      ? await pool.query(`
+          SELECT d.driver_id, d.nama_driver, d.nama_kernet, b.kode_bus, b.nopol
+          FROM driver d
+          LEFT JOIN bus b ON b.driver_id = d.driver_id AND b.status_aktif = 'aktif'
+          WHERE d.armada_id = $1
+            AND d.status_aktif = 'aktif'
+            AND d.driver_id NOT IN (
+              SELECT p.driver_id FROM penilaian p
+              WHERE p.created_by = $2
+                AND p.periode_id = $3
+            )
+          ORDER BY d.nama_driver
+        `, [armada_id, petugas_id, periodeAktif.periode_id])
+      : await pool.query(`
+          SELECT d.driver_id, d.nama_driver, d.nama_kernet, b.kode_bus, b.nopol
+          FROM driver d
+          LEFT JOIN bus b ON b.driver_id = d.driver_id AND b.status_aktif = 'aktif'
+          WHERE d.armada_id = $1
+            AND d.status_aktif = 'aktif'
+          ORDER BY d.nama_driver
+        `, [armada_id])
 
     const statusPenilaian = statusPenilaianResult.rows[0]
 
