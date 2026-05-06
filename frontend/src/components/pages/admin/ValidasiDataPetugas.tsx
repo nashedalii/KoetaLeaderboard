@@ -167,8 +167,16 @@ export default function ValidasiDataPetugas() {
         const list: PeriodeOption[] = data.periodes || []
         setPeriodeList(list)
         const aktif = list.find(p => p.is_aktif)
-        if (aktif) setFilterPeriode(String(aktif.periode_id))
-      } catch {}
+        if (aktif) {
+          setFilterPeriode(String(aktif.periode_id))
+        } else if (list.length > 0) {
+          setFilterPeriode(String(list[0].periode_id))
+        } else {
+          setFilterPeriode('all')
+        }
+      } catch {
+        setFilterPeriode('all')
+      }
     }
     fetchPeriodes()
   }, [])

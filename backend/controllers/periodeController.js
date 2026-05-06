@@ -59,7 +59,15 @@ export const getAllPeriode = async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT p.periode_id, p.nama_periode, p.tanggal_mulai, p.tanggal_selesai,
-        p.is_aktif, p.is_override, p.siklus_id
+        p.is_override, p.siklus_id,
+        CASE
+          WHEN p.is_override = true THEN true
+          WHEN NOT EXISTS (
+            SELECT 1 FROM periode p2
+            WHERE p2.siklus_id = p.siklus_id AND p2.is_override = true
+          ) AND CURRENT_DATE BETWEEN p.tanggal_mulai AND p.tanggal_selesai THEN true
+          ELSE false
+        END AS is_aktif
       FROM periode p
       JOIN siklus_penilaian s ON p.siklus_id = s.siklus_id
       WHERE s.status_siklus = 'aktif'
