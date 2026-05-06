@@ -80,6 +80,32 @@ export const getAdminDashboard = async (req, res) => {
       totalArmada = parseInt(armadaResult.rows[0].total)
     }
 
+    // Cek warning: apakah periode aktif adalah periode terakhir dan belum ada siklus berikutnya
+    let warningPeriode = null
+    if (periodeAktif) {
+      const hariTersisaResult = await pool.query(
+        `SELECT (p.tanggal_selesai - CURRENT_DATE) AS hari_tersisa,
+                NOT EXISTS (
+                  SELECT 1 FROM periode p2
+                  WHERE p2.siklus_id = p.siklus_id
+                    AND p2.tanggal_mulai > p.tanggal_mulai
+                ) AS is_periode_terakhir_siklus,
+                NOT EXISTS (
+                  SELECT 1 FROM siklus_penilaian s2
+                  WHERE s2.tanggal_mulai > p.tanggal_selesai
+                ) AS belum_ada_siklus_berikutnya
+         FROM periode p WHERE p.periode_id = $1`,
+        [periodeAktif.periode_id]
+      )
+      const w = hariTersisaResult.rows[0]
+      if (w && w.is_periode_terakhir_siklus && w.belum_ada_siklus_berikutnya) {
+        warningPeriode = {
+          aktif: true,
+          hari_tersisa: parseInt(w.hari_tersisa),
+        }
+      }
+    }
+
     // Top 5 ranking — dari periode aktif, difilter by armada jika admin vendor
     const top5Params = isSuperAdmin
       ? (periodeAktif ? [periodeAktif.periode_id] : [])
@@ -157,6 +183,7 @@ export const getAdminDashboard = async (req, res) => {
       total_approved_bulan_ini: parseInt(approvedPeriodeIniResult.rows[0].total),
       periode_aktif:            periodeAktif,
       top5_ranking:             top5,
+      warning_periode:          warningPeriode,
     })
   } catch (err) {
     console.error('Admin dashboard error:', err)

@@ -27,6 +27,11 @@ interface PeriodeAktif {
   tahun: number
 }
 
+interface WarningPeriode {
+  aktif: boolean
+  hari_tersisa: number
+}
+
 interface DashboardData {
   total_driver_aktif: number
   total_armada: number
@@ -35,6 +40,7 @@ interface DashboardData {
   total_approved_bulan_ini: number
   periode_aktif: PeriodeAktif | null
   top5_ranking: Top5Item[]
+  warning_periode: WarningPeriode | null
 }
 
 const RANK_COLORS  = ['#f59e0b', '#94a3b8', '#cd7f32', '#667eea', '#667eea']
@@ -320,6 +326,43 @@ export default function AdminDashboard() {
             )
           }
         />
+
+        {/* ── Warning Periode ──────────────────────────────────── */}
+        {data.warning_periode?.aktif && (() => {
+          const hari = data.warning_periode!.hari_tersisa
+          const isRed    = hari <= 7
+          const isYellow = hari <= 14 && hari > 7
+          const bg       = isRed ? '#fef2f2' : isYellow ? '#fffbeb' : '#eff6ff'
+          const border   = isRed ? '#fca5a5' : isYellow ? '#fcd34d' : '#93c5fd'
+          const color    = isRed ? '#991b1b' : isYellow ? '#92400e' : '#1e40af'
+          const icon     = isRed ? '🔴' : isYellow ? '🟡' : '🔵'
+          const label    = isRed
+            ? `Periode aktif berakhir dalam ${hari} hari lagi! Segera buat siklus baru.`
+            : isYellow
+            ? `Periode aktif berakhir dalam ${hari} hari. Pertimbangkan membuat siklus baru.`
+            : `Periode ini adalah periode terakhir dalam siklus (${hari} hari tersisa). Buat siklus baru sebelum habis.`
+          return (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 12, flexWrap: 'wrap',
+              background: bg, border: `1.5px solid ${border}`, borderRadius: 14,
+              padding: '14px 20px', marginBottom: 20,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>{icon}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color }}>{label}</span>
+              </div>
+              <a href="/admin/konfigurasi-periode" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                background: color, color: '#fff', textDecoration: 'none',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+                + Buat Siklus Baru
+              </a>
+            </div>
+          )
+        })()}
 
         {/* ── Stat Cards ───────────────────────────────────────── */}
         <div className="stats-grid">
