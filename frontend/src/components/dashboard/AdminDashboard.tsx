@@ -32,6 +32,12 @@ interface WarningPeriode {
   hari_tersisa: number
 }
 
+interface WarningBobot {
+  siklus_id: number
+  nama_siklus: string
+  is_future: boolean
+}
+
 interface DashboardData {
   total_driver_aktif: number
   total_armada: number
@@ -41,6 +47,7 @@ interface DashboardData {
   periode_aktif: PeriodeAktif | null
   top5_ranking: Top5Item[]
   warning_periode: WarningPeriode | null
+  warning_bobot: WarningBobot | null
 }
 
 const RANK_COLORS  = ['#f59e0b', '#94a3b8', '#cd7f32', '#667eea', '#667eea']
@@ -363,6 +370,33 @@ export default function AdminDashboard() {
             </div>
           )
         })()}
+
+        {/* ── Warning Bobot ───────────────────────────────────── */}
+        {data.warning_bobot && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 12, flexWrap: 'wrap',
+            background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 14,
+            padding: '14px 20px', marginBottom: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>⚠️</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#9a3412' }}>
+                {data.warning_bobot.is_future
+                  ? `Siklus "${data.warning_bobot.nama_siklus}" sudah dibuat tetapi bobot penilaian belum dikonfigurasi.`
+                  : `Siklus aktif "${data.warning_bobot.nama_siklus}" belum memiliki bobot penilaian.`}
+              </span>
+            </div>
+            <a href="/admin/konfigurasi-periode" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '7px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              background: '#9a3412', color: '#fff', textDecoration: 'none',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              Atur Bobot Sekarang
+            </a>
+          </div>
+        )}
 
         {/* ── Stat Cards ───────────────────────────────────────── */}
         <div className="stats-grid">

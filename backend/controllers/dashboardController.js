@@ -175,6 +175,20 @@ export const getAdminDashboard = async (req, res) => {
       }
     }
 
+    // Cek warning: ada siklus yang belum punya bobot (aktif atau mendatang)
+    const sikusTanpaBobotResult = await pool.query(`
+      SELECT s.siklus_id, s.nama_siklus, s.tanggal_mulai,
+        s.tanggal_mulai > CURRENT_DATE AS is_future
+      FROM siklus_penilaian s
+      WHERE s.tanggal_selesai >= CURRENT_DATE
+        AND NOT EXISTS (
+          SELECT 1 FROM bobot b WHERE b.siklus_id = s.siklus_id
+        )
+      ORDER BY s.tanggal_mulai ASC
+      LIMIT 1
+    `)
+    const warningBobot = sikusTanpaBobotResult.rows[0] || null
+
     res.json({
       total_driver_aktif:       parseInt(driverResult.rows[0].total),
       total_armada:             totalArmada,
@@ -184,6 +198,9 @@ export const getAdminDashboard = async (req, res) => {
       periode_aktif:            periodeAktif,
       top5_ranking:             top5,
       warning_periode:          warningPeriode,
+      warning_bobot:            warningBobot
+        ? { siklus_id: warningBobot.siklus_id, nama_siklus: warningBobot.nama_siklus, is_future: warningBobot.is_future }
+        : null,
     })
   } catch (err) {
     console.error('Admin dashboard error:', err)
