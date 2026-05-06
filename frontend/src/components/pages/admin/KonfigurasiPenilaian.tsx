@@ -333,35 +333,60 @@ export default function KonfigurasiPenilaian() {
         {/* Countdown */}
         {countdown && (
           <div style={{
-            background: 'linear-gradient(135deg, #0f172a, #1e3a5f)',
-            borderRadius: 16, padding: '20px 28px', marginBottom: 20,
-            border: '1px solid rgba(99,179,237,0.2)',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+            background: '#fff',
+            borderRadius: 16, padding: '22px 28px', marginBottom: 20,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+            border: '1px solid #e2e8f0',
+            position: 'relative', overflow: 'hidden',
           }}>
-            <p style={{ margin: '0 0 16px', fontSize: 13, fontWeight: 600, color: '#93c5fd', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              ⏳ Siklus dimulai dalam
-            </p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {/* top accent bar */}
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+              background: 'linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
+            }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: 'linear-gradient(135deg, #dbeafe, #ede9fe)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+              }}>⏳</div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#3730a3', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Siklus dimulai dalam
+              </span>
+              <span style={{
+                marginLeft: 'auto', fontSize: 12, fontWeight: 500, color: '#64748b',
+                background: '#f1f5f9', padding: '3px 10px', borderRadius: 999,
+              }}>
+                {selectedSiklus?.tanggal_mulai}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {[
-                { label: 'Bulan',  value: countdown.bulan },
-                { label: 'Hari',   value: countdown.hari  },
-                { label: 'Jam',    value: countdown.jam   },
-                { label: 'Menit',  value: countdown.menit },
-                { label: 'Detik',  value: countdown.detik },
-              ].map(({ label, value }) => (
+                { label: 'Bulan', value: countdown.bulan,  accent: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+                { label: 'Hari',  value: countdown.hari,   accent: '#6366f1', bg: '#eef2ff', border: '#c7d2fe' },
+                { label: 'Jam',   value: countdown.jam,    accent: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe' },
+                { label: 'Menit', value: countdown.menit,  accent: '#06b6d4', bg: '#ecfeff', border: '#a5f3fc' },
+                { label: 'Detik', value: countdown.detik,  accent: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
+              ].map(({ label, value, accent, bg, border }) => (
                 <div key={label} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  background: 'rgba(255,255,255,0.07)', borderRadius: 12,
-                  padding: '12px 20px', minWidth: 72,
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: bg, borderRadius: 14, padding: '14px 18px', minWidth: 76, flex: '1 1 0',
+                  border: `1.5px solid ${border}`,
+                  boxShadow: `0 2px 8px ${accent}18`,
                 }}>
                   <span style={{
-                    fontSize: '2rem', fontWeight: 800, color: '#fff',
+                    fontSize: '2rem', fontWeight: 800, color: accent,
                     fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                    fontFeatureSettings: '"tnum"',
                   }}>
                     {String(value).padStart(2, '0')}
                   </span>
-                  <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 6, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <span style={{
+                    fontSize: 10, color: accent, marginTop: 7,
+                    fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8,
+                  }}>
                     {label}
                   </span>
                 </div>
