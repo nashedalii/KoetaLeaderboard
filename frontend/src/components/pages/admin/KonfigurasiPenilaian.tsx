@@ -48,6 +48,7 @@ export default function KonfigurasiPenilaian() {
   const [hasBobot, setHasBobot] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [countdown, setCountdown] = useState<{ bulan: number; hari: number; jam: number; menit: number; detik: number } | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = (type: 'success' | 'error', text: string) => {
@@ -55,6 +56,37 @@ export default function KonfigurasiPenilaian() {
     setToast({ type, text })
     toastTimer.current = setTimeout(() => setToast(null), 4000)
   }
+
+  // Countdown real-time ke tanggal_mulai siklus yang belum dimulai
+  useEffect(() => {
+    if (!selectedSiklus || selectedSiklus.status_display !== 'belum_dimulai') {
+      setCountdown(null)
+      return
+    }
+    const target = new Date(`${selectedSiklus.tanggal_mulai}T00:00:00`)
+
+    const tick = () => {
+      const now = new Date()
+      const diff = target.getTime() - now.getTime()
+      if (diff <= 0) { setCountdown(null); return }
+
+      const totalDetik = Math.floor(diff / 1000)
+      const detik  = totalDetik % 60
+      const totalMenit = Math.floor(totalDetik / 60)
+      const menit  = totalMenit % 60
+      const totalJam = Math.floor(totalMenit / 60)
+      const jam    = totalJam % 24
+      const totalHari = Math.floor(totalJam / 24)
+      const bulan  = Math.floor(totalHari / 30)
+      const hari   = totalHari % 30
+
+      setCountdown({ bulan, hari, jam, menit, detik })
+    }
+
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [selectedSiklus])
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || ''
 
@@ -297,6 +329,46 @@ export default function KonfigurasiPenilaian() {
             ))}
           </select>
         </div>
+
+        {/* Countdown */}
+        {countdown && (
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a, #1e3a5f)',
+            borderRadius: 16, padding: '20px 28px', marginBottom: 20,
+            border: '1px solid rgba(99,179,237,0.2)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+          }}>
+            <p style={{ margin: '0 0 16px', fontSize: 13, fontWeight: 600, color: '#93c5fd', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              ⏳ Siklus dimulai dalam
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Bulan',  value: countdown.bulan },
+                { label: 'Hari',   value: countdown.hari  },
+                { label: 'Jam',    value: countdown.jam   },
+                { label: 'Menit',  value: countdown.menit },
+                { label: 'Detik',  value: countdown.detik },
+              ].map(({ label, value }) => (
+                <div key={label} style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  background: 'rgba(255,255,255,0.07)', borderRadius: 12,
+                  padding: '12px 20px', minWidth: 72,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}>
+                  <span style={{
+                    fontSize: '2rem', fontWeight: 800, color: '#fff',
+                    fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                  }}>
+                    {String(value).padStart(2, '0')}
+                  </span>
+                  <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 6, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Reminder Banner */}
         {reminderDeadline && (
