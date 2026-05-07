@@ -175,6 +175,18 @@ export const getAdminDashboard = async (req, res) => {
       }
     }
 
+    // Alert login: siklus mulai besok tapi belum ada bobot
+    const alertH1Result = await pool.query(`
+      SELECT s.siklus_id, s.nama_siklus, s.tanggal_mulai
+      FROM siklus_penilaian s
+      WHERE s.tanggal_mulai = CURRENT_DATE + INTERVAL '1 day'
+        AND NOT EXISTS (
+          SELECT 1 FROM bobot b WHERE b.siklus_id = s.siklus_id
+        )
+      LIMIT 1
+    `)
+    const alertBobotH1 = alertH1Result.rows[0] || null
+
     // Cek warning: ada siklus yang belum punya bobot (aktif atau mendatang)
     const sikusTanpaBobotResult = await pool.query(`
       SELECT s.siklus_id, s.nama_siklus, s.tanggal_mulai,
@@ -198,6 +210,9 @@ export const getAdminDashboard = async (req, res) => {
       periode_aktif:            periodeAktif,
       top5_ranking:             top5,
       warning_periode:          warningPeriode,
+      alert_bobot_h1:           alertBobotH1
+        ? { siklus_id: alertBobotH1.siklus_id, nama_siklus: alertBobotH1.nama_siklus, tanggal_mulai: alertBobotH1.tanggal_mulai }
+        : null,
       warning_bobot:            warningBobot
         ? { siklus_id: warningBobot.siklus_id, nama_siklus: warningBobot.nama_siklus, is_future: warningBobot.is_future }
         : null,

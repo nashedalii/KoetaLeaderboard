@@ -38,6 +38,12 @@ interface WarningBobot {
   is_future: boolean
 }
 
+interface AlertBobotH1 {
+  siklus_id: number
+  nama_siklus: string
+  tanggal_mulai: string
+}
+
 interface DashboardData {
   total_driver_aktif: number
   total_armada: number
@@ -48,6 +54,7 @@ interface DashboardData {
   top5_ranking: Top5Item[]
   warning_periode: WarningPeriode | null
   warning_bobot: WarningBobot | null
+  alert_bobot_h1: AlertBobotH1 | null
 }
 
 const RANK_COLORS  = ['#f59e0b', '#94a3b8', '#cd7f32', '#667eea', '#667eea']
@@ -170,6 +177,24 @@ export default function AdminDashboard() {
   const [data, setData]           = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState<string | null>(null)
+  const [showH1Alert, setShowH1Alert] = useState(false)
+  const [h1Countdown, setH1Countdown] = useState('')
+
+  useEffect(() => {
+    if (!data?.alert_bobot_h1) return
+    const target = new Date(`${data.alert_bobot_h1.tanggal_mulai}T00:00:00`)
+    const tick = () => {
+      const diff = target.getTime() - Date.now()
+      if (diff <= 0) { setH1Countdown('00:00:00'); return }
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setH1Countdown(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [data?.alert_bobot_h1])
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [armadaOptions, setArmadaOptions] = useState<ArmadaOption[]>([])
   const [armadaFilter, setArmadaFilter]   = useState<string>('all')
@@ -190,6 +215,7 @@ export default function AdminDashboard() {
         const result = await apiFetch('/api/dashboard/admin')
         setData(result)
         setTop5List(result.top5_ranking ?? [])
+        if (result.alert_bobot_h1) setShowH1Alert(true)
         setTop5Periode(
           result.top5_ranking?.[0]?.nama_periode
             ?? result.periode_aktif?.nama_periode
@@ -598,6 +624,70 @@ export default function AdminDashboard() {
         </div>
 
       </div>
+
+      {/* ── Popup Alert H-1 Bobot ── */}
+      {showH1Alert && data?.alert_bobot_h1 && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99998,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 20, padding: '36px 32px',
+            maxWidth: 440, width: '100%', textAlign: 'center',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
+            animation: 'fadeSlideIn 0.3s ease',
+          }}>
+            <div style={{
+              width: 64, height: 64, borderRadius: '50%', margin: '0 auto 20px',
+              background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30,
+            }}>⚠️</div>
+
+            <h2 style={{ margin: '0 0 10px', fontSize: '1.25rem', fontWeight: 800, color: '#111827' }}>
+              Bobot Belum Dikonfigurasi!
+            </h2>
+            <p style={{ margin: '0 0 12px', fontSize: 14, color: '#6b7280', lineHeight: 1.6 }}>
+              Siklus <strong style={{ color: '#111827' }}>"{data.alert_bobot_h1.nama_siklus}"</strong> dimulai dalam:
+            </p>
+            <div style={{
+              fontFamily: 'monospace', fontSize: '2rem', fontWeight: 800, color: '#dc2626',
+              background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 12,
+              padding: '10px 24px', display: 'inline-block', letterSpacing: '0.05em',
+              marginBottom: 12,
+            }}>
+              {h1Countdown}
+            </div>
+            <p style={{ margin: '0 0 28px', fontSize: 13, color: '#9ca3af' }}>
+              Segera konfigurasikan bobot agar petugas dapat melakukan penilaian.
+            </p>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowH1Alert(false)}
+                style={{
+                  padding: '10px 24px', borderRadius: 10, border: '1.5px solid #e5e7eb',
+                  background: '#fff', color: '#6b7280', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}
+              >
+                Nanti Saja
+              </button>
+              <a
+                href="/admin/konfigurasi"
+                onClick={() => setShowH1Alert(false)}
+                style={{
+                  padding: '10px 24px', borderRadius: 10, border: 'none',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                  textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                Atur Bobot Sekarang →
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
