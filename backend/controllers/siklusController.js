@@ -25,15 +25,9 @@ function generatePeriodes(siklusId, tanggalMulai, tanggalSelesai) {
     // Bulan berikutnya: selalu tanggal 1
     const firstDay = isFirstPeriod ? tanggalMulai : `${year}-${pad(month)}-01`
 
-    // Bulan terakhir: pakai tanggal selesai siklus yang sebenarnya
-    // Bulan lain: hari terakhir bulan tersebut
-    const isLastPeriod = year === endYear && month === endMonth
-    const lastDay = isLastPeriod
-      ? tanggalSelesai
-      : (() => {
-          const d = new Date(year, month, 0)
-          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-        })()
+    // tanggal_selesai selalu hari terakhir bulan (Opsi A)
+    const d = new Date(year, month, 0)
+    const lastDay = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
     periodes.push({
       bulan:           BULAN[month - 1], // BULAN array 0-indexed
@@ -167,17 +161,22 @@ export const createSiklus = async (req, res) => {
   try {
     await client.query('BEGIN')
 
+    // Sesuaikan tanggal_selesai ke hari terakhir bulannya
+    const [endY, endM] = tanggal_selesai.split('-').map(Number)
+    const lastDayOfEndMonth = new Date(endY, endM, 0)
+    const tanggal_selesai_adjusted = `${lastDayOfEndMonth.getFullYear()}-${pad(lastDayOfEndMonth.getMonth() + 1)}-${pad(lastDayOfEndMonth.getDate())}`
+
     // 1. Insert siklus
     const siklusResult = await client.query(
       `INSERT INTO siklus_penilaian (nama_siklus, tanggal_mulai, tanggal_selesai)
        VALUES ($1, $2, $3)
        RETURNING *`,
-      [nama_siklus, tanggal_mulai, tanggal_selesai]
+      [nama_siklus, tanggal_mulai, tanggal_selesai_adjusted]
     )
     const siklus = siklusResult.rows[0]
 
     // 2. Generate periode bulanan
-    const periodes = generatePeriodes(siklus.siklus_id, tanggal_mulai, tanggal_selesai)
+    const periodes = generatePeriodes(siklus.siklus_id, tanggal_mulai, tanggal_selesai_adjusted)
 
     // 3. Cek overlap: ada bulan/tahun yang sudah dimiliki siklus lain?
     for (const p of periodes) {

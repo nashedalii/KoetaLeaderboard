@@ -184,7 +184,7 @@ export default function LoginForm() {
             Sistem Penilaian<br />Kinerja Driver
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px', lineHeight: '1.75', marginBottom: '36px' }}>
-            Platform manajemen dan evaluasi kinerja supir TransKoetaradja secara digital dan terukur.
+            Platform manajemen dan evaluasi kinerja sopir TransKoetaradja secara digital dan terukur.
           </p>
 
           {/* Features */}
@@ -217,10 +217,6 @@ export default function LoginForm() {
 
         </div>
 
-        {/* Footer */}
-        <p className="absolute bottom-6" style={{ color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>
-          © {new Date().getFullYear()} Pemerintah Aceh
-        </p>
       </div>
 
       {/* ── RIGHT PANEL: Form ── */}

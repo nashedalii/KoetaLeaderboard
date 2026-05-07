@@ -70,6 +70,15 @@ export default function KonfigurasiPenilaian() {
   const [saving, setSaving]                   = useState(false)
   const [form, setForm] = useState({ nama_siklus: '', tanggal_mulai: '', tanggal_selesai: '' })
 
+  // Cek apakah tanggal_selesai bukan hari terakhir bulannya
+  const isNotLastDayOfMonth = (() => {
+    if (!form.tanggal_selesai) return false
+    const [y, m] = form.tanggal_selesai.split('-').map(Number)
+    const lastDay = new Date(y, m, 0).getDate()
+    const inputDay = parseInt(form.tanggal_selesai.split('-')[2])
+    return inputDay < lastDay
+  })()
+
   // Cek overlap form vs siklus yang sudah ada
   const overlapSiklus = (() => {
     if (!form.tanggal_mulai || !form.tanggal_selesai) return null
@@ -505,12 +514,27 @@ export default function KonfigurasiPenilaian() {
                   </div>
                 )}
 
-                {/* Success preview */}
-                {!overlapSiklus && form.tanggal_mulai && form.tanggal_selesai && form.tanggal_selesai > form.tanggal_mulai && (
-                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.75rem', fontSize: '0.85rem', color: '#16a34a' }}>
-                    ✅ Akan membuat periode bulanan dari <strong>{formatTanggal(form.tanggal_mulai)}</strong> hingga <strong>{formatTanggal(form.tanggal_selesai)}</strong>
+                {/* End date not last day of month warning */}
+                {isNotLastDayOfMonth && !overlapSiklus && (
+                  <div style={{ background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#92400e', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+                    <span>
+                      Tanggal selesai bukan akhir bulan. Sistem akan otomatis menyesuaikan tanggal selesai periode terakhir ke hari terakhir bulan tersebut.
+                    </span>
                   </div>
                 )}
+
+                {/* Success preview */}
+                {!overlapSiklus && form.tanggal_mulai && form.tanggal_selesai && form.tanggal_selesai > form.tanggal_mulai && (() => {
+                  const [y, m] = form.tanggal_selesai.split('-').map(Number)
+                  const lastDay = new Date(y, m, 0)
+                  const adjusted = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2,'0')}-${String(lastDay.getDate()).padStart(2,'0')}`
+                  return (
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.75rem', fontSize: '0.85rem', color: '#16a34a' }}>
+                      ✅ Akan membuat periode bulanan dari <strong>{formatTanggal(form.tanggal_mulai)}</strong> hingga <strong>{formatTanggal(adjusted)}</strong>
+                    </div>
+                  )
+                })()}
               </div>
 
               <div className="modal-footer">
