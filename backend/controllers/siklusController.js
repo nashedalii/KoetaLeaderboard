@@ -18,10 +18,12 @@ function generatePeriodes(siklusId, tanggalMulai, tanggalSelesai) {
   const periodes = []
   let year  = startYear
   let month = startMonth // 1-indexed (Januari = 1)
+  let isFirstPeriod = true
 
   while (year < endYear || (year === endYear && month <= endMonth)) {
-    // tanggal_mulai = hari pertama bulan (string langsung, tanpa Date)
-    const firstDay = `${year}-${pad(month)}-01`
+    // Bulan pertama: pakai tanggal mulai siklus yang sebenarnya
+    // Bulan berikutnya: selalu tanggal 1
+    const firstDay = isFirstPeriod ? tanggalMulai : `${year}-${pad(month)}-01`
 
     // tanggal_selesai = hari terakhir bulan
     // new Date(year, month, 0): month di sini 1-indexed, day 0 = hari terakhir bulan sebelumnya
@@ -38,6 +40,7 @@ function generatePeriodes(siklusId, tanggalMulai, tanggalSelesai) {
       siklus_id:       siklusId,
     })
 
+    isFirstPeriod = false
     // Pindah ke bulan berikutnya
     month++
     if (month > 12) {
@@ -169,9 +172,24 @@ export const createSiklus = async (req, res) => {
     )
     const siklus = siklusResult.rows[0]
 
-    // 2. Generate & insert periode bulanan
+    // 2. Generate periode bulanan
     const periodes = generatePeriodes(siklus.siklus_id, tanggal_mulai, tanggal_selesai)
 
+    // 3. Cek overlap: ada bulan/tahun yang sudah dimiliki siklus lain?
+    for (const p of periodes) {
+      const overlap = await client.query(
+        `SELECT nama_periode FROM periode WHERE bulan = $1 AND tahun = $2`,
+        [p.bulan, p.tahun]
+      )
+      if (overlap.rows.length > 0) {
+        await client.query('ROLLBACK')
+        return res.status(400).json({
+          message: `Periode ${p.nama_periode} sudah ada pada siklus yang sedang berjalan. Pastikan tanggal mulai siklus baru tidak tumpang tindih dengan siklus sebelumnya.`
+        })
+      }
+    }
+
+    // 4. Insert periode
     for (const p of periodes) {
       await client.query(
         `INSERT INTO periode (bulan, tahun, nama_periode, tanggal_mulai, tanggal_selesai, siklus_id)
