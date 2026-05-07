@@ -25,11 +25,15 @@ function generatePeriodes(siklusId, tanggalMulai, tanggalSelesai) {
     // Bulan berikutnya: selalu tanggal 1
     const firstDay = isFirstPeriod ? tanggalMulai : `${year}-${pad(month)}-01`
 
-    // tanggal_selesai = hari terakhir bulan
-    // new Date(year, month, 0): month di sini 1-indexed, day 0 = hari terakhir bulan sebelumnya
-    // contoh: new Date(2025, 9, 0) = 30 Sep 2025 (hari terakhir Agustus ke-9 → September hari 0)
-    const lastDate = new Date(year, month, 0)
-    const lastDay  = `${lastDate.getFullYear()}-${pad(lastDate.getMonth() + 1)}-${pad(lastDate.getDate())}`
+    // Bulan terakhir: pakai tanggal selesai siklus yang sebenarnya
+    // Bulan lain: hari terakhir bulan tersebut
+    const isLastPeriod = year === endYear && month === endMonth
+    const lastDay = isLastPeriod
+      ? tanggalSelesai
+      : (() => {
+          const d = new Date(year, month, 0)
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+        })()
 
     periodes.push({
       bulan:           BULAN[month - 1], // BULAN array 0-indexed

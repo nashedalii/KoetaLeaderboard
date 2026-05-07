@@ -70,6 +70,15 @@ export default function KonfigurasiPenilaian() {
   const [saving, setSaving]                   = useState(false)
   const [form, setForm] = useState({ nama_siklus: '', tanggal_mulai: '', tanggal_selesai: '' })
 
+  // Cek overlap form vs siklus yang sudah ada
+  const overlapSiklus = (() => {
+    if (!form.tanggal_mulai || !form.tanggal_selesai) return null
+    return sikluses.find(s =>
+      form.tanggal_mulai <= s.tanggal_selesai &&
+      s.tanggal_mulai   <= form.tanggal_selesai
+    ) || null
+  })()
+
   const [confirmDelete, setConfirmDelete] = useState<Siklus | null>(null)
   const [deleting, setDeleting]           = useState(false)
 
@@ -486,7 +495,18 @@ export default function KonfigurasiPenilaian() {
                   </p>
                 </div>
 
-                {form.tanggal_mulai && form.tanggal_selesai && form.tanggal_selesai > form.tanggal_mulai && (
+                {/* Overlap warning */}
+                {overlapSiklus && (
+                  <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#991b1b', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>⛔</span>
+                    <span>
+                      Tanggal ini tumpang tindih dengan siklus <strong>"{overlapSiklus.nama_siklus}"</strong> ({formatTanggal(overlapSiklus.tanggal_mulai)} – {formatTanggal(overlapSiklus.tanggal_selesai)}). Pilih tanggal setelah siklus tersebut berakhir.
+                    </span>
+                  </div>
+                )}
+
+                {/* Success preview */}
+                {!overlapSiklus && form.tanggal_mulai && form.tanggal_selesai && form.tanggal_selesai > form.tanggal_mulai && (
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.75rem', fontSize: '0.85rem', color: '#16a34a' }}>
                     ✅ Akan membuat periode bulanan dari <strong>{formatTanggal(form.tanggal_mulai)}</strong> hingga <strong>{formatTanggal(form.tanggal_selesai)}</strong>
                   </div>
@@ -495,7 +515,8 @@ export default function KonfigurasiPenilaian() {
 
               <div className="modal-footer">
                 <button onClick={() => setShowCreateModal(false)} className="btn-cancel">Batal</button>
-                <button onClick={handleCreate} disabled={saving} className="btn-save">
+                <button onClick={handleCreate} disabled={saving || !!overlapSiklus} className="btn-save"
+                  style={{ opacity: overlapSiklus ? 0.4 : 1, cursor: overlapSiklus ? 'not-allowed' : 'pointer' }}>
                   {saving ? 'Membuat...' : 'Buat Siklus'}
                 </button>
               </div>
