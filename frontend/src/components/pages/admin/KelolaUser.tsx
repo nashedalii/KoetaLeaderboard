@@ -602,9 +602,9 @@ export default function KelolaUser() {
                   <tr key={`${user.role}-${user.id}`}>
                     <td>{idx + 1}</td>
                     <td className="user-name" style={{ display: 'flex', alignItems: 'center' }}>
-                      <RoleInitial role={user.role} />
-                      {user.nama}
-                      {isSelf && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: '#94a3b8', fontWeight: 500 }}>(Anda)</span>}
+                      <span style={isSelf ? { fontWeight: 700, color: '#2563eb' } : undefined}>
+                        {user.nama}
+                      </span>
                     </td>
                     <td>{user.no_hp}</td>
                     <td>
@@ -660,11 +660,8 @@ export default function KelolaUser() {
                 return (
                 <div key={`card-${user.role}-${user.id}`} className="user-card">
                   <div className="user-card-left">
-                    <div className="user-card-avatar">
-                      <RoleInitial role={user.role} />
-                    </div>
                     <div className="user-card-info">
-                      <div className="user-card-name">{user.nama}</div>
+                      <div className="user-card-name" style={isSelf ? { fontWeight: 700, color: '#2563eb' } : undefined}>{user.nama}</div>
                       <div className="user-card-meta">
                         <span className={`role-badge role-${user.role === 'super_admin' ? 'super-admin' : user.role}`} style={{ fontSize: '0.65rem', padding: '2px 7px' }}>
                           {ROLE_LABEL[user.role]}

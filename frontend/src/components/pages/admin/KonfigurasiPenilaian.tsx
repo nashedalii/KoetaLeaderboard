@@ -346,11 +346,6 @@ export default function KonfigurasiPenilaian() {
             }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: 'linear-gradient(135deg, #dbeafe, #ede9fe)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-              }}>⏳</div>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#3730a3', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Siklus dimulai dalam
               </span>
